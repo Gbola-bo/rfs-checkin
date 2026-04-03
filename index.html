@@ -452,7 +452,7 @@ async function fetchSessionStatus() {
 //  Decides what the user sees based on day + open windows
 // ════════════════════════════════════════════════════════════
 function applySessionStatus(data) {
-    const day      = data.dayOfWeek;  // 0=Sun, 6=Sat
+    const day      = 0;  // 0=Sun, 6=Sat "data.dayOfWeek"
     const sunOpen  = data.sunOpen;
     const satMode  = data.satMode;    // CLOSED / CHECKIN-OPEN / CHECKOUT-OPEN
 
