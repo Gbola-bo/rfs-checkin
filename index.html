@@ -499,9 +499,9 @@ function renderBanner(data) {
     };
 
     let eventKey = 'CLOSED';
-    if (data.sunOpen && data.dayOfWeek === 0)  eventKey = 'SUN';
-    if (data.satMode === 'CHECKIN-OPEN')        eventKey = 'SAT-IN';
-    if (data.satMode === 'CHECKOUT-OPEN')       eventKey = 'SAT-OUT';
+    if (data.sunOpen && data.dayOfWeek === 0)                          eventKey = 'SUN';
+else if (data.satMode === 'CHECKIN-OPEN'  && data.dayOfWeek === 6) eventKey = 'SAT-IN';
+else if (data.satMode === 'CHECKOUT-OPEN' && data.dayOfWeek === 6) eventKey = 'SAT-OUT';
 
     const ev = eventLabels[eventKey];
 
