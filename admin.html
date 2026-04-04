@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RFS Admin — Attendance Control</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg:            #F4F5F2;
+            --bg-card:       #FFFFFF;
+            --bg-surface:    #F0F2ED;
+            --accent:        #2D6A2D;
+            --accent-dim:    rgba(45,106,45,0.10);
+            --success-bg:    #EAF5E4;
+            --success-text:  #1A5C1A;
+            --error-bg:      #FEF0F0;
+            --error-text:    #C0392B;
+            --warning-bg:    #FEF9E7;
+            --warning-text:  #7D5A00;
+            --text-primary:  #1A2010;
+            --text-secondary:#4A5540;
+            --text-muted:    #8A9A80;
+            --border:        rgba(0,0,0,0.09);
+            --radius-sm:     6px;
+            --radius-md:     10px;
+            --radius-lg:     16px;
+            --danger:        #C0392B;
+            --danger-dim:    rgba(192,57,43,0.10);
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        /* ── Top bar ── */
+        .topbar {
+            background: #1A2D1A;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .topbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .topbar-brand svg { flex-shrink: 0; }
+
+        .topbar-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 0.03em;
+        }
+
+        .topbar-sub {
+            font-size: 11px;
+            color: rgba(255,255,255,0.5);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .session-indicator {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 99px;
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.7);
+            letter-spacing: 0.04em;
+        }
+
+        .logout-btn {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.7);
+            border: 1px solid rgba(255,255,255,0.12);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .logout-btn:hover { background: rgba(255,255,255,0.15); }
+
+        /* ── Login overlay ── */
+        .login-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(20,35,20,0.92);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 24px;
+        }
+
+        .login-box {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 36px 32px;
+            width: 100%;
+            max-width: 360px;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+        }
+
+        .login-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .login-sub {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        .login-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+        .login-field label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+
+        /* ── Main layout ── */
+        .main {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 28px 20px;
+            display: none;
+        }
+        .main.show { display: block; }
+
+        /* ── Section selector ── */
+        .section-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            background: var(--bg-card);
+            padding: 6px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            background: transparent;
+            color: var(--text-muted);
+        }
+
+        .tab-btn.active {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        /* ── Cards ── */
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .card-head {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-head-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .card-head-sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .card-body { padding: 20px; }
+
+        /* ── Stream selector ── */
+        .stream-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .selector-field { display: flex; flex-direction: column; gap: 6px; }
+        .selector-field label { font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+
+        select {
+            width: 100%;
+            height: 40px;
+            padding: 0 12px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            background: var(--bg-surface);
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.15s;
+        }
+        select:focus { border-color: var(--accent); }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            height: 40px;
+            padding: 0 12px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: 'DM Mono', monospace;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-primary);
+            background: #fff;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            letter-spacing: 0.04em;
+        }
+        input[type="text"]:focus, input[type="password"]:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+        }
+
+        /* ── Status pill on card ── */
+        .status-pill {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 99px;
+            white-space: nowrap;
+        }
+        .pill-closed   { background: var(--bg-surface); color: var(--text-muted); }
+        .pill-open     { background: var(--success-bg); color: var(--success-text); }
+        .pill-checkout { background: #FFF3E0; color: #8A4000; }
+        .pill-force    { background: var(--warning-bg); color: var(--warning-text); }
+
+        /* ── Code row ── */
+        .code-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .code-field { display: flex; flex-direction: column; gap: 6px; }
+        .code-field label { font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+        .code-field .hint { font-size: 11px; color: var(--text-muted); }
+
+        /* ── Action buttons ── */
+        .action-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+
+        .action-btn {
+            flex: 1;
+            min-width: 120px;
+            height: 40px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.15s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .action-btn:hover  { opacity: 0.88; }
+        .action-btn:active { transform: scale(0.98); }
+        .action-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+        .btn-checkin  { background: var(--accent); color: #fff; }
+        .btn-checkout { background: #E67E22; color: #fff; }
+        .btn-close    { background: var(--danger); color: #fff; }
+        .btn-save     { background: var(--accent); color: #fff; }
+        .btn-force    { background: #7D5A00; color: #fff; }
+        .btn-outline  { background: transparent; color: var(--text-secondary); border: 1.5px solid var(--border); }
+
+        /* ── Divider ── */
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 20px 0;
+        }
+
+        /* ── Toast ── */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: #1A2D1A;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 500;
+            padding: 12px 20px;
+            border-radius: var(--radius-md);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            transition: transform 0.3s cubic-bezier(.22,.68,0,1.2);
+            z-index: 200;
+            white-space: nowrap;
+            max-width: 90vw;
+            text-align: center;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast.err  { background: var(--danger); }
+        .toast.ok   { background: #1A5C1A; }
+        .toast.warn { background: #7D5A00; }
+
+        /* ── Current status display ── */
+        .status-display {
+            background: var(--bg-surface);
+            border-radius: var(--radius-sm);
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .status-display-label { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+        .status-display-value { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+
+        /* ── Section panels ── */
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        /* ── Responsive ── */
+        @media (max-width: 480px) {
+            .stream-selector { grid-template-columns: 1fr 1fr; }
+            .code-row { grid-template-columns: 1fr; }
+            .action-row { flex-direction: column; }
+            .action-btn { min-width: unset; }
+            .topbar-sub { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Login overlay -->
+<div class="login-overlay" id="loginOverlay">
+    <div class="login-box">
+        <div class="login-title">Admin Login</div>
+        <div class="login-sub">RFS Attendance Control Panel</div>
+        <div class="login-field">
+            <label>Admin Password</label>
+            <input type="password" id="loginPassword" placeholder="Enter password" autocomplete="off">
+        </div>
+        <button class="action-btn btn-save" style="width:100%; margin-top:8px;" onclick="handleLogin()">Login</button>
+        <div id="loginError" style="font-size:12px; color:var(--danger); margin-top:10px; text-align:center; display:none;">Incorrect password</div>
+    </div>
+</div>
+
+<!-- Top bar -->
+<div class="topbar">
+    <div class="topbar-brand">
+        <svg viewBox="0 0 1535.61 720.7" width="40" height="19" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#7ac042" d="M0,693.1l17.76-27.95,78.77-14.93,39.53-55.38c77.39-18.85,157.19-33.28,236.48-44.4,298.97-41.95,607.51-36.4,904.31,19.14,48.81,9.13,92.27,16.51,137.14,38.78,15.07,7.48,54.7,29.33,64.06,41.87,6.62,8.87,11.26,24.98,17.82,34.63,6.09,3.05,24.83,2.93,29.31,6.17,1.19.86,10.43,20.26,10.44,21.53-8.4,1.77-17.28-.18-25.46-.53-172.91-7.3-345.62-20.92-518.95-15.98-120.92,3.45-242.02,15.47-362.82,21.05-167.22,7.73-335,2.5-501.9-11.03-42.2-3.42-84.32-8.22-126.47-11.98v-1Z"/>
+            <path fill="#4a7a2a" d="M905.76,112.87v160.78c24.25-7.17,48.56-17.58,74.47-15.96,28.01,1.75,53.53,16.33,75.81,32.13,50,35.45,119.73,106.25,181.15,113.65,13.1,1.58,26.08-1.17,36.47,9.51,5.34,5.49,12.01,21.51,12.01,28.95v22.47l-64.98,1v45.94c-35.89-4.17-71.67-10.41-107.6-14.86-242.16-30.01-485.68-27.78-727.54,4.01-19.03,2.5-37.9,6.26-57.05,7.91-2.5-13.93-2.65-28.83-1.58-43h-41.99v-31.46c0-3.13,1.55-12.2,2.48-15.5,2.27-8.01,6.95-12.37,15.27-13.7,101.98-.92,204.14,1.97,304.17-19.72,86.33-18.72,163.38-55.83,243.75-90.56.54-17.23-.14-34.53.17-51.77.1-5.48-.09-10.99,0-16.48,15.76-35.82,32.94-71.42,50.13-106.71.93-1.91,1.92-4.24,3-5.99.46-.74,1.51-2.57,1.85-.64Z"/>
+            <path fill="#f6eb19" d="M850.78,242.7c-75.13,29.86-146.12,67.66-224.73,88.6-38.12,10.16-77.21,16.63-116.54,20.16l-1.47-1.58c-9.55-57.54-3.35-116.46,19.35-170.07C583.95,46.3,728.79-28.69,870.99,10.3c109.33,29.97,193.87,126.56,210.72,238.39-1.54.38-2.17-.63-3.28-1.2-7.95-4.12-16.61-11.38-25.03-15.94-30.39-16.47-65.95-25.9-100.59-19.82l-47.04-98.85c-.35-1.93-1.4-.09-1.85.64-1.08,1.75-2.07,4.08-3,5.99-17.19,35.29-34.37,70.89-50.13,106.71-.09,5.49.1,11,0,16.48Z"/>
+        </svg>
+        <div>
+            <div class="topbar-title">RFS Attendance Admin</div>
+            <div class="topbar-sub">Rock Foundation School</div>
+        </div>
+    </div>
+    <div class="topbar-right">
+        <div class="session-indicator" id="topbarSession">—</div>
+        <button class="logout-btn" onclick="handleLogout()">Logout</button>
+    </div>
+</div>
+
+<!-- Main content -->
+<div class="main" id="mainContent">
+
+    <!-- Stream selector -->
+    <div class="card">
+        <div class="card-head">
+            <div>
+                <div class="card-head-title">Session Selection</div>
+                <div class="card-head-sub">Select the active class stream to manage</div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="stream-selector">
+                <div class="selector-field">
+                    <label>Class</label>
+                    <select id="selClass">
+                        <option value="FTR">FTR</option>
+                        <option value="USPA">USPA</option>
+                    </select>
+                </div>
+                <div class="selector-field">
+                    <label>Year</label>
+                    <select id="selYear">
+                        <option value="2026">2026</option>
+                        <option value="2027">2027</option>
+                        <option value="2028">2028</option>
+                    </select>
+                </div>
+                <div class="selector-field">
+                    <label>Stream</label>
+                    <select id="selStream">
+                        <option value="1">Stream 1</option>
+                        <option value="2">Stream 2</option>
+                        <option value="3">Stream 3</option>
+                    </select>
+                </div>
+            </div>
+            <button class="action-btn btn-save" style="width:100%;" onclick="loadSessionStatus()">Load Session</button>
+        </div>
+    </div>
+
+    <!-- Tab switcher -->
+    <div class="section-tabs" id="sectionTabs" style="display:none;">
+        <button class="tab-btn active" onclick="switchTab('sunday')">Sunday Control</button>
+        <button class="tab-btn" onclick="switchTab('saturday')">Saturday Control</button>
+    </div>
+
+    <!-- ── SUNDAY PANEL ── -->
+    <div class="panel active" id="panelSunday">
+
+        <!-- Current status -->
+        <div class="card">
+            <div class="card-head">
+                <div>
+                    <div class="card-head-title">Sunday Attendance Window</div>
+                    <div class="card-head-sub">Standard window: 7:30 AM – 8:10 AM</div>
+                </div>
+                <div class="status-pill pill-closed" id="sunStatusPill">Not loaded</div>
+            </div>
+            <div class="card-body">
+                <div class="status-display">
+                    <span class="status-display-label">Current mode</span>
+                    <span class="status-display-value" id="sunCurrentMode">—</span>
+                </div>
+
+                <div class="action-row">
+                    <button class="action-btn btn-force" id="btnSunForce" onclick="sunForceOpen()" disabled>
+                        Force Open Window
+                    </button>
+                    <button class="action-btn btn-close" id="btnSunClose" onclick="sunForceClose()" disabled>
+                        Close Window
+                    </button>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- Online code for Sunday -->
+                <div style="margin-bottom: 12px;">
+                    <div class="card-head-title" style="font-size:13px; margin-bottom:12px;">Sunday Online Code</div>
+                    <div class="code-field" style="margin-bottom: 12px;">
+                        <label>Today's Online Code</label>
+                        <input type="text" id="sunOnlineCode" placeholder="e.g. 4829" maxlength="6" inputmode="numeric">
+                        <span class="hint" style="font-size:11px; color:var(--text-muted); margin-top:4px;">Share this with online students only. Valid today only.</span>
+                    </div>
+                    <button class="action-btn btn-save" id="btnSunSaveCode" onclick="saveSundayCode()" disabled style="width:100%;">
+                        Save Online Code
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── SATURDAY PANEL ── -->
+    <div class="panel" id="panelSaturday">
+
+        <div class="card">
+            <div class="card-head">
+                <div>
+                    <div class="card-head-title">Saturday All-Day Class</div>
+                    <div class="card-head-sub">Control check-in and check-out windows</div>
+                </div>
+                <div class="status-pill pill-closed" id="satStatusPill">Not loaded</div>
+            </div>
+            <div class="card-body">
+
+                <div class="status-display">
+                    <span class="status-display-label">Current window</span>
+                    <span class="status-display-value" id="satCurrentMode">—</span>
+                </div>
+
+                <!-- Codes -->
+                <div class="code-row">
+                    <div class="code-field">
+                        <label>Check-In Code</label>
+                        <input type="text" id="satCheckinCode" placeholder="e.g. 8821" maxlength="6" inputmode="numeric">
+                        <span class="hint">Share at start of class</span>
+                    </div>
+                    <div class="code-field">
+                        <label>Check-Out Code</label>
+                        <input type="text" id="satCheckoutCode" placeholder="e.g. 4457" maxlength="6" inputmode="numeric">
+                        <span class="hint">Share only at end of class</span>
+                    </div>
+                </div>
+
+                <button class="action-btn btn-outline" id="btnSatSaveCodes" onclick="saveSatCodes()" disabled style="width:100%; margin-bottom:16px;">
+                    Save Codes
+                </button>
+
+                <div class="divider"></div>
+
+                <div class="action-row">
+                    <button class="action-btn btn-checkin" id="btnSatCheckin" onclick="setSatMode('CHECKIN-OPEN')" disabled>
+                        Open Check-In
+                    </button>
+                    <button class="action-btn btn-checkout" id="btnSatCheckout" onclick="setSatMode('CHECKOUT-OPEN')" disabled>
+                        Open Check-Out
+                    </button>
+                    <button class="action-btn btn-close" id="btnSatClose" onclick="setSatMode('CLOSED')" disabled>
+                        Close
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  CONFIG
+// ════════════════════════════════════════════════════════════
+const SCRIPT_URL    = 'PASTE_YOUR_APPS_SCRIPT_URL_HERE';
+const ADMIN_PASSWORD = 'PASTE_YOUR_ADMIN_PASSWORD_HERE';
+
+// ════════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════════
+let isLoggedIn    = false;
+let sessionLoaded = false;
+let currentStatus = null;
+
+// ════════════════════════════════════════════════════════════
+//  LOGIN
+// ════════════════════════════════════════════════════════════
+document.getElementById('loginPassword').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') handleLogin();
+});
+
+function handleLogin() {
+    const pw = document.getElementById('loginPassword').value.trim();
+    if (pw === ADMIN_PASSWORD) {
+        isLoggedIn = true;
+        document.getElementById('loginOverlay').style.display = 'none';
+        document.getElementById('mainContent').classList.add('show');
+    } else {
+        document.getElementById('loginError').style.display = 'block';
+        document.getElementById('loginPassword').value = '';
+    }
+}
+
+function handleLogout() {
+    isLoggedIn = false;
+    sessionLoaded = false;
+    document.getElementById('loginOverlay').style.display = 'flex';
+    document.getElementById('mainContent').classList.remove('show');
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('loginError').style.display = 'none';
+    document.getElementById('sectionTabs').style.display = 'none';
+}
+
+// ════════════════════════════════════════════════════════════
+//  TAB SWITCHING
+// ════════════════════════════════════════════════════════════
+function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('panel' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+}
+
+// ════════════════════════════════════════════════════════════
+//  LOAD SESSION STATUS
+// ════════════════════════════════════════════════════════════
+async function loadSessionStatus() {
+    const cls    = document.getElementById('selClass').value;
+    const year   = document.getElementById('selYear').value;
+    const stream = document.getElementById('selStream').value;
+
+    showToast('Loading session…', 'warn');
+
+    try {
+        const url = SCRIPT_URL
+            + '?action=get_status'
+            + '&class='  + encodeURIComponent(cls)
+            + '&year='   + encodeURIComponent(year)
+            + '&stream=' + encodeURIComponent(stream);
+
+        const res  = await fetch(url);
+        const data = await res.json();
+
+        if (data.status !== 'success') {
+            showToast(data.message || 'Failed to load session', 'err');
+            return;
+        }
+
+        currentStatus = data;
+        sessionLoaded = true;
+
+        // Update topbar
+        document.getElementById('topbarSession').textContent = cls + ' · ' + year + ' · Stream ' + stream;
+
+        // Show tabs
+        document.getElementById('sectionTabs').style.display = 'flex';
+
+        // Update Sunday UI
+        updateSundayUI(data);
+
+        // Update Saturday UI
+        updateSaturdayUI(data);
+
+        showToast('Session loaded', 'ok');
+
+    } catch(err) {
+        showToast('Connection error', 'err');
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+//  SUNDAY UI
+// ════════════════════════════════════════════════════════════
+function updateSundayUI(data) {
+    const pill = document.getElementById('sunStatusPill');
+    const mode = document.getElementById('sunCurrentMode');
+    const btnForce = document.getElementById('btnSunForce');
+    const btnClose = document.getElementById('btnSunClose');
+    const btnCode  = document.getElementById('btnSunSaveCode');
+
+    if (data.sunForceOpen) {
+        pill.textContent = 'Force Open';
+        pill.className   = 'status-pill pill-force';
+        mode.textContent = 'Force open — all students can check in';
+        btnForce.disabled = true;
+        btnClose.disabled = false;
+    } else if (data.sunOpen) {
+        pill.textContent = 'Open';
+        pill.className   = 'status-pill pill-open';
+        mode.textContent = 'Standard window active (7:30 – 8:10 AM)';
+        btnForce.disabled = false;
+        btnClose.disabled = false;
+    } else {
+        pill.textContent = 'Closed';
+        pill.className   = 'status-pill pill-closed';
+        mode.textContent = 'Window closed';
+        btnForce.disabled = false;
+        btnClose.disabled = true;
+    }
+
+    btnCode.disabled = false;
+}
+
+// ════════════════════════════════════════════════════════════
+//  SUNDAY ACTIONS
+// ════════════════════════════════════════════════════════════
+async function sunForceOpen() {
+    await adminSunday('FORCE-OPEN', '');
+}
+
+async function sunForceClose() {
+    await adminSunday('CLOSED', '');
+}
+
+async function saveSundayCode() {
+    const code = document.getElementById('sunOnlineCode').value.trim();
+    if (!code) { showToast('Please enter a code first', 'err'); return; }
+    await adminSunday('', code);
+}
+
+async function adminSunday(mode, code) {
+    const cls    = document.getElementById('selClass').value;
+    const year   = document.getElementById('selYear').value;
+    const stream = document.getElementById('selStream').value;
+
+    showToast('Updating…', 'warn');
+
+    try {
+        let url = SCRIPT_URL
+            + '?action=admin_sunday'
+            + '&class='    + encodeURIComponent(cls)
+            + '&year='     + encodeURIComponent(year)
+            + '&stream='   + encodeURIComponent(stream)
+            + '&password=' + encodeURIComponent(ADMIN_PASSWORD);
+
+        if (mode) url += '&mode=' + encodeURIComponent(mode);
+        if (code) url += '&onlineCode=' + encodeURIComponent(code);
+
+        const res  = await fetch(url);
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            showToast(data.message, 'ok');
+            await loadSessionStatus();
+        } else {
+            showToast(data.message || 'Update failed', 'err');
+        }
+    } catch(err) {
+        showToast('Connection error', 'err');
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+//  SATURDAY UI
+// ════════════════════════════════════════════════════════════
+function updateSaturdayUI(data) {
+    const pill    = document.getElementById('satStatusPill');
+    const mode    = document.getElementById('satCurrentMode');
+    const btnCI   = document.getElementById('btnSatCheckin');
+    const btnCO   = document.getElementById('btnSatCheckout');
+    const btnCL   = document.getElementById('btnSatClose');
+    const btnSave = document.getElementById('btnSatSaveCodes');
+
+    btnCI.disabled = btnCO.disabled = btnCL.disabled = btnSave.disabled = false;
+
+    switch(data.satMode) {
+        case 'CHECKIN-OPEN':
+            pill.textContent = 'Check-In Open';
+            pill.className   = 'status-pill pill-open';
+            mode.textContent = 'Students can check in now';
+            btnCI.disabled   = true;
+            break;
+        case 'CHECKOUT-OPEN':
+            pill.textContent = 'Check-Out Open';
+            pill.className   = 'status-pill pill-checkout';
+            mode.textContent = 'Students can check out now';
+            btnCO.disabled   = true;
+            break;
+        default:
+            pill.textContent = 'Closed';
+            pill.className   = 'status-pill pill-closed';
+            mode.textContent = 'Window closed';
+            btnCL.disabled   = true;
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+//  SATURDAY ACTIONS
+// ════════════════════════════════════════════════════════════
+async function saveSatCodes() {
+    const checkInCode  = document.getElementById('satCheckinCode').value.trim();
+    const checkOutCode = document.getElementById('satCheckoutCode').value.trim();
+
+    if (!checkInCode || !checkOutCode) {
+        showToast('Please enter both codes before saving', 'err');
+        return;
+    }
+
+    await adminSat('', checkInCode, checkOutCode);
+}
+
+async function setSatMode(mode) {
+    const checkInCode  = document.getElementById('satCheckinCode').value.trim();
+    const checkOutCode = document.getElementById('satCheckoutCode').value.trim();
+    await adminSat(mode, checkInCode, checkOutCode);
+}
+
+async function adminSat(mode, checkInCode, checkOutCode) {
+    const cls    = document.getElementById('selClass').value;
+    const year   = document.getElementById('selYear').value;
+    const stream = document.getElementById('selStream').value;
+
+    showToast('Updating…', 'warn');
+
+    try {
+        let url = SCRIPT_URL
+            + '?action=admin_sat'
+            + '&class='    + encodeURIComponent(cls)
+            + '&year='     + encodeURIComponent(year)
+            + '&stream='   + encodeURIComponent(stream)
+            + '&password=' + encodeURIComponent(ADMIN_PASSWORD);
+
+        if (mode)         url += '&mode='         + encodeURIComponent(mode);
+        if (checkInCode)  url += '&checkInCode='  + encodeURIComponent(checkInCode);
+        if (checkOutCode) url += '&checkOutCode=' + encodeURIComponent(checkOutCode);
+
+        const res  = await fetch(url);
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            showToast(data.message, 'ok');
+            await loadSessionStatus();
+        } else {
+            showToast(data.message || 'Update failed', 'err');
+        }
+    } catch(err) {
+        showToast('Connection error', 'err');
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════════════════════════════
+let toastTimer;
+function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className   = 'toast ' + (type || '') + ' show';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.classList.remove('show'); }, 3000);
+}
+</script>
+</body>
+</html>
