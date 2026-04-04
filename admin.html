@@ -425,15 +425,21 @@
                     <label>Class</label>
                     <select id="selClass">
                         <option value="FTR">FTR</option>
-                        <option value="USPA">USPA</option>
                     </select>
                 </div>
                 <div class="selector-field">
                     <label>Year</label>
-                    <select id="selYear">
+                    <select id="selYear" id="selYear">
                         <option value="2026">2026</option>
                         <option value="2027">2027</option>
                         <option value="2028">2028</option>
+                        <option value="2029">2029</option>
+                        <option value="2030">2030</option>
+                        <option value="2031">2031</option>
+                        <option value="2032">2032</option>
+                        <option value="2033">2033</option>
+                        <option value="2034">2034</option>
+                        <option value="2035">2035</option>
                     </select>
                 </div>
                 <div class="selector-field">
@@ -475,7 +481,7 @@
 
                 <div class="action-row">
                     <button class="action-btn btn-force" id="btnSunForce" onclick="sunForceOpen()" disabled>
-                        Force Open Window
+                        Open Window
                     </button>
                     <button class="action-btn btn-close" id="btnSunClose" onclick="sunForceClose()" disabled>
                         Close Window
@@ -620,7 +626,7 @@ async function loadSessionStatus() {
     const year   = document.getElementById('selYear').value;
     const stream = document.getElementById('selStream').value;
 
-    showToast('Loading session…', 'warn');
+    showToast('Loading session ' + cls + ' ' + year + ' Stream ' + stream + '…', 'warn');
 
     try {
         const url = SCRIPT_URL
@@ -652,7 +658,7 @@ async function loadSessionStatus() {
         // Update Saturday UI
         updateSaturdayUI(data);
 
-        showToast('Session loaded', 'ok');
+        showToast('Session loaded — ' + cls + ' ' + year + ' Stream ' + stream, 'ok');
 
     } catch(err) {
         showToast('Connection error', 'err');
@@ -696,25 +702,25 @@ function updateSundayUI(data) {
 //  SUNDAY ACTIONS
 // ════════════════════════════════════════════════════════════
 async function sunForceOpen() {
-    await adminSunday('FORCE-OPEN', '');
+    await adminSunday('FORCE-OPEN', '', 'Opening window for all students…', 'Window is now open — students can check in');
 }
 
 async function sunForceClose() {
-    await adminSunday('CLOSED', '');
+    await adminSunday('CLOSED', '', 'Closing Sunday window…', 'Sunday attendance window closed');
 }
 
 async function saveSundayCode() {
     const code = document.getElementById('sunOnlineCode').value.trim();
     if (!code) { showToast('Please enter a code first', 'err'); return; }
-    await adminSunday('', code);
+    await adminSunday('', code, 'Saving online code…', 'Online code saved — share with online students');
 }
 
-async function adminSunday(mode, code) {
+async function adminSunday(mode, code, loadingMsg, successMsg) {
     const cls    = document.getElementById('selClass').value;
     const year   = document.getElementById('selYear').value;
     const stream = document.getElementById('selStream').value;
 
-    showToast('Updating…', 'warn');
+    showToast(loadingMsg || 'Updating…', 'warn');
 
     try {
         let url = SCRIPT_URL
@@ -731,7 +737,7 @@ async function adminSunday(mode, code) {
         const data = await res.json();
 
         if (data.status === 'success') {
-            showToast(data.message, 'ok');
+            showToast(successMsg || data.message, 'ok');
             await loadSessionStatus();
         } else {
             showToast(data.message || 'Update failed', 'err');
@@ -787,21 +793,27 @@ async function saveSatCodes() {
         return;
     }
 
-    await adminSat('', checkInCode, checkOutCode);
+    await adminSat('SAVE-CODES', checkInCode, checkOutCode, 'Saving codes…', 'Codes saved successfully');
 }
 
 async function setSatMode(mode) {
     const checkInCode  = document.getElementById('satCheckinCode').value.trim();
     const checkOutCode = document.getElementById('satCheckoutCode').value.trim();
-    await adminSat(mode, checkInCode, checkOutCode);
+    const msgs = {
+        'CHECKIN-OPEN'  : ['Opening check-in window…',  'Check-in is now open — students can check in'],
+        'CHECKOUT-OPEN' : ['Opening check-out window…', 'Check-out is now open — students can check out'],
+        'CLOSED'        : ['Closing window…',           'Saturday window closed']
+    };
+    const [loading, success] = msgs[mode] || ['Updating…', 'Updated'];
+    await adminSat(mode, checkInCode, checkOutCode, loading, success);
 }
 
-async function adminSat(mode, checkInCode, checkOutCode) {
+async function adminSat(mode, checkInCode, checkOutCode, loadingMsg, successMsg) {
     const cls    = document.getElementById('selClass').value;
     const year   = document.getElementById('selYear').value;
     const stream = document.getElementById('selStream').value;
 
-    showToast('Updating…', 'warn');
+    showToast(loadingMsg || 'Updating…', 'warn');
 
     try {
         let url = SCRIPT_URL
@@ -819,7 +831,7 @@ async function adminSat(mode, checkInCode, checkOutCode) {
         const data = await res.json();
 
         if (data.status === 'success') {
-            showToast(data.message, 'ok');
+            showToast(successMsg || data.message, 'ok');
             await loadSessionStatus();
         } else {
             showToast(data.message || 'Update failed', 'err');
