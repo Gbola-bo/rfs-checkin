@@ -228,6 +228,90 @@
         .submit-btn:enabled:hover  { opacity: 0.88; }
         .submit-btn:enabled:active { transform: scale(0.98); }
 
+
+        /* ── Two-stage identity flow ── */
+        .identity-card {
+            display: none;
+            background: var(--bg-surface);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-top: 12px;
+            border: 1.5px solid var(--border-focus);
+            animation: fadeSlideIn 0.25s ease both;
+        }
+        .identity-card.show { display: block; }
+
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: none; }
+        }
+
+        .identity-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: #fff;
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+            flex-shrink: 0;
+        }
+
+        .identity-welcome {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.3;
+            margin-bottom: 4px;
+        }
+
+        .identity-sub {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            margin-bottom: 14px;
+        }
+
+        .identity-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .identity-btn {
+            flex: 1;
+            height: 42px;
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: opacity 0.15s, transform 0.1s;
+            border: none;
+        }
+        .identity-btn:active { transform: scale(0.98); }
+        .identity-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .identity-btn-secondary {
+            background: transparent;
+            border: 1.5px solid var(--border);
+            color: var(--text-secondary);
+        }
+        .identity-btn-secondary:hover { background: var(--bg-surface); }
+
+        .identity-btn-primary {
+            background: var(--accent);
+            color: #fff;
+        }
+        .identity-btn-primary:hover { opacity: 0.88; }
+
         /* ── Closed screen ── */
         .closed-screen {
             text-align: center;
@@ -338,15 +422,36 @@
                 </div>
             </div>
 
-            <button type="submit" class="submit-btn" id="submitBtn" disabled>
+            <!-- Stage 1: Confirm Identity button -->
+            <button type="submit" class="submit-btn" id="confirmBtn" disabled>
                 <span class="btn-icon">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="3 8 7 12 13 4"/>
+                        <circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/>
                     </svg>
                 </span>
-                <span id="btnLabel">Check In Now</span>
+                <span>Confirm Identity</span>
             </button>
         </form>
+
+        <!-- Stage 2: Identity confirmation card (hidden until verify succeeds) -->
+        <div class="identity-card" id="identityCard">
+            <div class="identity-avatar" id="identityAvatar">?</div>
+            <div class="identity-body">
+                <div class="identity-welcome" id="identityWelcome">Welcome!</div>
+                <div class="identity-sub">Is this you? Confirm to proceed with check-in.</div>
+            </div>
+            <div class="identity-actions">
+                <button class="identity-btn identity-btn-secondary" id="notMeBtn" onclick="resetToStageOne()">
+                    Not me
+                </button>
+                <button class="identity-btn identity-btn-primary" id="checkinBtn">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 8 7 12 13 4"/>
+                    </svg>
+                    <span id="btnLabel">Check In Now</span>
+                </button>
+            </div>
+        </div>
 
         <div id="statusMessage"></div>
     </div>
@@ -357,8 +462,8 @@
 //  CONFIG — update SCRIPT_URL after deploying new Apps Script
 // ════════════════════════════════════════════════════════════
 const SCRIPT_URL     = 'https://script.google.com/macros/s/AKfycbz5nLwhQOijtweajBY-Wyp91fCCaf4znGx54wU6m_PMBL4uTJjO5KGMSWNEGoJMpNfXiw/exec';
-const CAMPUS_LAT     = 6.440708198402372;
-const CAMPUS_LNG     = 3.500974042447532;
+const CAMPUS_LAT     = 6.441083265060992;
+const CAMPUS_LNG     = 3.501655099200829;
 const MAX_DISTANCE_M = 500;
 
 // ════════════════════════════════════════════════════════════
@@ -380,7 +485,6 @@ const serialError       = document.getElementById('serialError');
 const onlineCodeError   = document.getElementById('onlineCodeError');
 const locPill           = document.getElementById('locationStatus');
 const submitBtn         = document.getElementById('submitBtn');
-const btnLabel          = document.getElementById('btnLabel');
 const statusMessage     = document.getElementById('statusMessage');
 const form              = document.getElementById('checkInForm');
 const onlineToggle      = document.getElementById('onlineToggle');
@@ -452,7 +556,7 @@ async function fetchSessionStatus() {
 //  Decides what the user sees based on day + open windows
 // ════════════════════════════════════════════════════════════
 function applySessionStatus(data) {
-    const day      = 0;  // 0=Sun, 6=Sat "data.dayOfWeek"
+    const day      = data.dayOfWeek;  // 0=Sun, 6=Sat
     const sunOpen  = data.sunOpen;
     const satMode  = data.satMode;    // CLOSED / CHECKIN-OPEN / CHECKOUT-OPEN
 
@@ -499,9 +603,9 @@ function renderBanner(data) {
     };
 
     let eventKey = 'CLOSED';
-    if (data.sunOpen && data.dayOfWeek === 0)                          eventKey = 'SUN';
-else if (data.satMode === 'CHECKIN-OPEN'  && data.dayOfWeek === 6) eventKey = 'SAT-IN';
-else if (data.satMode === 'CHECKOUT-OPEN' && data.dayOfWeek === 6) eventKey = 'SAT-OUT';
+    if (data.sunOpen && data.dayOfWeek === 0)  eventKey = 'SUN';
+    if (data.satMode === 'CHECKIN-OPEN')        eventKey = 'SAT-IN';
+    if (data.satMode === 'CHECKOUT-OPEN')       eventKey = 'SAT-OUT';
 
     const ev = eventLabels[eventKey];
 
@@ -611,7 +715,7 @@ function updateSubmitState() {
     const snOk     = isValidSN(serialInput.value);
     const codeOk   = !isOnline || onlineCodeInput.value.trim().length >= 4;
     const locOk    = isOnline  || (userLocation !== null);
-    submitBtn.disabled = !(ysOk && snOk && codeOk && locOk);
+    document.getElementById('confirmBtn').disabled = !(ysOk && snOk && codeOk && locOk);
 }
 
 function isValidYS(v) {
@@ -677,13 +781,22 @@ onlineCodeInput.addEventListener('input', function() {
 // ════════════════════════════════════════════════════════════
 //  SUBMIT
 // ════════════════════════════════════════════════════════════
-const BTN_CHECKIN  = '<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 7 12 13 4"/></svg></span><span id="btnLabel">Check In Now</span>';
-const BTN_CHECKOUT = '<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 7 12 13 4"/></svg></span><span id="btnLabel">Check Out Now</span>';
+// ════════════════════════════════════════════════════════════
+//  IDENTITY CARD DOM REFS
+// ════════════════════════════════════════════════════════════
+const confirmBtn     = document.getElementById('confirmBtn');
+const identityCard   = document.getElementById('identityCard');
+const identityWelcome = document.getElementById('identityWelcome');
+const identityAvatar  = document.getElementById('identityAvatar');
+const checkinBtn     = document.getElementById('checkinBtn');
+const btnLabel       = document.getElementById('btnLabel');
 
-function getBtnDefault() {
-    return currentEvent === 'SAT-OUT' ? BTN_CHECKOUT : BTN_CHECKIN;
-}
+// Verified student data — stored after Stage 1 succeeds
+let verifiedStudent = null;
 
+// ════════════════════════════════════════════════════════════
+//  STATUS HELPER
+// ════════════════════════════════════════════════════════════
 function showStatus(type, msg) {
     statusMessage.className     = type;
     statusMessage.textContent   = msg;
@@ -693,6 +806,23 @@ function showStatus(type, msg) {
     }
 }
 
+// ════════════════════════════════════════════════════════════
+//  RESET TO STAGE ONE — "Not me" button
+// ════════════════════════════════════════════════════════════
+function resetToStageOne() {
+    identityCard.classList.remove('show');
+    verifiedStudent = null;
+    confirmBtn.disabled = false;
+    confirmBtn.innerHTML = `<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>`;
+    statusMessage.style.display = 'none';
+    // Refocus serial input so they can correct the number
+    serialInput.focus();
+    serialInput.select();
+}
+
+// ════════════════════════════════════════════════════════════
+//  STAGE 1 — CONFIRM IDENTITY (form submit)
+// ════════════════════════════════════════════════════════════
 form.addEventListener('submit', async function(e) {
     e.preventDefault();
 
@@ -701,7 +831,7 @@ form.addEventListener('submit', async function(e) {
         return;
     }
 
-    // Physical location check
+    // Physical location check at Stage 1
     if (!isOnline) {
         if (!userLocation) {
             showStatus('error', 'Location not available yet — please allow location access and try again.');
@@ -714,14 +844,67 @@ form.addEventListener('submit', async function(e) {
         }
     }
 
-    // Online code check
+    // Online code check at Stage 1
     if (isOnline && onlineCodeInput.value.trim().length < 4) {
         showErr(onlineCodeInput, onlineCodeError, 'Please enter the attendance code');
         return;
     }
 
-    submitBtn.disabled  = true;
-    submitBtn.innerHTML = '<span style="font-size:14px">Submitting…</span>';
+    // Lock form and show loading
+    confirmBtn.disabled  = true;
+    confirmBtn.innerHTML = '<span style="font-size:14px">Verifying…</span>';
+    identityCard.classList.remove('show');
+    statusMessage.style.display = 'none';
+
+    try {
+        const url = SCRIPT_URL
+            + '?action=verify'
+            + '&class='      + encodeURIComponent(CLASS_NAME)
+            + '&year='       + encodeURIComponent(YEAR)
+            + '&stream='     + encodeURIComponent(STREAM)
+            + '&yearStream=' + encodeURIComponent(yearStreamInput.value)
+            + '&serial='     + encodeURIComponent(serialInput.value);
+
+        const response = await fetch(url);
+        const data     = await response.json();
+
+        if (data.status !== 'success') {
+            showStatus('error', data.message || 'Verification failed. Please try again.');
+            confirmBtn.disabled  = false;
+            confirmBtn.innerHTML = `<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>`;
+            return;
+        }
+
+        if (!data.found) {
+            showStatus('error', 'Registration number not found for this stream. Please check your number or contact admin.');
+            confirmBtn.disabled  = false;
+            confirmBtn.innerHTML = `<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>`;
+            return;
+        }
+
+        // Found — store student and show identity card
+        verifiedStudent = data;
+        const initials  = (data.firstName.charAt(0) + data.lastName.charAt(0)).toUpperCase();
+        identityAvatar.textContent   = initials;
+        identityWelcome.textContent  = 'Welcome, ' + data.firstName + ' ' + data.lastName + '!';
+        btnLabel.textContent = currentEvent === 'SAT-OUT' ? 'Check Out Now' : 'Check In Now';
+        identityCard.classList.add('show');
+
+    } catch(err) {
+        showStatus('error', 'Connection error — please check your internet and try again.');
+        confirmBtn.disabled  = false;
+        confirmBtn.innerHTML = `<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>`;
+    }
+});
+
+// ════════════════════════════════════════════════════════════
+//  STAGE 2 — FINAL CHECK-IN (Check In Now button)
+// ════════════════════════════════════════════════════════════
+checkinBtn.addEventListener('click', async function() {
+    if (!verifiedStudent) return;
+
+    checkinBtn.disabled  = true;
+    checkinBtn.innerHTML = '<span style="font-size:13px">Submitting…</span>';
 
     try {
         const url = SCRIPT_URL
@@ -742,26 +925,31 @@ form.addEventListener('submit', async function(e) {
 
         if (data.status === 'success') {
             const label = currentEvent === 'SAT-OUT' ? 'Checked out' : 'Checked in';
-            showStatus('success', label + ' successfully! Reg: ' + data.regNumber);
+            identityCard.classList.remove('show');
+            showStatus('success', label + ' successfully! Welcome, ' + verifiedStudent.firstName + '. God bless you.');
+            // Reset entire form for next student
             form.reset();
             onlineCodeWrap.classList.remove('show');
-            onlineToggle.checked      = false;
-            isOnline                  = false;
+            onlineToggle.checked          = false;
+            isOnline                      = false;
             yearStreamDisplay.textContent = '____';
             yearStreamDisplay.className   = 'ph';
             serialDisplay.textContent     = '___';
             serialDisplay.className       = 'ph';
             locPill.style.display         = '';
+            verifiedStudent               = null;
+            confirmBtn.disabled           = true;
+            confirmBtn.innerHTML          = `<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>`;
         } else {
-            showStatus('error', data.message || 'Submission failed. Please try again.');
+            showStatus('error', data.message || 'Check-in failed. Please try again.');
+            checkinBtn.disabled  = false;
+            checkinBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 7 12 13 4"/></svg><span id="btnLabel">${currentEvent === 'SAT-OUT' ? 'Check Out Now' : 'Check In Now'}</span>`;
         }
 
     } catch(err) {
         showStatus('error', 'Connection error — please check your internet and try again.');
-    } finally {
-        submitBtn.disabled  = false;
-        submitBtn.innerHTML = getBtnDefault();
-        updateSubmitState();
+        checkinBtn.disabled  = false;
+        checkinBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 7 12 13 4"/></svg><span id="btnLabel">${currentEvent === 'SAT-OUT' ? 'Check Out Now' : 'Check In Now'}</span>`;
     }
 });
 </script>
