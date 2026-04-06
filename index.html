@@ -462,8 +462,8 @@
 //  CONFIG — update SCRIPT_URL after deploying new Apps Script
 // ════════════════════════════════════════════════════════════
 const SCRIPT_URL     = 'https://script.google.com/macros/s/AKfycbz5nLwhQOijtweajBY-Wyp91fCCaf4znGx54wU6m_PMBL4uTJjO5KGMSWNEGoJMpNfXiw/exec';
-const CAMPUS_LAT     = 6.44062514957352;
-const CAMPUS_LNG     = 3.5008819207966173;
+const CAMPUS_LAT     = 6.440693001898269;
+const CAMPUS_LNG     = 3.50090315293822;
 const MAX_DISTANCE_M = 500;
 
 // ════════════════════════════════════════════════════════════
@@ -484,8 +484,6 @@ const yearStreamError   = document.getElementById('yearStreamError');
 const serialError       = document.getElementById('serialError');
 const onlineCodeError   = document.getElementById('onlineCodeError');
 const locPill           = document.getElementById('locationStatus');
-const submitBtn         = document.getElementById('submitBtn');
-const btnLabel          = document.getElementById('btnLabel');
 const statusMessage     = document.getElementById('statusMessage');
 const form              = document.getElementById('checkInForm');
 const onlineToggle      = document.getElementById('onlineToggle');
@@ -790,7 +788,6 @@ const identityCard   = document.getElementById('identityCard');
 const identityWelcome = document.getElementById('identityWelcome');
 const identityAvatar  = document.getElementById('identityAvatar');
 const checkinBtn     = document.getElementById('checkinBtn');
-const btnLabel       = document.getElementById('btnLabel');
 
 // Verified student data — stored after Stage 1 succeeds
 let verifiedStudent = null;
