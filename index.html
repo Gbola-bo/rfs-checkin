@@ -462,8 +462,8 @@
 //  CONFIG — update SCRIPT_URL after deploying new Apps Script
 // ════════════════════════════════════════════════════════════
 const SCRIPT_URL     = 'https://script.google.com/macros/s/AKfycbz5nLwhQOijtweajBY-Wyp91fCCaf4znGx54wU6m_PMBL4uTJjO5KGMSWNEGoJMpNfXiw/exec';
-const CAMPUS_LAT     = 6.440693001898269;
-const CAMPUS_LNG     = 3.50090315293822;
+const CAMPUS_LAT     = 6.44075696861908;
+const CAMPUS_LNG     = 3.5009675259516873;
 const MAX_DISTANCE_M = 500;
 
 // ════════════════════════════════════════════════════════════
@@ -667,28 +667,47 @@ function calcDistance(lat1, lon1, lat2, lon2) {
 
 function getLocation() {
     if (!navigator.geolocation) {
-        locPill.textContent  = 'Not supported';
-        locPill.className    = 'loc-pill err';
+        locPill.textContent = 'Not supported';
+        locPill.className   = 'loc-pill err';
         return;
     }
-    navigator.geolocation.getCurrentPosition(
-        function(pos) {
-            userLocation = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
-            const dist   = calcDistance(CAMPUS_LAT, CAMPUS_LNG, userLocation.latitude, userLocation.longitude);
-            if (dist <= MAX_DISTANCE_M) {
-                locPill.textContent = 'On campus';
-                locPill.className   = 'loc-pill ok';
-            } else {
-                locPill.textContent = (dist / 1000).toFixed(2) + 'km away';
-                locPill.className   = 'loc-pill err';
-            }
-            updateSubmitState();
-        },
-        function() {
-            locPill.textContent = 'Access denied';
+
+    function onSuccess(pos) {
+        userLocation = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+        const dist   = calcDistance(CAMPUS_LAT, CAMPUS_LNG, userLocation.latitude, userLocation.longitude);
+        if (dist <= MAX_DISTANCE_M) {
+            locPill.textContent = 'On campus';
+            locPill.className   = 'loc-pill ok';
+        } else {
+            locPill.textContent = (dist / 1000).toFixed(2) + 'km away';
             locPill.className   = 'loc-pill err';
-        },
-        { timeout: 10000, enableHighAccuracy: false }
+        }
+        updateSubmitState();
+    }
+
+    function onError(err) {
+        if (err.code === 1) {
+            // Permission denied
+            locPill.textContent = 'Location denied';
+            locPill.className   = 'loc-pill err';
+        } else if (err.code === 3) {
+            // Timeout — try once more with high accuracy
+            locPill.textContent = 'Retrying…';
+            navigator.geolocation.getCurrentPosition(onSuccess, function() {
+                locPill.textContent = 'Location unavailable';
+                locPill.className   = 'loc-pill err';
+            }, { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 });
+        } else {
+            locPill.textContent = 'Location unavailable';
+            locPill.className   = 'loc-pill err';
+        }
+    }
+
+    // First attempt — fast, cached position acceptable
+    navigator.geolocation.getCurrentPosition(
+        onSuccess,
+        onError,
+        { timeout: 8000, enableHighAccuracy: true, maximumAge: 60000 }
     );
 }
 
