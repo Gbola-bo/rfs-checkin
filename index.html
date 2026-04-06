@@ -969,7 +969,7 @@ checkinBtn.addEventListener('click', async function() {
             + '&onlineCode=' + encodeURIComponent(isOnline ? onlineCodeInput.value.trim() : '')
             + '&latitude='   + encodeURIComponent(isOnline ? '' : userLocation.latitude)
             + '&longitude='  + encodeURIComponent(isOnline ? '' : userLocation.longitude)
-            + '&isTest='     + encodeURIComponent(isTestMode ? 'TRUE' : 'FALSE');
+            + '&isTest='     + (isTestMode ? 'TRUE' : 'FALSE'); // <-- Ensure this is here
 
         const response = await fetch(url);
         const data     = await response.json();
