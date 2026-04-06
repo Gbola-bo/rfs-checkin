@@ -449,12 +449,12 @@ function showDashboard() {
     document.getElementById('mainContent').classList.add('show');
     document.getElementById('topbarAdmin').textContent = 'Logged in as ' + admin.name;
 
-    // --- NEW LOGIC HERE ---
+    // --- ADD THIS LOGIC ---
     const testToggle = document.getElementById('testToggleWrap');
     if (admin.role === 'Super Admin') {
-        testToggle.style.display = 'flex'; // Show only for Super Admins
+        testToggle.style.display = 'flex'; // Only show for Super Admins
     } else {
-        testToggle.style.display = 'none'; // Ensure it's hidden for others
+        testToggle.style.display = 'none'; // Hide for everyone else
     }
 }
 
