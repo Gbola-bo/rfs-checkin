@@ -942,7 +942,13 @@ form.addEventListener('submit', async function(e) {
         identityCard.classList.add('show');
 
     } catch(err) {
-        showStatus('error', 'Connection error — please check your internet and try again.');
+        console.error('VERIFY ERROR:', err);
+        console.error('Error name:', err.name);
+        console.error('Error message:', err.message);
+        console.error('yearStream value:', yearStreamInput.value);
+        console.error('serial value:', serialInput.value);
+        console.error('CLASS_NAME:', CLASS_NAME, 'YEAR:', YEAR, 'STREAM:', STREAM);
+        showStatus('error', 'Error: ' + err.name + ' — ' + err.message);
         confirmBtn.disabled  = false;
         confirmBtn.innerHTML = `<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>`;
     }
