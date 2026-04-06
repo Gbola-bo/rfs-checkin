@@ -97,7 +97,7 @@
 
         .card-title { font-size: 22px; font-weight: 600; color: var(--text-primary); line-height: 1.2; }
 
-        /* ── Session banner — shows class/year/stream/event ── */
+        /* ── Session banner ── */
         .session-banner {
             display: flex;
             align-items: center;
@@ -157,7 +157,7 @@
         .card-body { padding: 24px 28px 28px; }
 
         /* ── Field grid ── */
-        .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+        .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; transition: opacity 0.2s ease; }
         .field { display: flex; flex-direction: column; gap: 6px; }
         .field label { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
         .field .hint { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
@@ -228,11 +228,9 @@
         .submit-btn:enabled:hover  { opacity: 0.88; }
         .submit-btn:enabled:active { transform: scale(0.98); }
 
-
-
        /* ── Test mode banner ── */
         .test-mode-banner {
-            display: none; /* Controlled by JS .show class */
+            display: none;
             background: #FFF3CD;
             border-bottom: 2px solid #FFD700;
             padding: 10px 16px;
@@ -242,7 +240,6 @@
             color: #856404;
             letter-spacing: 0.03em;
             width: 100%;
-            /* No position: absolute/relative needed if inside the card flow */
         }
         .test-mode-banner.show { 
             display: block; 
@@ -253,10 +250,11 @@
             display: none;
             background: var(--bg-surface);
             border-radius: var(--radius-md);
-            padding: 16px;
-            margin-top: 12px;
-            border: 1.5px solid var(--border-focus);
-            animation: fadeSlideIn 0.25s ease both;
+            padding: 20px;
+            margin-top: 10px;
+            border: 2px solid var(--accent);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            animation: fadeSlideIn 0.3s ease both;
         }
         .identity-card.show { display: block; }
 
@@ -281,8 +279,8 @@
         }
 
         .identity-welcome {
-            font-size: 17px;
-            font-weight: 600;
+            font-size: 18px;
+            font-weight: 700;
             color: var(--text-primary);
             line-height: 1.3;
             margin-bottom: 4px;
@@ -401,14 +399,14 @@
             </div>
         </div>
 
-        <!-- Closed screen — shown when no window is active -->
+        <!-- Closed screen -->
         <div class="closed-screen" id="closedScreen">
             <div class="closed-icon">🔒</div>
             <div class="closed-title" id="closedTitle">Attendance window is closed</div>
             <div class="closed-msg" id="closedMsg">Check-in is not currently open. Please wait for the session to begin.</div>
         </div>
 
-        <!-- Check-in form — shown when a window is active -->
+        <!-- Check-in form -->
         <form id="checkInForm" novalidate>
 
             <!-- Online mode toggle -->
@@ -454,7 +452,7 @@
             </button>
         </form>
 
-        <!-- Stage 2: Identity confirmation card (hidden until verify succeeds) -->
+        <!-- Stage 2: Identity confirmation card -->
         <div class="identity-card" id="identityCard">
             <div class="identity-avatar" id="identityAvatar">?</div>
             <div class="identity-body">
@@ -479,18 +477,11 @@
 </div>
 
 <script>
-// ════════════════════════════════════════════════════════════
-//  CONFIG — update SCRIPT_URL after deploying new Apps Script
-// ════════════════════════════════════════════════════════════
 const SCRIPT_URL     = 'https://script.google.com/macros/s/AKfycbz5nLwhQOijtweajBY-Wyp91fCCaf4znGx54wU6m_PMBL4uTJjO5KGMSWNEGoJMpNfXiw/exec';
 const CAMPUS_LAT     = 6.440522423936702;
 const CAMPUS_LNG     = 3.500946068280531;
 const MAX_DISTANCE_M = 500;
 
-// ════════════════════════════════════════════════════════════
-//  READ URL PARAMS — class, year, stream determine everything
-//  e.g. ?class=FTR&year=2026&stream=1
-// ════════════════════════════════════════════════════════════
 const params    = new URLSearchParams(window.location.search);
 const CLASS_NAME = (params.get('class')  || 'FTR').toUpperCase();
 const YEAR       = (params.get('year')   || '');
@@ -516,117 +507,76 @@ const closedTitle       = document.getElementById('closedTitle');
 const closedMsg         = document.getElementById('closedMsg');
 const sessionBanner     = document.getElementById('sessionBanner');
 const cardTitle         = document.getElementById('cardTitle');
+const confirmBtn        = document.getElementById('confirmBtn');
+const identityCard      = document.getElementById('identityCard');
+const identityWelcome   = document.getElementById('identityWelcome');
+const identityAvatar    = document.getElementById('identityAvatar');
+const checkinBtn        = document.getElementById('checkinBtn');
 
 // ── State ─────────────────────────────────────────────────
 let userLocation  = null;
 let currentEvent  = null;   // 'SUN', 'SAT-IN', 'SAT-OUT'
 let isOnline      = false;
 let isTestMode    = false;
+let verifiedStudent = null;
 
 // ════════════════════════════════════════════════════════════
-//  INIT — runs on page load
+//  INIT
 // ════════════════════════════════════════════════════════════
 (async function init() {
-    // Validate URL params — if missing, show a friendly prompt
     if (!YEAR || !STREAM) {
-        showClosed(
-            'No session selected',
-            'Please use the check-in link shared by your class coordinator. If you think this is an error, contact admin.'
-        );
-        // Still try to get location in background
+        showClosed('No session selected', 'Please use the check-in link shared by your coordinator.');
         getLocation();
         return;
     }
-
-    // Fetch session status from Apps Script
     await fetchSessionStatus();
-
-    // Start location
     getLocation();
 })();
 
-// ════════════════════════════════════════════════════════════
-//  FETCH SESSION STATUS
-//  Asks Apps Script what mode is currently active
-// ════════════════════════════════════════════════════════════
 async function fetchSessionStatus() {
     try {
-        const url = SCRIPT_URL
-            + '?action=get_status'
-            + '&class='  + encodeURIComponent(CLASS_NAME)
-            + '&year='   + encodeURIComponent(YEAR)
-            + '&stream=' + encodeURIComponent(STREAM);
-
+        const url = SCRIPT_URL + '?action=get_status&class=' + encodeURIComponent(CLASS_NAME) + '&year=' + encodeURIComponent(YEAR) + '&stream=' + encodeURIComponent(STREAM);
         const res  = await fetch(url);
         const data = await res.json();
-
         if (data.status !== 'success') {
-            showClosed('Configuration error', data.message || 'Could not load session config. Contact admin.');
+            showClosed('Configuration error', data.message || 'Contact admin.');
             return;
         }
-
         applySessionStatus(data);
-
     } catch(err) {
-        // If status fetch fails, still show form — let submit handle errors
         showForm('SUN');
     }
 }
 
-// ════════════════════════════════════════════════════════════
-//  APPLY SESSION STATUS
-//  Decides what the user sees based on day + open windows
-// ════════════════════════════════════════════════════════════
 function applySessionStatus(data) {
     const day      = data.dayOfWeek;
     const sunOpen  = data.sunOpen;
     const satMode  = data.satMode;
     const testMode = data.testMode;
 
-    // Update test mode state and banner
     isTestMode = !!testMode;
     const banner = document.getElementById('testModeBanner');
     if (isTestMode) banner.classList.add('show');
     else banner.classList.remove('show');
 
-    // Build session tags
     renderBanner(data);
 
-    // Test mode — always show form regardless of day/time
-    if (testMode) {
-        showForm('SUN');
-        return;
-    }
-
-    if (day === 0 && sunOpen) {
-        showForm('SUN');
-        return;
-    }
-
+    if (testMode) { showForm('SUN'); return; }
+    if (day === 0 && sunOpen) { showForm('SUN'); return; }
     if (day === 6) {
-        if (satMode === 'CHECKIN-OPEN') {
-            showForm('SAT-IN');
-            return;
-        }
-        if (satMode === 'CHECKOUT-OPEN') {
-            showForm('SAT-OUT');
-            return;
-        }
+        if (satMode === 'CHECKIN-OPEN') { showForm('SAT-IN'); return; }
+        if (satMode === 'CHECKOUT-OPEN') { showForm('SAT-OUT'); return; }
     }
 
-    // Nothing open
     if (day === 0 && !sunOpen) {
         showClosed('Window not open yet', 'Sunday attendance opens at 7:30 AM and closes at 8:10 AM.');
     } else if (day === 6) {
-        showClosed('Window closed', 'Saturday check-in/check-out is not currently open. Wait for admin to open it.');
+        showClosed('Window closed', 'Saturday window is not open.');
     } else {
-        showClosed('No class today', 'Check-in is only available on Sundays and scheduled Saturdays.');
+        showClosed('No class today', 'Check-in is only for Sundays and Saturdays.');
     }
 }
 
-// ════════════════════════════════════════════════════════════
-//  RENDER SESSION BANNER TAGS
-// ════════════════════════════════════════════════════════════
 function renderBanner(data) {
     const eventLabels = {
         'SUN'     : { label: 'Sunday Class',   cls: 'sun' },
@@ -634,37 +584,28 @@ function renderBanner(data) {
         'SAT-OUT' : { label: 'Saturday Check-Out', cls: 'sat-out' },
         'CLOSED'  : { label: 'Closed',         cls: 'closed' }
     };
-
     let eventKey = 'CLOSED';
     if (data.sunOpen && data.dayOfWeek === 0)  eventKey = 'SUN';
     if (data.satMode === 'CHECKIN-OPEN')        eventKey = 'SAT-IN';
     if (data.satMode === 'CHECKOUT-OPEN')       eventKey = 'SAT-OUT';
-
     const ev = eventLabels[eventKey];
-
-    sessionBanner.innerHTML =
-        '<span class="session-tag tag-class">'  + CLASS_NAME + '</span>' +
+    sessionBanner.innerHTML = '<span class="session-tag tag-class">' + CLASS_NAME + '</span>' +
         '<span class="session-tag tag-stream">Year ' + data.year + ' · Stream ' + data.stream + '</span>' +
         '<span class="session-tag tag-event ' + ev.cls + '">' + ev.label + '</span>';
 }
 
-// ════════════════════════════════════════════════════════════
-//  SHOW / HIDE STATES
-// ════════════════════════════════════════════════════════════
 function showForm(eventType) {
     currentEvent = eventType;
     closedScreen.classList.remove('show');
     form.style.display = 'block';
-
-    // Update button label
     if (eventType === 'SAT-OUT') {
-        const _bl1 = document.getElementById('btnLabel'); if (_bl1) _bl1.textContent = 'Check Out Now';
+        if (btnLabel) btnLabel.textContent = 'Check Out Now';
         cardTitle.textContent = 'Saturday Check-Out';
     } else if (eventType === 'SAT-IN') {
-        const _bl2 = document.getElementById('btnLabel'); if (_bl2) _bl2.textContent = 'Check In Now';
+        if (btnLabel) btnLabel.textContent = 'Check In Now';
         cardTitle.textContent = 'Saturday Check-In';
     } else {
-        const _bl2 = document.getElementById('btnLabel'); if (_bl2) _bl2.textContent = 'Check In Now';
+        if (btnLabel) btnLabel.textContent = 'Check In Now';
         cardTitle.textContent = 'Student Check-In';
     }
 }
@@ -676,9 +617,7 @@ function showClosed(title, msg) {
     closedMsg.textContent   = msg;
 }
 
-// ════════════════════════════════════════════════════════════
-//  ONLINE TOGGLE
-// ════════════════════════════════════════════════════════════
+// ── Toggle / GPS ──
 onlineToggle.addEventListener('change', function() {
     isOnline = this.checked;
     onlineCodeWrap.classList.toggle('show', isOnline);
@@ -686,79 +625,33 @@ onlineToggle.addEventListener('change', function() {
     updateSubmitState();
 });
 
-// ════════════════════════════════════════════════════════════
-//  GEOLOCATION
-// ════════════════════════════════════════════════════════════
 function calcDistance(lat1, lon1, lat2, lon2) {
-    const R    = 6371000;
+    const R = 6371000;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a    = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                 Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                 Math.sin(dLon/2) * Math.sin(dLon/2);
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 function getLocation() {
-    if (!navigator.geolocation) {
-        locPill.textContent = 'Not supported';
-        locPill.className   = 'loc-pill err';
-        return;
-    }
-
-    function onSuccess(pos) {
+    if (!navigator.geolocation) { locPill.textContent = 'Not supported'; locPill.className = 'loc-pill err'; return; }
+    navigator.geolocation.getCurrentPosition((pos) => {
         userLocation = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
-        const dist   = calcDistance(CAMPUS_LAT, CAMPUS_LNG, userLocation.latitude, userLocation.longitude);
-        if (dist <= MAX_DISTANCE_M) {
-            locPill.textContent = 'On campus';
-            locPill.className   = 'loc-pill ok';
-        } else {
-            locPill.textContent = (dist / 1000).toFixed(2) + 'km away';
-            locPill.className   = 'loc-pill err';
-        }
+        const dist = calcDistance(CAMPUS_LAT, CAMPUS_LNG, userLocation.latitude, userLocation.longitude);
+        if (dist <= MAX_DISTANCE_M) { locPill.textContent = 'On campus'; locPill.className = 'loc-pill ok'; }
+        else { locPill.textContent = (dist / 1000).toFixed(2) + 'km away'; locPill.className = 'loc-pill err'; }
         updateSubmitState();
-    }
-
-    function onError(err) {
-        if (err.code === 1) {
-            // Permission denied
-            locPill.textContent = 'Location denied';
-            locPill.className   = 'loc-pill err';
-        } else if (err.code === 3) {
-            // Timeout — try once more with high accuracy
-            locPill.textContent = 'Retrying…';
-            navigator.geolocation.getCurrentPosition(onSuccess, function() {
-                locPill.textContent = 'Location unavailable';
-                locPill.className   = 'loc-pill err';
-            }, { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 });
-        } else {
-            locPill.textContent = 'Location unavailable';
-            locPill.className   = 'loc-pill err';
-        }
-    }
-
-    // First attempt — fast, cached position acceptable
-    navigator.geolocation.getCurrentPosition(
-        onSuccess,
-        onError,
-        { timeout: 8000, enableHighAccuracy: true, maximumAge: 60000 }
-    );
+    }, (err) => { locPill.textContent = 'Location unavailable'; locPill.className = 'loc-pill err'; }, { timeout: 8000, enableHighAccuracy: true });
 }
 
-// ════════════════════════════════════════════════════════════
-//  LIVE PREVIEW + VALIDATION
-// ════════════════════════════════════════════════════════════
+// ── Validation ──
 function updatePreview() {
-    const ys   = yearStreamInput.value;
-    const sn   = serialInput.value;
-    const ysOk = isValidYS(ys);
-    const snOk = isValidSN(sn);
-
+    const ys = yearStreamInput.value;
+    const sn = serialInput.value;
     yearStreamDisplay.textContent = ys ? ys.padEnd(4, '_') : '____';
-    yearStreamDisplay.className   = ysOk ? 'filled' : 'ph';
+    yearStreamDisplay.className   = isValidYS(ys) ? 'filled' : 'ph';
     serialDisplay.textContent     = sn ? sn.padEnd(3, '_') : '___';
-    serialDisplay.className       = snOk ? 'filled' : 'ph';
-
+    serialDisplay.className       = isValidSN(sn) ? 'filled' : 'ph';
     updateSubmitState();
 }
 
@@ -767,262 +660,83 @@ function updateSubmitState() {
     const snOk     = isValidSN(serialInput.value);
     const codeOk   = !isOnline || onlineCodeInput.value.trim().length >= 4;
     const locOk    = isOnline  || (userLocation !== null);
-    document.getElementById('confirmBtn').disabled = !(ysOk && snOk && codeOk && locOk);
+    confirmBtn.disabled = !(ysOk && snOk && codeOk && locOk);
 }
 
-function isValidYS(v) {
-    if (!/^\d{4}$/.test(v)) return false;
-    if (parseInt(v.slice(0, 2)) < 20) return false;
-    if (!['01', '02', '03'].includes(v.slice(2))) return false;
-    return true;
-}
+function isValidYS(v) { return /^\d{4}$/.test(v) && parseInt(v.slice(0, 2)) >= 20 && ['01','02','03'].includes(v.slice(2)); }
+function isValidSN(v) { return /^\d{3}$/.test(v) && parseInt(v) >= 1; }
 
-function isValidSN(v) {
-    return /^\d{3}$/.test(v) && parseInt(v) >= 1;
-}
+yearStreamInput.addEventListener('input', function() { this.value = this.value.replace(/\D/g, '').slice(0, 4); updatePreview(); });
+serialInput.addEventListener('input', function() { this.value = this.value.replace(/\D/g, '').slice(0, 3); updatePreview(); });
+onlineCodeInput.addEventListener('input', function() { this.value = this.value.replace(/\D/g, '').slice(0, 6); updateSubmitState(); });
 
-function showErr(input, el, msg) {
-    input.classList.add('invalid');
-    el.textContent = msg;
-    el.classList.add('show');
-    return false;
-}
-
-function clearErr(input, el) {
-    input.classList.remove('invalid');
-    el.classList.remove('show');
-}
-
-function validateYearStream() {
-    const v = yearStreamInput.value;
-    clearErr(yearStreamInput, yearStreamError);
-    if (!v) return true;
-    if (!/^\d{4}$/.test(v))                         return showErr(yearStreamInput, yearStreamError, 'Must be exactly 4 digits');
-    if (parseInt(v.slice(0, 2)) < 20)               return showErr(yearStreamInput, yearStreamError, 'Year must be 20–99');
-    if (!['01','02','03'].includes(v.slice(2)))      return showErr(yearStreamInput, yearStreamError, 'Stream must be 01, 02, or 03');
-    return true;
-}
-
-function validateSerial() {
-    const v = serialInput.value;
-    clearErr(serialInput, serialError);
-    if (!v) return true;
-    if (!/^\d{3}$/.test(v)) return showErr(serialInput, serialError, 'Must be exactly 3 digits');
-    if (parseInt(v) < 1)    return showErr(serialInput, serialError, 'Must be between 001 and 999');
-    return true;
-}
-
-yearStreamInput.addEventListener('input', function() {
-    this.value = this.value.replace(/\D/g, '').slice(0, 4);
-    validateYearStream();
-    updatePreview();
-});
-
-serialInput.addEventListener('input', function() {
-    this.value = this.value.replace(/\D/g, '').slice(0, 3);
-    validateSerial();
-    updatePreview();
-});
-
-onlineCodeInput.addEventListener('input', function() {
-    this.value = this.value.replace(/\D/g, '').slice(0, 6);
-    clearErr(onlineCodeInput, onlineCodeError);
-    updateSubmitState();
-});
-
-// ════════════════════════════════════════════════════════════
-//  SUBMIT
-// ════════════════════════════════════════════════════════════
-// ════════════════════════════════════════════════════════════
-//  IDENTITY CARD DOM REFS
-// ════════════════════════════════════════════════════════════
-const confirmBtn     = document.getElementById('confirmBtn');
-const identityCard   = document.getElementById('identityCard');
-const identityWelcome = document.getElementById('identityWelcome');
-const identityAvatar  = document.getElementById('identityAvatar');
-const checkinBtn     = document.getElementById('checkinBtn');
-
-// Verified student data — stored after Stage 1 succeeds
-let verifiedStudent = null;
-
-// ════════════════════════════════════════════════════════════
-//  STATUS HELPER
-// ════════════════════════════════════════════════════════════
 function showStatus(type, msg) {
-    statusMessage.className     = type;
-    statusMessage.textContent   = msg;
-    statusMessage.style.display = 'block';
-    if (type === 'success') {
-        setTimeout(() => { statusMessage.style.display = 'none'; }, 6000);
-    }
+    statusMessage.className = type; statusMessage.textContent = msg; statusMessage.style.display = 'block';
+    if (type === 'success') setTimeout(() => { statusMessage.style.display = 'none'; }, 6000);
 }
 
-// ════════════════════════════════════════════════════════════
-//  RESET TO STAGE ONE — "Not me" button
-// ════════════════════════════════════════════════════════════
-function resetToStageOne() {
-    identityCard.classList.remove('show');
-    verifiedStudent = null;
-    confirmBtn.disabled = false;
-    confirmBtn.innerHTML = `<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>`;
-    statusMessage.style.display = 'none';
-    // Refocus serial input so they can correct the number
-    serialInput.focus();
-    serialInput.select();
-}
-
-// ════════════════════════════════════════════════════════════
-//  STAGE 1 — CONFIRM IDENTITY (form submit)
-// ════════════════════════════════════════════════════════════
+// ── Stage 1: Verify ──
 form.addEventListener('submit', async function(e) {
     e.preventDefault();
-
-    if (!validateYearStream() || !validateSerial()) {
-        showStatus('error', 'Please fix the errors above before submitting.');
-        return;
-    }
-
-    // Physical location check at Stage 1
+    if (!isValidYS(yearStreamInput.value) || !isValidSN(serialInput.value)) return;
     if (!isOnline) {
-        if (!userLocation) {
-            showStatus('error', 'Location not available yet — please allow location access and try again.');
-            return;
-        }
-        const dist = calcDistance(CAMPUS_LAT, CAMPUS_LNG, userLocation.latitude, userLocation.longitude);
-        if (dist > MAX_DISTANCE_M) {
-            showStatus('error', 'You must be on campus to check in. You are ' + (dist / 1000).toFixed(2) + 'km away.');
-            return;
+        if (!userLocation) { showStatus('error', 'Location not available.'); return; }
+        if (calcDistance(CAMPUS_LAT, CAMPUS_LNG, userLocation.latitude, userLocation.longitude) > MAX_DISTANCE_M) {
+            showStatus('error', 'You must be on campus.'); return;
         }
     }
-
-    // Online code check at Stage 1
-    if (isOnline && onlineCodeInput.value.trim().length < 4) {
-        showErr(onlineCodeInput, onlineCodeError, 'Please enter the attendance code');
-        return;
-    }
-
-    // Lock form and show loading
-    confirmBtn.disabled  = true;
-    confirmBtn.innerHTML = '<span style="font-size:14px">Verifying…</span>';
-    identityCard.classList.remove('show');
-    statusMessage.style.display = 'none';
-
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<span>Verifying…</span>';
     try {
-        const url = SCRIPT_URL
-            + '?action=verify'
-            + '&class='      + encodeURIComponent(CLASS_NAME)
-            + '&year='       + encodeURIComponent(YEAR)
-            + '&stream='     + encodeURIComponent(STREAM)
-            + '&yearStream=' + encodeURIComponent(yearStreamInput.value)
-            + '&serial='     + encodeURIComponent(serialInput.value)
-            + '&cb='         + Date.now();
-
-        const response = await fetch(url);
-        const data     = await response.json();
-
-        if (data.status !== 'success') {
-            showStatus('error', data.message || 'Verification failed. Please try again.');
-            confirmBtn.disabled  = false;
-            confirmBtn.innerHTML = `<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>`;
-            return;
+        const url = SCRIPT_URL + '?action=verify&class='+encodeURIComponent(CLASS_NAME)+'&year='+encodeURIComponent(YEAR)+'&stream='+encodeURIComponent(STREAM)+'&yearStream='+encodeURIComponent(yearStreamInput.value)+'&serial='+encodeURIComponent(serialInput.value)+'&cb='+Date.now();
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.status === 'success' && data.found) {
+            verifiedStudent = data;
+            identityAvatar.textContent = (data.firstName.charAt(0) + data.lastName.charAt(0)).toUpperCase();
+            identityWelcome.textContent = 'Welcome, ' + data.firstName + ' ' + data.lastName + '!';
+            
+            // HIDE INPUTS
+            document.querySelector('.field-grid').style.display = 'none';
+            confirmBtn.style.display = 'none';
+            
+            identityCard.classList.add('show');
+            if (btnLabel) btnLabel.textContent = currentEvent === 'SAT-OUT' ? 'Check Out Now' : 'Check In Now';
+        } else {
+            showStatus('error', 'Student not found.');
+            resetToStageOne();
         }
-
-        if (!data.found) {
-            showStatus('error', 'Registration number not found for this stream. Please check your number or contact admin.');
-            confirmBtn.disabled  = false;
-            confirmBtn.innerHTML = `<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>`;
-            return;
-        }
-
-        // Found — store student and show identity card
-        // Inside the 'verify' success logic:
-        verifiedStudent = data;
-        const initials  = (data.firstName.charAt(0) + data.lastName.charAt(0)).toUpperCase();
-        identityAvatar.textContent   = initials;
-        identityWelcome.textContent  = 'Welcome, ' + data.firstName + ' ' + data.lastName + '!';
-
-        // THIS WAS THE CRASHING LINE:
-        if (btnLabel) {
-            btnLabel.textContent = currentEvent === 'SAT-OUT' ? 'Check Out Now' : 'Check In Now';
-        }
-
-identityCard.classList.add('show');
-
-    } catch(err) {
-        showStatus('error', 'Connection error — please check your internet and try again.');
-        confirmBtn.disabled  = false;
-        confirmBtn.innerHTML = '<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>';
-    }
+    } catch(err) { showStatus('error', 'Connection error.'); confirmBtn.disabled = false; }
 });
 
-// ════════════════════════════════════════════════════════════
-//  STAGE 2 — FINAL CHECK-IN (Check In Now button)
-// ════════════════════════════════════════════════════════════
+function resetToStageOne() {
+    document.querySelector('.field-grid').style.display = 'grid';
+    confirmBtn.style.display = 'flex';
+    confirmBtn.disabled = false;
+    confirmBtn.innerHTML = '<span>Confirm Identity</span>';
+    identityCard.classList.remove('show');
+    verifiedStudent = null;
+}
+
+// ── Stage 2: Check-In ──
 checkinBtn.addEventListener('click', async function() {
     if (!verifiedStudent) return;
-
-    checkinBtn.disabled  = true;
-    checkinBtn.innerHTML = '<span style="font-size:13px">Submitting…</span>';
-
+    checkinBtn.disabled = true;
+    checkinBtn.innerHTML = '<span>Submitting…</span>';
     try {
-        const url = SCRIPT_URL
-            + '?action=checkin'
-            + '&class='      + encodeURIComponent(CLASS_NAME)
-            + '&year='       + encodeURIComponent(YEAR)
-            + '&stream='     + encodeURIComponent(STREAM)
-            + '&yearStream=' + encodeURIComponent(yearStreamInput.value)
-            + '&serial='     + encodeURIComponent(serialInput.value)
-            + '&eventType='  + encodeURIComponent(currentEvent)
-            + '&mode='       + encodeURIComponent(isOnline ? 'ONLINE' : 'PHYSICAL')
-            + '&onlineCode=' + encodeURIComponent(isOnline ? onlineCodeInput.value.trim() : '')
-            + '&latitude='   + encodeURIComponent(isOnline ? '' : userLocation.latitude)
-            + '&longitude='  + encodeURIComponent(isOnline ? '' : userLocation.longitude)
-            + '&isTest='     + (isTestMode ? 'TRUE' : 'FALSE'); // <-- Ensure this is here
-
-        const response = await fetch(url);
-        const data     = await response.json();
-
+        const url = SCRIPT_URL + '?action=checkin&class='+encodeURIComponent(CLASS_NAME)+'&year='+encodeURIComponent(YEAR)+'&stream='+encodeURIComponent(STREAM)+'&yearStream='+encodeURIComponent(yearStreamInput.value)+'&serial='+encodeURIComponent(serialInput.value)+'&eventType='+encodeURIComponent(currentEvent)+'&mode='+encodeURIComponent(isOnline ? 'ONLINE' : 'PHYSICAL')+'&onlineCode='+encodeURIComponent(onlineCodeInput.value)+'&latitude='+encodeURIComponent(isOnline ? '' : userLocation.latitude)+'&longitude='+encodeURIComponent(isOnline ? '' : userLocation.longitude)+'&isTest='+(isTestMode?'TRUE':'FALSE');
+        const res = await fetch(url);
+        const data = await res.json();
         if (data.status === 'success') {
-            const label = currentEvent === 'SAT-OUT' ? 'Checked out' : 'Checked in';
-            // Hide identity card and reset full form for next student
-            identityCard.classList.remove('show');
-            showStatus('success', label + ' successfully! Welcome, ' + verifiedStudent.firstName + '. God bless you.');
+            showStatus('success', 'Successful! God bless you.');
             form.reset();
-            onlineCodeWrap.classList.remove('show');
-            onlineToggle.checked          = false;
-            isOnline                      = false;
+            resetToStageOne();
             yearStreamDisplay.textContent = '____';
-            yearStreamDisplay.className   = 'ph';
-            serialDisplay.textContent     = '___';
-            serialDisplay.className       = 'ph';
-            locPill.style.display         = '';
-            verifiedStudent               = null;
-            // Reset both buttons cleanly for next student
-            confirmBtn.disabled  = true;
-            confirmBtn.innerHTML = '<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>';
-            checkinBtn.disabled  = false;
-            checkinBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 7 12 13 4"/></svg><span>Check In Now</span>';
-        } else {
-            // Error — show message, hide identity card, reset to Stage 1 so they can try again
-            identityCard.classList.remove('show');
-            verifiedStudent = null;
-            showStatus('error', data.message || 'Check-in failed. Please try again.');
-            confirmBtn.disabled  = false;
-            confirmBtn.innerHTML = '<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>';
-            checkinBtn.disabled  = false;
-            checkinBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 7 12 13 4"/></svg><span>Check In Now</span>';
-        }
-
-    } catch(err) {
-        identityCard.classList.remove('show');
-        verifiedStudent = null;
-        showStatus('error', 'Connection error — please check your internet and try again.');
-        confirmBtn.disabled  = false;
-        confirmBtn.innerHTML = '<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>';
-        checkinBtn.disabled  = false;
-        checkinBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 7 12 13 4"/></svg><span>Check In Now</span>';
-    }
+            serialDisplay.textContent = '___';
+        } else { showStatus('error', data.message); checkinBtn.disabled = false; }
+    } catch(err) { showStatus('error', 'Error.'); checkinBtn.disabled = false; }
 });
 </script>
 </body>
 </html>
+
