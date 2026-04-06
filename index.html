@@ -914,8 +914,7 @@ form.addEventListener('submit', async function(e) {
             + '&stream='     + encodeURIComponent(STREAM)
             + '&yearStream=' + encodeURIComponent(yearStreamInput.value)
             + '&serial='     + encodeURIComponent(serialInput.value)
-            + '&cb='         + Date.now(); // <--- ADD THIS LINE
-        
+            + '&cb='         + Date.now();
 
         const response = await fetch(url);
         const data     = await response.json();
