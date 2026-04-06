@@ -510,6 +510,7 @@ const form              = document.getElementById('checkInForm');
 const onlineToggle      = document.getElementById('onlineToggle');
 const onlineCodeWrap    = document.getElementById('onlineCodeWrap');
 const onlineCodeInput   = document.getElementById('onlineCode');
+const btnLabel          = document.getElementById('btnLabel');
 const closedScreen      = document.getElementById('closedScreen');
 const closedTitle       = document.getElementById('closedTitle');
 const closedMsg         = document.getElementById('closedMsg');
@@ -934,12 +935,18 @@ form.addEventListener('submit', async function(e) {
         }
 
         // Found — store student and show identity card
+        // Inside the 'verify' success logic:
         verifiedStudent = data;
         const initials  = (data.firstName.charAt(0) + data.lastName.charAt(0)).toUpperCase();
         identityAvatar.textContent   = initials;
         identityWelcome.textContent  = 'Welcome, ' + data.firstName + ' ' + data.lastName + '!';
-        const _bl3 = document.getElementById('btnLabel'); if (_bl3) _bl3.textContent = currentEvent === 'SAT-OUT' ? 'Check Out Now' : 'Check In Now';
-        identityCard.classList.add('show');
+
+        // THIS WAS THE CRASHING LINE:
+        if (btnLabel) {
+            btnLabel.textContent = currentEvent === 'SAT-OUT' ? 'Check Out Now' : 'Check In Now';
+        }
+
+identityCard.classList.add('show');
 
     } catch(err) {
         showStatus('error', 'Connection error — please check your internet and try again.');
