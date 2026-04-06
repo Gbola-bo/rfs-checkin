@@ -462,8 +462,8 @@
 //  CONFIG — update SCRIPT_URL after deploying new Apps Script
 // ════════════════════════════════════════════════════════════
 const SCRIPT_URL     = 'https://script.google.com/macros/s/AKfycbz5nLwhQOijtweajBY-Wyp91fCCaf4znGx54wU6m_PMBL4uTJjO5KGMSWNEGoJMpNfXiw/exec';
-const CAMPUS_LAT     = 6.436657996626435;
-const CAMPUS_LNG     = 3.493554692281231;
+const CAMPUS_LAT     = 6.44062514957352;
+const CAMPUS_LNG     = 3.5008819207966173;
 const MAX_DISTANCE_M = 500;
 
 // ════════════════════════════════════════════════════════════
@@ -485,6 +485,7 @@ const serialError       = document.getElementById('serialError');
 const onlineCodeError   = document.getElementById('onlineCodeError');
 const locPill           = document.getElementById('locationStatus');
 const submitBtn         = document.getElementById('submitBtn');
+const btnLabel          = document.getElementById('btnLabel');
 const statusMessage     = document.getElementById('statusMessage');
 const form              = document.getElementById('checkInForm');
 const onlineToggle      = document.getElementById('onlineToggle');
@@ -925,9 +926,9 @@ checkinBtn.addEventListener('click', async function() {
 
         if (data.status === 'success') {
             const label = currentEvent === 'SAT-OUT' ? 'Checked out' : 'Checked in';
+            // Hide identity card and reset full form for next student
             identityCard.classList.remove('show');
             showStatus('success', label + ' successfully! Welcome, ' + verifiedStudent.firstName + '. God bless you.');
-            // Reset entire form for next student
             form.reset();
             onlineCodeWrap.classList.remove('show');
             onlineToggle.checked          = false;
@@ -938,18 +939,30 @@ checkinBtn.addEventListener('click', async function() {
             serialDisplay.className       = 'ph';
             locPill.style.display         = '';
             verifiedStudent               = null;
-            confirmBtn.disabled           = true;
-            confirmBtn.innerHTML          = `<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>`;
-        } else {
-            showStatus('error', data.message || 'Check-in failed. Please try again.');
+            // Reset both buttons cleanly for next student
+            confirmBtn.disabled  = true;
+            confirmBtn.innerHTML = '<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>';
             checkinBtn.disabled  = false;
-            checkinBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 7 12 13 4"/></svg><span id="btnLabel">${currentEvent === 'SAT-OUT' ? 'Check Out Now' : 'Check In Now'}</span>`;
+            checkinBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 7 12 13 4"/></svg><span>Check In Now</span>';
+        } else {
+            // Error — show message, hide identity card, reset to Stage 1 so they can try again
+            identityCard.classList.remove('show');
+            verifiedStudent = null;
+            showStatus('error', data.message || 'Check-in failed. Please try again.');
+            confirmBtn.disabled  = false;
+            confirmBtn.innerHTML = '<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>';
+            checkinBtn.disabled  = false;
+            checkinBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 7 12 13 4"/></svg><span>Check In Now</span>';
         }
 
     } catch(err) {
+        identityCard.classList.remove('show');
+        verifiedStudent = null;
         showStatus('error', 'Connection error — please check your internet and try again.');
+        confirmBtn.disabled  = false;
+        confirmBtn.innerHTML = '<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>';
         checkinBtn.disabled  = false;
-        checkinBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 7 12 13 4"/></svg><span id="btnLabel">${currentEvent === 'SAT-OUT' ? 'Check Out Now' : 'Check In Now'}</span>`;
+        checkinBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 7 12 13 4"/></svg><span>Check In Now</span>';
     }
 });
 </script>
