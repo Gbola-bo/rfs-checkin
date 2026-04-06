@@ -657,13 +657,13 @@ function showForm(eventType) {
 
     // Update button label
     if (eventType === 'SAT-OUT') {
-        btnLabel.textContent = 'Check Out Now';
+        const _bl1 = document.getElementById('btnLabel'); if (_bl1) _bl1.textContent = 'Check Out Now';
         cardTitle.textContent = 'Saturday Check-Out';
     } else if (eventType === 'SAT-IN') {
-        btnLabel.textContent = 'Check In Now';
+        const _bl2 = document.getElementById('btnLabel'); if (_bl2) _bl2.textContent = 'Check In Now';
         cardTitle.textContent = 'Saturday Check-In';
     } else {
-        btnLabel.textContent = 'Check In Now';
+        const _bl2 = document.getElementById('btnLabel'); if (_bl2) _bl2.textContent = 'Check In Now';
         cardTitle.textContent = 'Student Check-In';
     }
 }
@@ -938,19 +938,13 @@ form.addEventListener('submit', async function(e) {
         const initials  = (data.firstName.charAt(0) + data.lastName.charAt(0)).toUpperCase();
         identityAvatar.textContent   = initials;
         identityWelcome.textContent  = 'Welcome, ' + data.firstName + ' ' + data.lastName + '!';
-        btnLabel.textContent = currentEvent === 'SAT-OUT' ? 'Check Out Now' : 'Check In Now';
+        const _bl3 = document.getElementById('btnLabel'); if (_bl3) _bl3.textContent = currentEvent === 'SAT-OUT' ? 'Check Out Now' : 'Check In Now';
         identityCard.classList.add('show');
 
     } catch(err) {
-        console.error('VERIFY ERROR:', err);
-        console.error('Error name:', err.name);
-        console.error('Error message:', err.message);
-        console.error('yearStream value:', yearStreamInput.value);
-        console.error('serial value:', serialInput.value);
-        console.error('CLASS_NAME:', CLASS_NAME, 'YEAR:', YEAR, 'STREAM:', STREAM);
-        showStatus('error', 'Error: ' + err.name + ' — ' + err.message);
+        showStatus('error', 'Connection error — please check your internet and try again.');
         confirmBtn.disabled  = false;
-        confirmBtn.innerHTML = `<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>`;
+        confirmBtn.innerHTML = '<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>';
     }
 });
 
