@@ -155,7 +155,12 @@
             .code-grid { grid-template-columns: 1fr; }
             .btn-row { flex-direction: column; }
             .topbar-session { display: none; }
-            .test-toggle-label { display: none; }
+            .test-toggle-wrap { 
+    display: none; /* Hidden by default */
+    align-items: center; 
+    gap: 8px; 
+    /* ... rest of your existing CSS ... */
+}
         }
     </style>
 </head>
@@ -443,6 +448,14 @@ function showDashboard() {
     document.getElementById('loginOverlay').style.display = 'none';
     document.getElementById('mainContent').classList.add('show');
     document.getElementById('topbarAdmin').textContent = 'Logged in as ' + admin.name;
+
+    // --- NEW LOGIC HERE ---
+    const testToggle = document.getElementById('testToggleWrap');
+    if (admin.role === 'Super Admin') {
+        testToggle.style.display = 'flex'; // Show only for Super Admins
+    } else {
+        testToggle.style.display = 'none'; // Ensure it's hidden for others
+    }
 }
 
 function handleLogout() {
