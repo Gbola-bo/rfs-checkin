@@ -4,445 +4,248 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RFS Admin — Attendance Control</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
         :root {
-            --bg:            #F4F5F2;
-            --bg-card:       #FFFFFF;
-            --bg-surface:    #F0F2ED;
-            --accent:        #2D6A2D;
-            --accent-dim:    rgba(45,106,45,0.10);
-            --success-bg:    #EAF5E4;
-            --success-text:  #1A5C1A;
-            --error-bg:      #FEF0F0;
-            --error-text:    #C0392B;
-            --warning-bg:    #FEF9E7;
-            --warning-text:  #7D5A00;
-            --text-primary:  #1A2010;
-            --text-secondary:#4A5540;
-            --text-muted:    #8A9A80;
-            --border:        rgba(0,0,0,0.09);
-            --radius-sm:     6px;
-            --radius-md:     10px;
-            --radius-lg:     16px;
-            --danger:        #C0392B;
-            --danger-dim:    rgba(192,57,43,0.10);
+            --bg:          #F2F4F0;
+            --card:        #FFFFFF;
+            --surface:     #F0F2ED;
+            --accent:      #2D6A2D;
+            --accent-dim:  rgba(45,106,45,0.10);
+            --success-bg:  #EAF5E4; --success-text: #1A5C1A;
+            --error-bg:    #FEF0F0; --error-text:   #C0392B;
+            --warning-bg:  #FEF9E7; --warning-text: #7D5A00;
+            --test-bg:     #FFF3CD; --test-text:    #856404;
+            --text:        #1A2010; --text-2:       #4A5540; --text-3: #8A9A80;
+            --border:      rgba(0,0,0,0.09);
+            --danger:      #C0392B;
+            --r-sm: 6px; --r-md: 10px; --r-lg: 16px;
         }
+        body { font-family: 'DM Sans', sans-serif; background: var(--bg); min-height: 100vh; color: var(--text); }
 
-        body {
-            font-family: 'DM Sans', sans-serif;
-            background: var(--bg);
-            min-height: 100vh;
-            color: var(--text-primary);
-        }
+        /* ── Login ── */
+        .login-overlay { position: fixed; inset: 0; background: rgba(15,25,15,0.93); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
+        .login-box { background: var(--card); border-radius: var(--r-lg); padding: 36px 32px; width: 100%; max-width: 380px; box-shadow: 0 24px 64px rgba(0,0,0,0.4); }
+        .login-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; }
+        .login-logo svg { flex-shrink: 0; }
+        .login-logo-text { font-size: 13px; font-weight: 700; color: #26361b; letter-spacing: 0.03em; line-height: 1.2; }
+        .login-logo-sub { font-size: 11px; color: #7ac042; font-weight: 600; letter-spacing: 0.04em; }
+        .login-title { font-size: 19px; font-weight: 600; margin-bottom: 4px; }
+        .login-sub { font-size: 13px; color: var(--text-3); margin-bottom: 24px; }
+        .f-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+        .f-group label { font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; }
+        .login-err { font-size: 12px; color: var(--danger); text-align: center; margin-top: 10px; display: none; }
 
-        /* ── Top bar ── */
-        .topbar {
-            background: #1A2D1A;
-            padding: 14px 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
+        /* ── Topbar ── */
+        .topbar { background: #162416; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+        .topbar-left { display: flex; align-items: center; gap: 12px; }
+        .topbar-logo svg { display: block; }
+        .topbar-info { display: flex; flex-direction: column; gap: 1px; }
+        .topbar-title { font-size: 13px; font-weight: 600; color: #fff; }
+        .topbar-admin { font-size: 11px; color: rgba(255,255,255,0.5); }
+        .topbar-right { display: flex; align-items: center; gap: 8px; }
+        .topbar-session { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 99px; background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.65); }
 
-        .topbar-brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        /* Test mode toggle in topbar */
+        .test-toggle-wrap { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.07); padding: 6px 12px; border-radius: var(--r-sm); cursor: pointer; border: 1px solid rgba(255,255,255,0.1); transition: background 0.15s; }
+        .test-toggle-wrap:hover { background: rgba(255,255,255,0.12); }
+        .test-toggle-wrap.active { background: rgba(255,195,0,0.2); border-color: rgba(255,195,0,0.4); }
+        .test-toggle-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.65); white-space: nowrap; }
+        .test-toggle-wrap.active .test-toggle-label { color: #FFD700; }
+        .toggle-switch { width: 28px; height: 16px; background: rgba(255,255,255,0.2); border-radius: 99px; position: relative; transition: background 0.2s; flex-shrink: 0; }
+        .toggle-switch::after { content:''; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; transition: transform 0.2s; }
+        .test-toggle-wrap.active .toggle-switch { background: #FFD700; }
+        .test-toggle-wrap.active .toggle-switch::after { transform: translateX(12px); background: #162416; }
 
-        .topbar-brand svg { flex-shrink: 0; }
-
-        .topbar-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #fff;
-            letter-spacing: 0.03em;
-        }
-
-        .topbar-sub {
-            font-size: 11px;
-            color: rgba(255,255,255,0.5);
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-        }
-
-        .topbar-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .session-indicator {
-            font-size: 11px;
-            font-weight: 600;
-            padding: 4px 10px;
-            border-radius: 99px;
-            background: rgba(255,255,255,0.1);
-            color: rgba(255,255,255,0.7);
-            letter-spacing: 0.04em;
-        }
-
-        .logout-btn {
-            font-size: 12px;
-            font-weight: 600;
-            padding: 6px 12px;
-            border-radius: var(--radius-sm);
-            background: rgba(255,255,255,0.08);
-            color: rgba(255,255,255,0.7);
-            border: 1px solid rgba(255,255,255,0.12);
-            cursor: pointer;
-            transition: background 0.15s;
-        }
-        .logout-btn:hover { background: rgba(255,255,255,0.15); }
-
-        /* ── Login overlay ── */
-        .login-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(20,35,20,0.92);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-            padding: 24px;
-        }
-
-        .login-box {
-            background: var(--bg-card);
-            border-radius: var(--radius-lg);
-            padding: 36px 32px;
-            width: 100%;
-            max-width: 360px;
-            box-shadow: 0 24px 64px rgba(0,0,0,0.4);
-        }
-
-        .login-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 4px;
-        }
-
-        .login-sub {
-            font-size: 13px;
-            color: var(--text-muted);
-            margin-bottom: 24px;
-        }
-
-        .login-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
-        .login-field label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+        .logout-btn { font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: var(--r-sm); background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.65); border: 1px solid rgba(255,255,255,0.12); cursor: pointer; transition: background 0.15s; }
+        .logout-btn:hover { background: rgba(255,255,255,0.14); }
 
         /* ── Main layout ── */
-        .main {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 28px 20px;
-            display: none;
-        }
+        .main { max-width: 860px; margin: 0 auto; padding: 24px 16px; display: none; }
         .main.show { display: block; }
 
-        /* ── Section selector ── */
-        .section-tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 24px;
-            background: var(--bg-card);
-            padding: 6px;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border);
-        }
+        /* ── Session selector ── */
+        .session-card { background: var(--card); border-radius: var(--r-md); border: 1px solid var(--border); margin-bottom: 20px; overflow: hidden; }
+        .section-head { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .section-head-title { font-size: 13px; font-weight: 600; }
+        .section-head-sub { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+        .section-body { padding: 16px 18px; }
+        .sel-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+        .sel-field { display: flex; flex-direction: column; gap: 5px; }
+        .sel-field label { font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; }
 
-        .tab-btn {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            border-radius: var(--radius-sm);
-            font-family: 'DM Sans', sans-serif;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.15s, color 0.15s;
-            background: transparent;
-            color: var(--text-muted);
-        }
-
-        .tab-btn.active {
-            background: var(--accent);
-            color: #fff;
-        }
-
-        /* ── Cards ── */
-        .card {
-            background: var(--bg-card);
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border);
-            margin-bottom: 16px;
-            overflow: hidden;
-        }
-
-        .card-head {
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .card-head-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .card-head-sub {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 2px;
-        }
-
-        .card-body { padding: 20px; }
-
-        /* ── Stream selector ── */
-        .stream-selector {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .selector-field { display: flex; flex-direction: column; gap: 6px; }
-        .selector-field label { font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
-
-        select {
-            width: 100%;
-            height: 40px;
-            padding: 0 12px;
-            border: 1.5px solid var(--border);
-            border-radius: var(--radius-sm);
-            font-family: 'DM Sans', sans-serif;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-primary);
-            background: var(--bg-surface);
-            outline: none;
-            cursor: pointer;
-            transition: border-color 0.15s;
-        }
-        select:focus { border-color: var(--accent); }
-
-        input[type="text"], input[type="password"] {
-            width: 100%;
-            height: 40px;
-            padding: 0 12px;
-            border: 1.5px solid var(--border);
-            border-radius: var(--radius-sm);
-            font-family: 'DM Mono', monospace;
-            font-size: 15px;
-            font-weight: 500;
-            color: var(--text-primary);
-            background: #fff;
-            outline: none;
+        select, input[type="text"], input[type="password"] {
+            width: 100%; height: 40px; padding: 0 12px;
+            border: 1.5px solid var(--border); border-radius: var(--r-sm);
+            font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+            color: var(--text); background: var(--surface); outline: none;
             transition: border-color 0.15s, box-shadow 0.15s;
-            letter-spacing: 0.04em;
         }
-        input[type="text"]:focus, input[type="password"]:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px var(--accent-dim);
-        }
+        input[type="text"], input[type="password"] { font-family: 'DM Mono', monospace; font-size: 15px; background: #fff; }
+        select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
 
-        /* ── Status pill on card ── */
-        .status-pill {
-            font-size: 11px;
-            font-weight: 600;
-            padding: 4px 10px;
-            border-radius: 99px;
-            white-space: nowrap;
-        }
-        .pill-closed   { background: var(--bg-surface); color: var(--text-muted); }
+        /* ── Tabs ── */
+        .tabs { display: flex; gap: 6px; background: var(--card); padding: 5px; border-radius: var(--r-md); border: 1px solid var(--border); margin-bottom: 16px; display: none; }
+        .tabs.show { display: flex; }
+        .tab-btn { flex: 1; padding: 9px 8px; border: none; border-radius: var(--r-sm); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-3); background: transparent; transition: all 0.15s; }
+        .tab-btn.active { background: var(--accent); color: #fff; }
+
+        /* ── Panel cards ── */
+        .panel { display: none; }
+        .panel.active { display: flex; flex-direction: column; gap: 14px; }
+        .card { background: var(--card); border-radius: var(--r-md); border: 1px solid var(--border); overflow: hidden; }
+
+        /* ── Status pill ── */
+        .pill { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px; white-space: nowrap; }
+        .pill-closed   { background: var(--surface); color: var(--text-3); }
         .pill-open     { background: var(--success-bg); color: var(--success-text); }
         .pill-checkout { background: #FFF3E0; color: #8A4000; }
-        .pill-force    { background: var(--warning-bg); color: var(--warning-text); }
+        .pill-test     { background: var(--test-bg); color: var(--test-text); }
 
-        /* ── Code row ── */
-        .code-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
+        /* ── Status display row ── */
+        .status-row { display: flex; align-items: center; justify-content: space-between; background: var(--surface); border-radius: var(--r-sm); padding: 10px 14px; margin-bottom: 14px; }
+        .status-row-label { font-size: 12px; color: var(--text-3); font-weight: 500; }
+        .status-row-value { font-size: 13px; font-weight: 600; }
 
-        .code-field { display: flex; flex-direction: column; gap: 6px; }
-        .code-field label { font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
-        .code-field .hint { font-size: 11px; color: var(--text-muted); }
-
-        /* ── Action buttons ── */
-        .action-row {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-top: 4px;
-        }
-
-        .action-btn {
-            flex: 1;
-            min-width: 120px;
-            height: 40px;
-            border: none;
-            border-radius: var(--radius-sm);
-            font-family: 'DM Sans', sans-serif;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.15s, transform 0.1s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-        .action-btn:hover  { opacity: 0.88; }
-        .action-btn:active { transform: scale(0.98); }
-        .action-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-        .btn-checkin  { background: var(--accent); color: #fff; }
-        .btn-checkout { background: #E67E22; color: #fff; }
-        .btn-close    { background: var(--danger); color: #fff; }
-        .btn-save     { background: var(--accent); color: #fff; }
-        .btn-force    { background: #7D5A00; color: #fff; }
-        .btn-outline  { background: transparent; color: var(--text-secondary); border: 1.5px solid var(--border); }
+        /* ── Code inputs ── */
+        .code-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+        .code-field { display: flex; flex-direction: column; gap: 5px; }
+        .code-field label { font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; }
+        .code-hint { font-size: 11px; color: var(--text-3); margin-top: 3px; }
 
         /* ── Divider ── */
-        .divider {
-            height: 1px;
-            background: var(--border);
-            margin: 20px 0;
-        }
+        .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+        /* ── Buttons ── */
+        .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn { flex: 1; min-width: 100px; height: 40px; border: none; border-radius: var(--r-sm); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: opacity 0.15s, transform 0.1s; }
+        .btn:hover { opacity: 0.87; }
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled { opacity: 0.38; cursor: not-allowed; transform: none; }
+        .btn-primary  { background: var(--accent); color: #fff; }
+        .btn-amber    { background: #E67E22; color: #fff; }
+        .btn-danger   { background: var(--danger); color: #fff; }
+        .btn-outline  { background: transparent; color: var(--text-2); border: 1.5px solid var(--border); }
+        .btn-full     { width: 100%; flex: none; }
+
+        /* ── Activity log ── */
+        .log-list { display: flex; flex-direction: column; gap: 0; }
+        .log-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+        .log-item:last-child { border-bottom: none; }
+        .log-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; margin-top: 5px; }
+        .log-body { flex: 1; min-width: 0; }
+        .log-action { font-size: 13px; font-weight: 500; color: var(--text); }
+        .log-meta { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+        .log-empty { text-align: center; padding: 24px; color: var(--text-3); font-size: 13px; }
 
         /* ── Toast ── */
-        .toast {
-            position: fixed;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%) translateY(80px);
-            background: #1A2D1A;
-            color: #fff;
-            font-size: 13px;
-            font-weight: 500;
-            padding: 12px 20px;
-            border-radius: var(--radius-md);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-            transition: transform 0.3s cubic-bezier(.22,.68,0,1.2);
-            z-index: 200;
-            white-space: nowrap;
-            max-width: 90vw;
-            text-align: center;
-        }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px); background: #1A2D1A; color: #fff; font-size: 13px; font-weight: 500; padding: 11px 18px; border-radius: var(--r-md); box-shadow: 0 8px 32px rgba(0,0,0,0.3); transition: transform 0.3s cubic-bezier(.22,.68,0,1.2); z-index: 300; white-space: nowrap; max-width: 90vw; text-align: center; }
         .toast.show { transform: translateX(-50%) translateY(0); }
         .toast.err  { background: var(--danger); }
         .toast.ok   { background: #1A5C1A; }
         .toast.warn { background: #7D5A00; }
 
-        /* ── Current status display ── */
-        .status-display {
-            background: var(--bg-surface);
-            border-radius: var(--radius-sm);
-            padding: 12px 16px;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-        }
-        .status-display-label { font-size: 12px; color: var(--text-muted); font-weight: 500; }
-        .status-display-value { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+        /* ── Test mode banner on page ── */
+        .test-banner { background: var(--test-bg); border-bottom: 1px solid rgba(133,100,4,0.2); padding: 8px 20px; text-align: center; font-size: 12px; font-weight: 600; color: var(--test-text); display: none; }
+        .test-banner.show { display: block; }
 
-        /* ── Section panels ── */
-        .panel { display: none; }
-        .panel.active { display: block; }
-
-        /* ── Responsive ── */
-        @media (max-width: 480px) {
-            .stream-selector { grid-template-columns: 1fr 1fr; }
-            .code-row { grid-template-columns: 1fr; }
-            .action-row { flex-direction: column; }
-            .action-btn { min-width: unset; }
-            .topbar-sub { display: none; }
+        @media (max-width: 500px) {
+            .sel-grid { grid-template-columns: 1fr 1fr; }
+            .code-grid { grid-template-columns: 1fr; }
+            .btn-row { flex-direction: column; }
+            .topbar-session { display: none; }
+            .test-toggle-label { display: none; }
         }
     </style>
 </head>
 <body>
 
-<!-- Login overlay -->
+<!-- Login -->
 <div class="login-overlay" id="loginOverlay">
     <div class="login-box">
-        <div class="login-title">Admin Login</div>
-        <div class="login-sub">RFS Attendance Control Panel</div>
-        <div class="login-field">
-            <label>Admin Password</label>
-            <input type="password" id="loginPassword" placeholder="Enter password" autocomplete="off">
+        <div class="login-logo">
+            <svg viewBox="0 0 1535.61 720.7" width="52" height="24">
+                <path fill="#7ac042" d="M0,693.1l17.76-27.95,78.77-14.93,39.53-55.38c77.39-18.85,157.19-33.28,236.48-44.4,298.97-41.95,607.51-36.4,904.31,19.14,48.81,9.13,92.27,16.51,137.14,38.78,15.07,7.48,54.7,29.33,64.06,41.87,6.62,8.87,11.26,24.98,17.82,34.63,6.09,3.05,24.83,2.93,29.31,6.17,1.19.86,10.43,20.26,10.44,21.53-8.4,1.77-17.28-.18-25.46-.53-172.91-7.3-345.62-20.92-518.95-15.98-120.92,3.45-242.02,15.47-362.82,21.05-167.22,7.73-335,2.5-501.9-11.03-42.2-3.42-84.32-8.22-126.47-11.98v-1Z"/>
+                <path fill="#26361b" d="M905.76,112.87v160.78c24.25-7.17,48.56-17.58,74.47-15.96,28.01,1.75,53.53,16.33,75.81,32.13,50,35.45,119.73,106.25,181.15,113.65,13.1,1.58,26.08-1.17,36.47,9.51,5.34,5.49,12.01,21.51,12.01,28.95v22.47l-64.98,1v45.94c-35.89-4.17-71.67-10.41-107.6-14.86-242.16-30.01-485.68-27.78-727.54,4.01-19.03,2.5-37.9,6.26-57.05,7.91-2.5-13.93-2.65-28.83-1.58-43h-41.99v-31.46c0-3.13,1.55-12.2,2.48-15.5,2.27-8.01,6.95-12.37,15.27-13.7,101.98-.92,204.14,1.97,304.17-19.72,86.33-18.72,163.38-55.83,243.75-90.56.54-17.23-.14-34.53.17-51.77.1-5.48-.09-10.99,0-16.48,15.76-35.82,32.94-71.42,50.13-106.71.93-1.91,1.92-4.24,3-5.99.46-.74,1.51-2.57,1.85-.64Z"/>
+                <path fill="#f6eb19" d="M850.78,242.7c-75.13,29.86-146.12,67.66-224.73,88.6-38.12,10.16-77.21,16.63-116.54,20.16l-1.47-1.58c-9.55-57.54-3.35-116.46,19.35-170.07C583.95,46.3,728.79-28.69,870.99,10.3c109.33,29.97,193.87,126.56,210.72,238.39-1.54.38-2.17-.63-3.28-1.2-7.95-4.12-16.61-11.38-25.03-15.94-30.39-16.47-65.95-25.9-100.59-19.82l-47.04-98.85c-.35-1.93-1.4-.09-1.85.64-1.08,1.75-2.07,4.08-3,5.99-17.19,35.29-34.37,70.89-50.13,106.71-.09,5.49.1,11,0,16.48Z"/>
+            </svg>
+            <div>
+                <div class="login-logo-text">House on the Rock</div>
+                <div class="login-logo-sub">Rock Foundation School</div>
+            </div>
         </div>
-        <button class="action-btn btn-save" style="width:100%; margin-top:8px;" onclick="handleLogin()">Login</button>
-        <div id="loginError" style="font-size:12px; color:var(--danger); margin-top:10px; text-align:center; display:none;">Incorrect password</div>
+        <div class="login-title">Admin Login</div>
+        <div class="login-sub">Attendance Control Panel</div>
+        <div class="f-group">
+            <label>Your Name</label>
+            <input type="text" id="loginName" placeholder="e.g. Gbola" autocomplete="off" style="font-family:'DM Sans',sans-serif; font-size:14px; letter-spacing:0;">
+        </div>
+        <div class="f-group">
+            <label>Password</label>
+            <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="off">
+        </div>
+        <button class="btn btn-primary btn-full" style="margin-top:8px; height:44px;" onclick="handleLogin()">Login</button>
+        <div class="login-err" id="loginErr"></div>
     </div>
 </div>
 
-<!-- Top bar -->
+<!-- Test mode banner -->
+<div class="test-banner" id="testBanner">Test Mode Active — Entries will be marked as TEST in the attendance sheet</div>
+
+<!-- Topbar -->
 <div class="topbar">
-    <div class="topbar-brand">
-        <svg viewBox="0 0 1535.61 720.7" width="40" height="19" xmlns="http://www.w3.org/2000/svg">
-            <path fill="#7ac042" d="M0,693.1l17.76-27.95,78.77-14.93,39.53-55.38c77.39-18.85,157.19-33.28,236.48-44.4,298.97-41.95,607.51-36.4,904.31,19.14,48.81,9.13,92.27,16.51,137.14,38.78,15.07,7.48,54.7,29.33,64.06,41.87,6.62,8.87,11.26,24.98,17.82,34.63,6.09,3.05,24.83,2.93,29.31,6.17,1.19.86,10.43,20.26,10.44,21.53-8.4,1.77-17.28-.18-25.46-.53-172.91-7.3-345.62-20.92-518.95-15.98-120.92,3.45-242.02,15.47-362.82,21.05-167.22,7.73-335,2.5-501.9-11.03-42.2-3.42-84.32-8.22-126.47-11.98v-1Z"/>
-            <path fill="#4a7a2a" d="M905.76,112.87v160.78c24.25-7.17,48.56-17.58,74.47-15.96,28.01,1.75,53.53,16.33,75.81,32.13,50,35.45,119.73,106.25,181.15,113.65,13.1,1.58,26.08-1.17,36.47,9.51,5.34,5.49,12.01,21.51,12.01,28.95v22.47l-64.98,1v45.94c-35.89-4.17-71.67-10.41-107.6-14.86-242.16-30.01-485.68-27.78-727.54,4.01-19.03,2.5-37.9,6.26-57.05,7.91-2.5-13.93-2.65-28.83-1.58-43h-41.99v-31.46c0-3.13,1.55-12.2,2.48-15.5,2.27-8.01,6.95-12.37,15.27-13.7,101.98-.92,204.14,1.97,304.17-19.72,86.33-18.72,163.38-55.83,243.75-90.56.54-17.23-.14-34.53.17-51.77.1-5.48-.09-10.99,0-16.48,15.76-35.82,32.94-71.42,50.13-106.71.93-1.91,1.92-4.24,3-5.99.46-.74,1.51-2.57,1.85-.64Z"/>
-            <path fill="#f6eb19" d="M850.78,242.7c-75.13,29.86-146.12,67.66-224.73,88.6-38.12,10.16-77.21,16.63-116.54,20.16l-1.47-1.58c-9.55-57.54-3.35-116.46,19.35-170.07C583.95,46.3,728.79-28.69,870.99,10.3c109.33,29.97,193.87,126.56,210.72,238.39-1.54.38-2.17-.63-3.28-1.2-7.95-4.12-16.61-11.38-25.03-15.94-30.39-16.47-65.95-25.9-100.59-19.82l-47.04-98.85c-.35-1.93-1.4-.09-1.85.64-1.08,1.75-2.07,4.08-3,5.99-17.19,35.29-34.37,70.89-50.13,106.71-.09,5.49.1,11,0,16.48Z"/>
-        </svg>
-        <div>
-            <div class="topbar-title">RFS Attendance Admin</div>
-            <div class="topbar-sub">Rock Foundation School</div>
+    <div class="topbar-left">
+        <div class="topbar-logo">
+            <svg viewBox="0 0 1535.61 720.7" width="44" height="20">
+                <path fill="#7ac042" d="M0,693.1l17.76-27.95,78.77-14.93,39.53-55.38c77.39-18.85,157.19-33.28,236.48-44.4,298.97-41.95,607.51-36.4,904.31,19.14,48.81,9.13,92.27,16.51,137.14,38.78,15.07,7.48,54.7,29.33,64.06,41.87,6.62,8.87,11.26,24.98,17.82,34.63,6.09,3.05,24.83,2.93,29.31,6.17,1.19.86,10.43,20.26,10.44,21.53-8.4,1.77-17.28-.18-25.46-.53-172.91-7.3-345.62-20.92-518.95-15.98-120.92,3.45-242.02,15.47-362.82,21.05-167.22,7.73-335,2.5-501.9-11.03-42.2-3.42-84.32-8.22-126.47-11.98v-1Z"/>
+                <path fill="#4a7a2a" d="M905.76,112.87v160.78c24.25-7.17,48.56-17.58,74.47-15.96,28.01,1.75,53.53,16.33,75.81,32.13,50,35.45,119.73,106.25,181.15,113.65,13.1,1.58,26.08-1.17,36.47,9.51,5.34,5.49,12.01,21.51,12.01,28.95v22.47l-64.98,1v45.94c-35.89-4.17-71.67-10.41-107.6-14.86-242.16-30.01-485.68-27.78-727.54,4.01-19.03,2.5-37.9,6.26-57.05,7.91-2.5-13.93-2.65-28.83-1.58-43h-41.99v-31.46c0-3.13,1.55-12.2,2.48-15.5,2.27-8.01,6.95-12.37,15.27-13.7,101.98-.92,204.14,1.97,304.17-19.72,86.33-18.72,163.38-55.83,243.75-90.56.54-17.23-.14-34.53.17-51.77.1-5.48-.09-10.99,0-16.48,15.76-35.82,32.94-71.42,50.13-106.71.93-1.91,1.92-4.24,3-5.99.46-.74,1.51-2.57,1.85-.64Z"/>
+                <path fill="#f6eb19" d="M850.78,242.7c-75.13,29.86-146.12,67.66-224.73,88.6-38.12,10.16-77.21,16.63-116.54,20.16l-1.47-1.58c-9.55-57.54-3.35-116.46,19.35-170.07C583.95,46.3,728.79-28.69,870.99,10.3c109.33,29.97,193.87,126.56,210.72,238.39-1.54.38-2.17-.63-3.28-1.2-7.95-4.12-16.61-11.38-25.03-15.94-30.39-16.47-65.95-25.9-100.59-19.82l-47.04-98.85c-.35-1.93-1.4-.09-1.85.64-1.08,1.75-2.07,4.08-3,5.99-17.19,35.29-34.37,70.89-50.13,106.71-.09,5.49.1,11,0,16.48Z"/>
+            </svg>
+        </div>
+        <div class="topbar-info">
+            <div class="topbar-title">RFS Admin</div>
+            <div class="topbar-admin" id="topbarAdmin">Not logged in</div>
         </div>
     </div>
     <div class="topbar-right">
-        <div class="session-indicator" id="topbarSession">—</div>
+        <div class="topbar-session" id="topbarSession">—</div>
+        <div class="test-toggle-wrap" id="testToggleWrap" onclick="toggleTestMode()" title="Toggle test mode">
+            <div class="toggle-switch" id="toggleSwitch"></div>
+            <span class="test-toggle-label">Test Mode</span>
+        </div>
         <button class="logout-btn" onclick="handleLogout()">Logout</button>
     </div>
 </div>
 
-<!-- Main content -->
+<!-- Main -->
 <div class="main" id="mainContent">
 
-    <!-- Stream selector -->
-    <div class="card">
-        <div class="card-head">
+    <!-- Session selector -->
+    <div class="session-card">
+        <div class="section-head">
             <div>
-                <div class="card-head-title">Session Selection</div>
-                <div class="card-head-sub">Select the active class stream to manage</div>
+                <div class="section-head-title">Select Session</div>
+                <div class="section-head-sub">Choose the class stream you want to manage</div>
             </div>
         </div>
-        <div class="card-body">
-            <div class="stream-selector">
-                <div class="selector-field">
+        <div class="section-body">
+            <div class="sel-grid">
+                <div class="sel-field">
                     <label>Class</label>
-                    <select id="selClass">
-                        <option value="FTR">FTR</option>
-                    </select>
+                    <select id="selClass"><option value="FTR">FTR</option></select>
                 </div>
-                <div class="selector-field">
+                <div class="sel-field">
                     <label>Year</label>
-                    <select id="selYear" id="selYear">
-                        <option value="2026">2026</option>
-                        <option value="2027">2027</option>
-                        <option value="2028">2028</option>
-                        <option value="2029">2029</option>
-                        <option value="2030">2030</option>
-                        <option value="2031">2031</option>
-                        <option value="2032">2032</option>
-                        <option value="2033">2033</option>
-                        <option value="2034">2034</option>
-                        <option value="2035">2035</option>
+                    <select id="selYear">
+                        <option value="2026">2026</option><option value="2027">2027</option>
+                        <option value="2028">2028</option><option value="2029">2029</option>
+                        <option value="2030">2030</option><option value="2031">2031</option>
+                        <option value="2032">2032</option><option value="2033">2033</option>
+                        <option value="2034">2034</option><option value="2035">2035</option>
                     </select>
                 </div>
-                <div class="selector-field">
+                <div class="sel-field">
                     <label>Stream</label>
                     <select id="selStream">
                         <option value="1">Stream 1</option>
@@ -451,406 +254,423 @@
                     </select>
                 </div>
             </div>
-            <button class="action-btn btn-save" style="width:100%;" onclick="loadSessionStatus()">Load Session</button>
+            <button class="btn btn-primary btn-full" onclick="loadSession()">Load Session</button>
         </div>
     </div>
 
-    <!-- Tab switcher -->
-    <div class="section-tabs" id="sectionTabs" style="display:none;">
-        <button class="tab-btn active" onclick="switchTab('sunday')">Sunday Control</button>
-        <button class="tab-btn" onclick="switchTab('saturday')">Saturday Control</button>
+    <!-- Tabs -->
+    <div class="tabs" id="tabsRow">
+        <button class="tab-btn active" onclick="switchTab('sunday', this)">Sunday</button>
+        <button class="tab-btn" onclick="switchTab('saturday', this)">Saturday</button>
+        <button class="tab-btn" onclick="switchTab('log', this)">Activity Log</button>
     </div>
 
-    <!-- ── SUNDAY PANEL ── -->
+    <!-- Sunday Panel -->
     <div class="panel active" id="panelSunday">
-
-        <!-- Current status -->
         <div class="card">
-            <div class="card-head">
+            <div class="section-head">
                 <div>
-                    <div class="card-head-title">Sunday Attendance Window</div>
-                    <div class="card-head-sub">Standard window: 7:30 AM – 8:10 AM</div>
+                    <div class="section-head-title">Attendance Window</div>
+                    <div class="section-head-sub">Standard hours: 7:30 AM – 8:10 AM</div>
                 </div>
-                <div class="status-pill pill-closed" id="sunStatusPill">Not loaded</div>
+                <div class="pill pill-closed" id="sunPill">Not loaded</div>
             </div>
-            <div class="card-body">
-                <div class="status-display">
-                    <span class="status-display-label">Current mode</span>
-                    <span class="status-display-value" id="sunCurrentMode">—</span>
+            <div class="section-body">
+                <div class="status-row">
+                    <span class="status-row-label">Current status</span>
+                    <span class="status-row-value" id="sunStatus">—</span>
                 </div>
-
-                <div class="action-row">
-                    <button class="action-btn btn-force" id="btnSunForce" onclick="sunForceOpen()" disabled>
-                        Open Window
-                    </button>
-                    <button class="action-btn btn-close" id="btnSunClose" onclick="sunForceClose()" disabled>
-                        Close Window
-                    </button>
+                <div class="btn-row">
+                    <button class="btn btn-primary" id="btnSunOpen" onclick="sunOpen()" disabled>Open Window</button>
+                    <button class="btn btn-danger"  id="btnSunClose" onclick="sunClose()" disabled>Close Window</button>
                 </div>
-
-                <div class="divider"></div>
-
-                <!-- Online code for Sunday -->
-                <div style="margin-bottom: 12px;">
-                    <div class="card-head-title" style="font-size:13px; margin-bottom:12px;">Sunday Online Code</div>
-                    <div class="code-field" style="margin-bottom: 12px;">
-                        <label>Today's Online Code</label>
-                        <input type="text" id="sunOnlineCode" placeholder="e.g. 4829" maxlength="6" inputmode="numeric">
-                        <span class="hint" style="font-size:11px; color:var(--text-muted); margin-top:4px;">Share this with online students only. Valid today only.</span>
-                    </div>
-                    <button class="action-btn btn-save" id="btnSunSaveCode" onclick="saveSundayCode()" disabled style="width:100%;">
-                        Save Online Code
-                    </button>
+            </div>
+        </div>
+        <div class="card">
+            <div class="section-head">
+                <div>
+                    <div class="section-head-title">Online Attendance Code</div>
+                    <div class="section-head-sub">Set and share with online students before class</div>
                 </div>
+            </div>
+            <div class="section-body">
+                <div class="code-field" style="margin-bottom:12px;">
+                    <label>Today's Code</label>
+                    <input type="text" id="sunCodeInput" placeholder="e.g. 4829" maxlength="6" inputmode="numeric">
+                    <span class="code-hint">Only share this with online students. Valid today only.</span>
+                </div>
+                <button class="btn btn-primary btn-full" id="btnSunSaveCode" onclick="saveSunCode()" disabled>Save Code</button>
             </div>
         </div>
     </div>
 
-    <!-- ── SATURDAY PANEL ── -->
+    <!-- Saturday Panel -->
     <div class="panel" id="panelSaturday">
-
         <div class="card">
-            <div class="card-head">
+            <div class="section-head">
                 <div>
-                    <div class="card-head-title">Saturday All-Day Class</div>
-                    <div class="card-head-sub">Control check-in and check-out windows</div>
+                    <div class="section-head-title">Saturday Window Control</div>
+                    <div class="section-head-sub">Manually open and close check-in / check-out</div>
                 </div>
-                <div class="status-pill pill-closed" id="satStatusPill">Not loaded</div>
+                <div class="pill pill-closed" id="satPill">Not loaded</div>
             </div>
-            <div class="card-body">
-
-                <div class="status-display">
-                    <span class="status-display-label">Current window</span>
-                    <span class="status-display-value" id="satCurrentMode">—</span>
+            <div class="section-body">
+                <div class="status-row">
+                    <span class="status-row-label">Current window</span>
+                    <span class="status-row-value" id="satStatus">—</span>
                 </div>
-
-                <!-- Codes -->
-                <div class="code-row">
+                <div class="btn-row">
+                    <button class="btn btn-primary"  id="btnSatCI"    onclick="setSatMode('CHECKIN-OPEN')"  disabled>Open Check-In</button>
+                    <button class="btn btn-amber"    id="btnSatCO"    onclick="setSatMode('CHECKOUT-OPEN')" disabled>Open Check-Out</button>
+                    <button class="btn btn-danger"   id="btnSatClose" onclick="setSatMode('CLOSED')"        disabled>Close</button>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="section-head">
+                <div>
+                    <div class="section-head-title">Online Codes for Saturday</div>
+                    <div class="section-head-sub">Set both codes before class starts</div>
+                </div>
+            </div>
+            <div class="section-body">
+                <div class="code-grid">
                     <div class="code-field">
                         <label>Check-In Code</label>
-                        <input type="text" id="satCheckinCode" placeholder="e.g. 8821" maxlength="6" inputmode="numeric">
-                        <span class="hint">Share at start of class</span>
+                        <input type="text" id="satCICode" placeholder="e.g. 8821" maxlength="6" inputmode="numeric">
+                        <span class="code-hint">Share at the start of class</span>
                     </div>
                     <div class="code-field">
                         <label>Check-Out Code</label>
-                        <input type="text" id="satCheckoutCode" placeholder="e.g. 4457" maxlength="6" inputmode="numeric">
-                        <span class="hint">Share only at end of class</span>
+                        <input type="text" id="satCOCode" placeholder="e.g. 4457" maxlength="6" inputmode="numeric">
+                        <span class="code-hint">Share only when wrapping up</span>
                     </div>
                 </div>
+                <button class="btn btn-outline btn-full" id="btnSatSave" onclick="saveSatCodes()" disabled>Save Codes</button>
+            </div>
+        </div>
+    </div>
 
-                <button class="action-btn btn-outline" id="btnSatSaveCodes" onclick="saveSatCodes()" disabled style="width:100%; margin-bottom:16px;">
-                    Save Codes
-                </button>
-
-                <div class="divider"></div>
-
-                <div class="action-row">
-                    <button class="action-btn btn-checkin" id="btnSatCheckin" onclick="setSatMode('CHECKIN-OPEN')" disabled>
-                        Open Check-In
-                    </button>
-                    <button class="action-btn btn-checkout" id="btnSatCheckout" onclick="setSatMode('CHECKOUT-OPEN')" disabled>
-                        Open Check-Out
-                    </button>
-                    <button class="action-btn btn-close" id="btnSatClose" onclick="setSatMode('CLOSED')" disabled>
-                        Close
-                    </button>
+    <!-- Activity Log Panel -->
+    <div class="panel" id="panelLog">
+        <div class="card">
+            <div class="section-head">
+                <div>
+                    <div class="section-head-title">Activity Log</div>
+                    <div class="section-head-sub">Last 30 admin actions across all sessions</div>
                 </div>
-
+                <button class="btn btn-outline" style="flex:none; height:32px; font-size:12px; padding:0 12px;" onclick="loadLog()">Refresh</button>
+            </div>
+            <div class="section-body" style="padding-top:8px; padding-bottom:8px;">
+                <div class="log-list" id="logList">
+                    <div class="log-empty">Load a session to view activity log</div>
+                </div>
             </div>
         </div>
     </div>
 
 </div>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script>
-// ════════════════════════════════════════════════════════════
-//  CONFIG
-// ════════════════════════════════════════════════════════════
-const SCRIPT_URL    = 'https://script.google.com/macros/s/AKfycbz5nLwhQOijtweajBY-Wyp91fCCaf4znGx54wU6m_PMBL4uTJjO5KGMSWNEGoJMpNfXiw/exec';
-const ADMIN_PASSWORD = 'RFSADMIN';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz5nLwhQOijtweajBY-Wyp91fCCaf4znGx54wU6m_PMBL4uTJjO5KGMSWNEGoJMpNfXiw/exec';
 
-// ════════════════════════════════════════════════════════════
-//  STATE
-// ════════════════════════════════════════════════════════════
-let isLoggedIn    = false;
-let sessionLoaded = false;
-let currentStatus = null;
+// ── State ─────────────────────────────────────────────────────
+let admin       = null;   // { name, role }
+let sessionData = null;   // current loaded session status
+let testModeOn  = false;
 
-// ════════════════════════════════════════════════════════════
-//  LOGIN
-// ════════════════════════════════════════════════════════════
-document.getElementById('loginPassword').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') handleLogin();
+// ── Session persistence (survives refresh, clears on tab close) ─
+function saveSession() {
+    if (admin) sessionStorage.setItem('rfs_admin', JSON.stringify(admin));
+}
+function loadSavedSession() {
+    try {
+        const saved = sessionStorage.getItem('rfs_admin');
+        if (saved) { admin = JSON.parse(saved); return true; }
+    } catch(e) {}
+    return false;
+}
+function clearSession() {
+    sessionStorage.removeItem('rfs_admin');
+    admin = null;
+}
+
+// ── Boot ──────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', function() {
+    if (loadSavedSession()) {
+        showDashboard();
+    }
+    document.getElementById('loginName').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('loginPassword').focus(); });
+    document.getElementById('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
 });
 
-function handleLogin() {
-    const pw = document.getElementById('loginPassword').value.trim();
-    if (pw === ADMIN_PASSWORD) {
-        isLoggedIn = true;
-        document.getElementById('loginOverlay').style.display = 'none';
-        document.getElementById('mainContent').classList.add('show');
-    } else {
-        document.getElementById('loginError').style.display = 'block';
-        document.getElementById('loginPassword').value = '';
+// ── Login ─────────────────────────────────────────────────────
+async function handleLogin() {
+    const name = document.getElementById('loginName').value.trim();
+    const pass = document.getElementById('loginPassword').value.trim();
+    const errEl = document.getElementById('loginErr');
+    errEl.style.display = 'none';
+    if (!name || !pass) { showLoginErr('Please enter your name and password.'); return; }
+
+    const loginBtn = document.querySelector('.login-box .btn-primary');
+    loginBtn.textContent = 'Logging in…'; loginBtn.disabled = true;
+
+    try {
+        const url = SCRIPT_URL + '?action=admin_login&name=' + encodeURIComponent(name) + '&password=' + encodeURIComponent(pass);
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (data.status === 'success') {
+            admin = { name: data.name, role: data.role };
+            saveSession();
+            showDashboard();
+        } else {
+            showLoginErr(data.message || 'Login failed.');
+        }
+    } catch(e) {
+        showLoginErr('Connection error. Please try again.');
     }
+    loginBtn.textContent = 'Login'; loginBtn.disabled = false;
+}
+
+function showLoginErr(msg) {
+    const el = document.getElementById('loginErr');
+    el.textContent = msg; el.style.display = 'block';
+}
+
+function showDashboard() {
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('mainContent').classList.add('show');
+    document.getElementById('topbarAdmin').textContent = 'Logged in as ' + admin.name;
 }
 
 function handleLogout() {
-    isLoggedIn = false;
-    sessionLoaded = false;
+    clearSession();
+    sessionData = null;
+    testModeOn  = false;
     document.getElementById('loginOverlay').style.display = 'flex';
     document.getElementById('mainContent').classList.remove('show');
+    document.getElementById('loginName').value = '';
     document.getElementById('loginPassword').value = '';
-    document.getElementById('loginError').style.display = 'none';
-    document.getElementById('sectionTabs').style.display = 'none';
+    document.getElementById('loginErr').style.display = 'none';
+    document.getElementById('tabsRow').classList.remove('show');
+    document.getElementById('topbarSession').textContent = '—';
+    document.getElementById('testToggleWrap').classList.remove('active');
+    document.getElementById('testBanner').classList.remove('show');
 }
 
-// ════════════════════════════════════════════════════════════
-//  TAB SWITCHING
-// ════════════════════════════════════════════════════════════
-function switchTab(tab) {
+// ── Tab switching ─────────────────────────────────────────────
+function switchTab(name, btn) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    event.target.classList.add('active');
-    document.getElementById('panel' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+    btn.classList.add('active');
+    document.getElementById('panel' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+    if (name === 'log') loadLog();
 }
 
-// ════════════════════════════════════════════════════════════
-//  LOAD SESSION STATUS
-// ════════════════════════════════════════════════════════════
-async function loadSessionStatus() {
+// ── Load session ──────────────────────────────────────────────
+async function loadSession() {
     const cls    = document.getElementById('selClass').value;
     const year   = document.getElementById('selYear').value;
     const stream = document.getElementById('selStream').value;
-
-    showToast('Loading session ' + cls + ' ' + year + ' Stream ' + stream + '…', 'warn');
-
+    showToast('Loading ' + cls + ' ' + year + ' Stream ' + stream + '…', 'warn');
     try {
-        const url = SCRIPT_URL
-            + '?action=get_status'
-            + '&class='  + encodeURIComponent(cls)
-            + '&year='   + encodeURIComponent(year)
-            + '&stream=' + encodeURIComponent(stream);
-
+        const url  = SCRIPT_URL + '?action=get_status&class=' + cls + '&year=' + year + '&stream=' + stream;
         const res  = await fetch(url);
         const data = await res.json();
-
-        if (data.status !== 'success') {
-            showToast(data.message || 'Failed to load session', 'err');
-            return;
-        }
-
-        currentStatus = data;
-        sessionLoaded = true;
-
-        // Update topbar
-        document.getElementById('topbarSession').textContent = cls + ' · ' + year + ' · Stream ' + stream;
-
-        // Show tabs
-        document.getElementById('sectionTabs').style.display = 'flex';
-
-        // Update Sunday UI
+        if (data.status !== 'success') { showToast(data.message || 'Failed to load', 'err'); return; }
+        sessionData = data;
+        document.getElementById('topbarSession').textContent = cls + ' · ' + year + ' · S' + stream;
+        document.getElementById('tabsRow').classList.add('show');
         updateSundayUI(data);
-
-        // Update Saturday UI
         updateSaturdayUI(data);
-
+        updateTestModeUI(data.testMode);
         showToast('Session loaded — ' + cls + ' ' + year + ' Stream ' + stream, 'ok');
-
-    } catch(err) {
-        showToast('Connection error', 'err');
-    }
+    } catch(e) { showToast('Connection error', 'err'); }
 }
 
-// ════════════════════════════════════════════════════════════
-//  SUNDAY UI
-// ════════════════════════════════════════════════════════════
+// ── Sunday UI ─────────────────────────────────────────────────
 function updateSundayUI(data) {
-    const pill = document.getElementById('sunStatusPill');
-    const mode = document.getElementById('sunCurrentMode');
-    const btnForce = document.getElementById('btnSunForce');
-    const btnClose = document.getElementById('btnSunClose');
-    const btnCode  = document.getElementById('btnSunSaveCode');
-
-    if (data.sunForceOpen) {
-        pill.textContent = 'Force Open';
-        pill.className   = 'status-pill pill-force';
-        mode.textContent = 'Force open — all students can check in';
-        btnForce.disabled = true;
-        btnClose.disabled = false;
+    const pill   = document.getElementById('sunPill');
+    const status = document.getElementById('sunStatus');
+    const btnO   = document.getElementById('btnSunOpen');
+    const btnC   = document.getElementById('btnSunClose');
+    document.getElementById('btnSunSaveCode').disabled = false;
+    if (data.testMode) {
+        pill.textContent = 'Test Mode'; pill.className = 'pill pill-test';
+        status.textContent = 'Test mode active — window always open';
+        btnO.disabled = true; btnC.disabled = false;
+    } else if (data.sunForceOpen) {
+        pill.textContent = 'Open'; pill.className = 'pill pill-open';
+        status.textContent = 'Window force-opened by admin';
+        btnO.disabled = true; btnC.disabled = false;
     } else if (data.sunOpen) {
-        pill.textContent = 'Open';
-        pill.className   = 'status-pill pill-open';
-        mode.textContent = 'Standard window active (7:30 – 8:10 AM)';
-        btnForce.disabled = false;
-        btnClose.disabled = false;
+        pill.textContent = 'Open'; pill.className = 'pill pill-open';
+        status.textContent = 'Standard window is active (7:30 – 8:10 AM)';
+        btnO.disabled = true; btnC.disabled = false;
     } else {
-        pill.textContent = 'Closed';
-        pill.className   = 'status-pill pill-closed';
-        mode.textContent = 'Window closed';
-        btnForce.disabled = false;
-        btnClose.disabled = true;
+        pill.textContent = 'Closed'; pill.className = 'pill pill-closed';
+        status.textContent = 'Window is closed';
+        btnO.disabled = false; btnC.disabled = true;
     }
-
-    btnCode.disabled = false;
 }
 
-// ════════════════════════════════════════════════════════════
-//  SUNDAY ACTIONS
-// ════════════════════════════════════════════════════════════
-async function sunForceOpen() {
-    await adminSunday('FORCE-OPEN', '', 'Opening window for all students…', 'Window is now open — students can check in');
-}
-
-async function sunForceClose() {
-    await adminSunday('CLOSED', '', 'Closing Sunday window…', 'Sunday attendance window closed');
-}
-
-async function saveSundayCode() {
-    const code = document.getElementById('sunOnlineCode').value.trim();
+async function sunOpen()  { await adminSunday('FORCE-OPEN', '', 'Opening window…', 'Sunday window is now open'); }
+async function sunClose() { await adminSunday('CLOSED', '', 'Closing window…', 'Sunday window closed'); }
+async function saveSunCode() {
+    const code = document.getElementById('sunCodeInput').value.trim();
     if (!code) { showToast('Please enter a code first', 'err'); return; }
     await adminSunday('', code, 'Saving online code…', 'Online code saved — share with online students');
 }
 
 async function adminSunday(mode, code, loadingMsg, successMsg) {
-    const cls    = document.getElementById('selClass').value;
-    const year   = document.getElementById('selYear').value;
-    const stream = document.getElementById('selStream').value;
-
+    const cls = document.getElementById('selClass').value;
+    const yr  = document.getElementById('selYear').value;
+    const st  = document.getElementById('selStream').value;
     showToast(loadingMsg || 'Updating…', 'warn');
-
     try {
-        let url = SCRIPT_URL
-            + '?action=admin_sunday'
-            + '&class='    + encodeURIComponent(cls)
-            + '&year='     + encodeURIComponent(year)
-            + '&stream='   + encodeURIComponent(stream)
-            + '&password=' + encodeURIComponent(ADMIN_PASSWORD);
-
+        let url = SCRIPT_URL + '?action=admin_sunday&adminName=' + encodeURIComponent(admin.name)
+            + '&password=' + encodeURIComponent(document.getElementById('loginPassword').value || getStoredPass())
+            + '&class=' + cls + '&year=' + yr + '&stream=' + st;
         if (mode) url += '&mode=' + encodeURIComponent(mode);
         if (code) url += '&onlineCode=' + encodeURIComponent(code);
-
-        const res  = await fetch(url);
-        const data = await res.json();
-
-        if (data.status === 'success') {
-            showToast(successMsg || data.message, 'ok');
-            await loadSessionStatus();
-        } else {
-            showToast(data.message || 'Update failed', 'err');
-        }
-    } catch(err) {
-        showToast('Connection error', 'err');
-    }
+        const res  = await fetch(url); const data = await res.json();
+        if (data.status === 'success') { showToast(successMsg || data.message, 'ok'); await loadSession(); }
+        else showToast(data.message || 'Failed', 'err');
+    } catch(e) { showToast('Connection error', 'err'); }
 }
 
-// ════════════════════════════════════════════════════════════
-//  SATURDAY UI
-// ════════════════════════════════════════════════════════════
+// ── Saturday UI ───────────────────────────────────────────────
 function updateSaturdayUI(data) {
-    const pill    = document.getElementById('satStatusPill');
-    const mode    = document.getElementById('satCurrentMode');
-    const btnCI   = document.getElementById('btnSatCheckin');
-    const btnCO   = document.getElementById('btnSatCheckout');
-    const btnCL   = document.getElementById('btnSatClose');
-    const btnSave = document.getElementById('btnSatSaveCodes');
-
-    btnCI.disabled = btnCO.disabled = btnCL.disabled = btnSave.disabled = false;
-
+    const pill   = document.getElementById('satPill');
+    const status = document.getElementById('satStatus');
+    const btnCI  = document.getElementById('btnSatCI');
+    const btnCO  = document.getElementById('btnSatCO');
+    const btnCL  = document.getElementById('btnSatClose');
+    const btnSv  = document.getElementById('btnSatSave');
+    btnCI.disabled = btnCO.disabled = btnCL.disabled = btnSv.disabled = false;
     switch(data.satMode) {
         case 'CHECKIN-OPEN':
-            pill.textContent = 'Check-In Open';
-            pill.className   = 'status-pill pill-open';
-            mode.textContent = 'Students can check in now';
-            btnCI.disabled   = true;
-            break;
+            pill.textContent = 'Check-In Open'; pill.className = 'pill pill-open';
+            status.textContent = 'Students can check in now'; btnCI.disabled = true; break;
         case 'CHECKOUT-OPEN':
-            pill.textContent = 'Check-Out Open';
-            pill.className   = 'status-pill pill-checkout';
-            mode.textContent = 'Students can check out now';
-            btnCO.disabled   = true;
-            break;
+            pill.textContent = 'Check-Out Open'; pill.className = 'pill pill-checkout';
+            status.textContent = 'Students can check out now'; btnCO.disabled = true; break;
         default:
-            pill.textContent = 'Closed';
-            pill.className   = 'status-pill pill-closed';
-            mode.textContent = 'Window closed';
-            btnCL.disabled   = true;
+            pill.textContent = 'Closed'; pill.className = 'pill pill-closed';
+            status.textContent = 'Window is closed'; btnCL.disabled = true;
     }
 }
 
-// ════════════════════════════════════════════════════════════
-//  SATURDAY ACTIONS
-// ════════════════════════════════════════════════════════════
 async function saveSatCodes() {
-    const checkInCode  = document.getElementById('satCheckinCode').value.trim();
-    const checkOutCode = document.getElementById('satCheckoutCode').value.trim();
-
-    if (!checkInCode || !checkOutCode) {
-        showToast('Please enter both codes before saving', 'err');
-        return;
-    }
-
-    await adminSat('SAVE-CODES', checkInCode, checkOutCode, 'Saving codes…', 'Codes saved successfully');
+    const ci = document.getElementById('satCICode').value.trim();
+    const co = document.getElementById('satCOCode').value.trim();
+    if (!ci || !co) { showToast('Please enter both codes before saving', 'err'); return; }
+    await adminSat('SAVE-CODES', ci, co, 'Saving codes…', 'Codes saved successfully');
 }
-
 async function setSatMode(mode) {
-    const checkInCode  = document.getElementById('satCheckinCode').value.trim();
-    const checkOutCode = document.getElementById('satCheckoutCode').value.trim();
+    const ci = document.getElementById('satCICode').value.trim();
+    const co = document.getElementById('satCOCode').value.trim();
     const msgs = {
-        'CHECKIN-OPEN'  : ['Opening check-in window…',  'Check-in is now open — students can check in'],
-        'CHECKOUT-OPEN' : ['Opening check-out window…', 'Check-out is now open — students can check out'],
-        'CLOSED'        : ['Closing window…',           'Saturday window closed']
+        'CHECKIN-OPEN':  ['Opening check-in window…',  'Check-in is now open'],
+        'CHECKOUT-OPEN': ['Opening check-out window…', 'Check-out is now open'],
+        'CLOSED':        ['Closing window…',           'Saturday window closed']
     };
     const [loading, success] = msgs[mode] || ['Updating…', 'Updated'];
-    await adminSat(mode, checkInCode, checkOutCode, loading, success);
+    await adminSat(mode, ci, co, loading, success);
 }
-
-async function adminSat(mode, checkInCode, checkOutCode, loadingMsg, successMsg) {
-    const cls    = document.getElementById('selClass').value;
-    const year   = document.getElementById('selYear').value;
-    const stream = document.getElementById('selStream').value;
-
-    showToast(loadingMsg || 'Updating…', 'warn');
-
+async function adminSat(mode, ci, co, loadingMsg, successMsg) {
+    const cls = document.getElementById('selClass').value;
+    const yr  = document.getElementById('selYear').value;
+    const st  = document.getElementById('selStream').value;
+    showToast(loadingMsg, 'warn');
     try {
-        let url = SCRIPT_URL
-            + '?action=admin_sat'
-            + '&class='    + encodeURIComponent(cls)
-            + '&year='     + encodeURIComponent(year)
-            + '&stream='   + encodeURIComponent(stream)
-            + '&password=' + encodeURIComponent(ADMIN_PASSWORD);
-
-        if (mode)         url += '&mode='         + encodeURIComponent(mode);
-        if (checkInCode)  url += '&checkInCode='  + encodeURIComponent(checkInCode);
-        if (checkOutCode) url += '&checkOutCode=' + encodeURIComponent(checkOutCode);
-
-        const res  = await fetch(url);
-        const data = await res.json();
-
-        if (data.status === 'success') {
-            showToast(successMsg || data.message, 'ok');
-            await loadSessionStatus();
-        } else {
-            showToast(data.message || 'Update failed', 'err');
-        }
-    } catch(err) {
-        showToast('Connection error', 'err');
-    }
+        let url = SCRIPT_URL + '?action=admin_sat&adminName=' + encodeURIComponent(admin.name)
+            + '&password=' + encodeURIComponent(getStoredPass())
+            + '&class=' + cls + '&year=' + yr + '&stream=' + st + '&mode=' + encodeURIComponent(mode);
+        if (ci) url += '&checkInCode='  + encodeURIComponent(ci);
+        if (co) url += '&checkOutCode=' + encodeURIComponent(co);
+        const res = await fetch(url); const data = await res.json();
+        if (data.status === 'success') { showToast(successMsg || data.message, 'ok'); await loadSession(); }
+        else showToast(data.message || 'Failed', 'err');
+    } catch(e) { showToast('Connection error', 'err'); }
 }
 
-// ════════════════════════════════════════════════════════════
-//  TOAST
-// ════════════════════════════════════════════════════════════
+// ── Test Mode ─────────────────────────────────────────────────
+function updateTestModeUI(isActive) {
+    testModeOn = !!isActive;
+    const wrap = document.getElementById('testToggleWrap');
+    const banner = document.getElementById('testBanner');
+    if (testModeOn) { wrap.classList.add('active'); banner.classList.add('show'); }
+    else            { wrap.classList.remove('active'); banner.classList.remove('show'); }
+}
+
+async function toggleTestMode() {
+    if (!sessionData) { showToast('Load a session first', 'err'); return; }
+    const newVal = !testModeOn;
+    const cls    = document.getElementById('selClass').value;
+    const yr     = document.getElementById('selYear').value;
+    const st     = document.getElementById('selStream').value;
+    showToast(newVal ? 'Enabling test mode…' : 'Disabling test mode…', 'warn');
+    try {
+        const url = SCRIPT_URL + '?action=admin_testmode&adminName=' + encodeURIComponent(admin.name)
+            + '&password=' + encodeURIComponent(getStoredPass())
+            + '&class=' + cls + '&year=' + yr + '&stream=' + st
+            + '&testMode=' + (newVal ? 'TRUE' : 'FALSE');
+        const res  = await fetch(url); const data = await res.json();
+        if (data.status === 'success') {
+            updateTestModeUI(newVal);
+            showToast(newVal ? 'Test mode enabled' : 'Test mode disabled', 'ok');
+            await loadSession();
+        } else showToast(data.message || 'Failed', 'err');
+    } catch(e) { showToast('Connection error', 'err'); }
+}
+
+// ── Activity Log ──────────────────────────────────────────────
+async function loadLog() {
+    const logList = document.getElementById('logList');
+    logList.innerHTML = '<div class="log-empty">Loading…</div>';
+    try {
+        const url  = SCRIPT_URL + '?action=admin_get_log&adminName=' + encodeURIComponent(admin.name)
+            + '&password=' + encodeURIComponent(getStoredPass());
+        const res  = await fetch(url); const data = await res.json();
+        if (data.status !== 'success') { logList.innerHTML = '<div class="log-empty">Could not load log.</div>'; return; }
+        if (!data.logs || data.logs.length === 0) { logList.innerHTML = '<div class="log-empty">No activity recorded yet.</div>'; return; }
+        logList.innerHTML = data.logs.map(function(log) {
+            const ts = log.timestamp ? new Date(log.timestamp) : null;
+            const timeStr = ts ? ts.toLocaleDateString('en-GB', { day:'numeric', month:'short' }) + ' · ' + ts.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) : '';
+            const session = [log.className, log.year, log.stream ? 'Stream ' + log.stream : ''].filter(Boolean).join(' · ');
+            return '<div class="log-item"><div class="log-dot"></div><div class="log-body"><div class="log-action">' + escHtml(log.action) + '</div><div class="log-meta">' + escHtml(log.adminName) + (session ? ' &nbsp;·&nbsp; ' + escHtml(session) : '') + (timeStr ? ' &nbsp;·&nbsp; ' + timeStr : '') + '</div></div></div>';
+        }).join('');
+    } catch(e) { logList.innerHTML = '<div class="log-empty">Connection error.</div>'; }
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function getStoredPass() {
+    // Password is stored in the session for re-auth on actions after refresh
+    const saved = sessionStorage.getItem('rfs_pass');
+    return saved || document.getElementById('loginPassword').value || '';
+}
+
+// Store password in session on login so it's available after refresh
+const origLogin = window.handleLogin;
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('loginPassword').addEventListener('input', function() {
+        if (this.value) sessionStorage.setItem('rfs_pass', this.value);
+    });
+});
+
+function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
 let toastTimer;
 function showToast(msg, type) {
     const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className   = 'toast ' + (type || '') + ' show';
+    t.textContent = msg; t.className = 'toast ' + (type||'') + ' show';
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { t.classList.remove('show'); }, 3000);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
 }
 </script>
 </body>
