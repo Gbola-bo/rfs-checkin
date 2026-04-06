@@ -230,21 +230,23 @@
 
 
 
-        /* ── Test mode banner ── */
+       /* ── Test mode banner ── */
         .test-mode-banner {
-            display: none;
+            display: none; /* Controlled by JS .show class */
             background: #FFF3CD;
             border-bottom: 2px solid #FFD700;
-            padding: 8px 16px;
+            padding: 10px 16px;
             text-align: center;
             font-size: 12px;
-            font-weight: 600;
+            font-weight: 700;
             color: #856404;
             letter-spacing: 0.03em;
-            position: relative;
-            z-index: 2;
+            width: 100%;
+            /* No position: absolute/relative needed if inside the card flow */
         }
-        .test-mode-banner.show { display: block; }
+        .test-mode-banner.show { 
+            display: block; 
+        }
 
         /* ── Two-stage identity flow ── */
         .identity-card {
@@ -358,9 +360,9 @@
 </head>
 <body>
 
-<div class="test-mode-banner" id="testModeBanner">⚠ Test Mode Active — Your entry will be marked as TEST</div>
-
 <div class="card">
+    <div class="test-mode-banner" id="testModeBanner">⚠ Test Mode Active — Your entry will be marked as TEST</div>
+
     <div class="card-header">
         <div class="school-brand">
             <svg class="logo-mark" viewBox="0 0 1535.61 720.7" width="64" height="30" xmlns="http://www.w3.org/2000/svg">
