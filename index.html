@@ -229,6 +229,23 @@
         .submit-btn:enabled:active { transform: scale(0.98); }
 
 
+
+        /* ── Test mode banner ── */
+        .test-mode-banner {
+            display: none;
+            background: #FFF3CD;
+            border-bottom: 2px solid #FFD700;
+            padding: 8px 16px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: #856404;
+            letter-spacing: 0.03em;
+            position: relative;
+            z-index: 2;
+        }
+        .test-mode-banner.show { display: block; }
+
         /* ── Two-stage identity flow ── */
         .identity-card {
             display: none;
@@ -340,6 +357,8 @@
     </style>
 </head>
 <body>
+
+<div class="test-mode-banner" id="testModeBanner">⚠ Test Mode Active — Your entry will be marked as TEST</div>
 
 <div class="card">
     <div class="card-header">
@@ -462,8 +481,8 @@
 //  CONFIG — update SCRIPT_URL after deploying new Apps Script
 // ════════════════════════════════════════════════════════════
 const SCRIPT_URL     = 'https://script.google.com/macros/s/AKfycbz5nLwhQOijtweajBY-Wyp91fCCaf4znGx54wU6m_PMBL4uTJjO5KGMSWNEGoJMpNfXiw/exec';
-const CAMPUS_LAT     = 6.44075696861908;
-const CAMPUS_LNG     = 3.5009675259516873;
+const CAMPUS_LAT     = 6.440522423936702;
+const CAMPUS_LNG     = 3.500946068280531;
 const MAX_DISTANCE_M = 500;
 
 // ════════════════════════════════════════════════════════════
@@ -499,6 +518,7 @@ const cardTitle         = document.getElementById('cardTitle');
 let userLocation  = null;
 let currentEvent  = null;   // 'SUN', 'SAT-IN', 'SAT-OUT'
 let isOnline      = false;
+let isTestMode    = false;
 
 // ════════════════════════════════════════════════════════════
 //  INIT — runs on page load
@@ -555,21 +575,32 @@ async function fetchSessionStatus() {
 //  Decides what the user sees based on day + open windows
 // ════════════════════════════════════════════════════════════
 function applySessionStatus(data) {
-    const day      = data.dayOfWeek;  // 0=Sun, 6=Sat
+    const day      = data.dayOfWeek;
     const sunOpen  = data.sunOpen;
-    const satMode  = data.satMode;    // CLOSED / CHECKIN-OPEN / CHECKOUT-OPEN
+    const satMode  = data.satMode;
+    const testMode = data.testMode;
+
+    // Update test mode state and banner
+    isTestMode = !!testMode;
+    const banner = document.getElementById('testModeBanner');
+    if (isTestMode) banner.classList.add('show');
+    else banner.classList.remove('show');
 
     // Build session tags
     renderBanner(data);
 
+    // Test mode — always show form regardless of day/time
+    if (testMode) {
+        showForm('SUN');
+        return;
+    }
+
     if (day === 0 && sunOpen) {
-        // Sunday with open window
         showForm('SUN');
         return;
     }
 
     if (day === 6) {
-        // Saturday
         if (satMode === 'CHECKIN-OPEN') {
             showForm('SAT-IN');
             return;
