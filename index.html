@@ -254,11 +254,14 @@
             background: var(--bg-surface);
             border-radius: var(--radius-md);
             padding: 16px;
-            margin-top: 12px;
+            margin-bottom: 16px;
             border: 1.5px solid var(--border-focus);
             animation: fadeSlideIn 0.25s ease both;
         }
         .identity-card.show { display: block; }
+
+        /* Hide the input form while identity card is visible */
+        .identity-card.show ~ form#checkInForm { display: none; }
 
         @keyframes fadeSlideIn {
             from { opacity: 0; transform: translateY(8px); }
@@ -406,6 +409,26 @@
             <div class="closed-icon">🔒</div>
             <div class="closed-title" id="closedTitle">Attendance window is closed</div>
             <div class="closed-msg" id="closedMsg">Check-in is not currently open. Please wait for the session to begin.</div>
+        </div>
+
+        <!-- Stage 2: Identity card — appears above inputs, blocks editing after verify -->
+        <div class="identity-card" id="identityCard">
+            <div class="identity-avatar" id="identityAvatar">?</div>
+            <div class="identity-body">
+                <div class="identity-welcome" id="identityWelcome">Welcome!</div>
+                <div class="identity-sub">Is this you? Confirm to proceed with check-in.</div>
+            </div>
+            <div class="identity-actions">
+                <button class="identity-btn identity-btn-secondary" id="notMeBtn" onclick="resetToStageOne()">
+                    Not me
+                </button>
+                <button class="identity-btn identity-btn-primary" id="checkinBtn">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 8 7 12 13 4"/>
+                    </svg>
+                    <span>Check In Now</span>
+                </button>
+            </div>
         </div>
 
         <!-- Check-in form — shown when a window is active -->
@@ -863,10 +886,12 @@ function showStatus(type, msg) {
 function resetToStageOne() {
     identityCard.classList.remove('show');
     verifiedStudent = null;
+    // Re-enable inputs so student can correct their number
+    yearStreamInput.disabled = false;
+    serialInput.disabled     = false;
     confirmBtn.disabled = false;
-    confirmBtn.innerHTML = `<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>`;
+    confirmBtn.innerHTML = '<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>';
     statusMessage.style.display = 'none';
-    // Refocus serial input so they can correct the number
     serialInput.focus();
     serialInput.select();
 }
@@ -934,19 +959,16 @@ form.addEventListener('submit', async function(e) {
             return;
         }
 
-        // Found — store student and show identity card
-        // Inside the 'verify' success logic:
-        verifiedStudent = data;
-        const initials  = (data.firstName.charAt(0) + data.lastName.charAt(0)).toUpperCase();
-        identityAvatar.textContent   = initials;
-        identityWelcome.textContent  = 'Welcome, ' + data.firstName + ' ' + data.lastName + '!';
-
-        // THIS WAS THE CRASHING LINE:
-        if (btnLabel) {
-            btnLabel.textContent = currentEvent === 'SAT-OUT' ? 'Check Out Now' : 'Check In Now';
-        }
-
-identityCard.classList.add('show');
+        // Found — lock inputs and show identity card
+        verifiedStudent          = data;
+        yearStreamInput.disabled = true;
+        serialInput.disabled     = true;
+        const initials = (data.firstName.charAt(0) + data.lastName.charAt(0)).toUpperCase();
+        identityAvatar.textContent  = initials;
+        identityWelcome.textContent = 'Welcome, ' + data.firstName + ' ' + data.lastName + '!';
+        const _bl3 = document.getElementById('btnLabel');
+        if (_bl3) _bl3.textContent = currentEvent === 'SAT-OUT' ? 'Check Out Now' : 'Check In Now';
+        identityCard.classList.add('show');
 
     } catch(err) {
         showStatus('error', 'Connection error — please check your internet and try again.');
@@ -997,6 +1019,8 @@ checkinBtn.addEventListener('click', async function() {
             serialDisplay.className       = 'ph';
             locPill.style.display         = '';
             verifiedStudent               = null;
+            yearStreamInput.disabled      = false;
+            serialInput.disabled          = false;
             // Reset both buttons cleanly for next student
             confirmBtn.disabled  = true;
             confirmBtn.innerHTML = '<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>';
