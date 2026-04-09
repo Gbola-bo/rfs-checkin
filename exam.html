@@ -12,7 +12,6 @@
         :root {
             --accent:       #2D6A2D;
             --accent-dim:   rgba(45,106,45,0.12);
-            --accent-dark:  #1A4A1A;
             --gold:         #C8960C;
             --gold-dim:     rgba(200,150,12,0.12);
             --success-bg:   #EAF5E4;
@@ -25,7 +24,7 @@
             --border:       rgba(0,0,0,0.09);
             --card:         #FFFFFF;
             --bg-surface:   #F3F5F0;
-            --r-sm: 8px; --r-md: 14px; --r-lg: 22px;
+            --r-sm: 8px; --r-lg: 22px;
             --shadow: 0 8px 48px rgba(0,0,0,0.45), 0 2px 12px rgba(0,0,0,0.25);
         }
 
@@ -33,29 +32,21 @@
             font-family: 'DM Sans', sans-serif;
             background: #1a2a1a;
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
             padding: 24px 16px;
-            position: relative;
-            overflow-x: hidden;
+            position: relative; overflow-x: hidden;
             color: var(--text);
         }
-
         body::before {
-            content: '';
-            position: fixed; inset: 0;
+            content: ''; position: fixed; inset: 0;
             background-image: url('hotr-bg.jpg');
-            background-size: cover;
-            background-position: center 30%;
+            background-size: cover; background-position: center 30%;
             filter: blur(3px) brightness(0.32) saturate(0.6);
-            transform: scale(1.05);
-            z-index: 0;
+            transform: scale(1.05); z-index: 0;
         }
         body::after {
-            content: '';
-            position: fixed; inset: 0;
+            content: ''; position: fixed; inset: 0;
             background: radial-gradient(ellipse at center, transparent 20%, rgba(5,15,5,0.65) 100%);
             z-index: 0;
         }
@@ -65,8 +56,7 @@
             background: var(--card);
             border-radius: var(--r-lg);
             box-shadow: var(--shadow);
-            width: 100%;
-            max-width: 460px;
+            width: 100%; max-width: 460px;
             overflow: hidden;
             animation: rise 0.4s cubic-bezier(.22,.68,0,1.2) both;
         }
@@ -75,26 +65,21 @@
             to   { opacity:1; transform: none; }
         }
 
-        .card-header {
-            padding: 24px 28px 18px;
-            border-bottom: 1px solid var(--border);
-        }
+        .card-header { padding: 24px 28px 18px; border-bottom: 1px solid var(--border); }
         .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
         .brand-text { display: flex; flex-direction: column; gap: 2px; }
-        .brand-name { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #26361b; }
+        .brand-name   { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #26361b; }
         .brand-school { font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #7ac042; }
         .brand-divider { width: 1px; height: 30px; background: rgba(0,0,0,0.12); flex-shrink: 0; }
-
         .exam-title { font-size: 21px; font-weight: 700; color: var(--text); line-height: 1.2; }
-        .exam-meta { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-        .meta-tag { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px; background: var(--bg-surface); color: var(--text-2); }
+        .exam-meta  { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+        .meta-tag   { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px; background: var(--bg-surface); color: var(--text-2); }
         .meta-tag.gold { background: var(--gold-dim); color: var(--gold); }
 
         .screen { display: none; }
         .screen.active { display: block; }
         .card-body { padding: 24px 28px 28px; }
 
-        /* Login screen */
         .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
         .field label { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; }
         .field .hint { font-size: 11px; color: var(--text-3); margin-top: 3px; }
@@ -127,10 +112,10 @@
             transition: opacity 0.15s, transform 0.1s;
         }
         .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-        .btn:enabled:hover { opacity: 0.88; }
+        .btn:enabled:hover  { opacity: 0.88; }
         .btn:enabled:active { transform: scale(0.98); }
         .btn-primary { background: var(--accent); color: #fff; }
-        .btn-gold    { background: var(--gold); color: #fff; }
+        .btn-gold    { background: var(--gold);   color: #fff; }
 
         .status-msg {
             margin-top: 14px; padding: 13px 16px;
@@ -140,29 +125,23 @@
         .status-msg.error   { background: var(--error-bg);   color: var(--error-text);   display: block; }
         .status-msg.success { background: var(--success-bg); color: var(--success-text); display: block; }
 
-        /* Instructions screen */
         .welcome-strip {
-            background: var(--accent-dim);
-            border-radius: var(--r-sm);
-            padding: 14px 16px;
-            margin-bottom: 20px;
+            background: var(--accent-dim); border-radius: var(--r-sm);
+            padding: 14px 16px; margin-bottom: 20px;
             display: flex; align-items: center; gap: 12px;
         }
         .welcome-avatar {
             width: 44px; height: 44px; border-radius: 50%;
             background: var(--accent); color: #fff;
             font-size: 16px; font-weight: 700;
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
         }
         .welcome-name { font-size: 15px; font-weight: 600; color: var(--text); }
         .welcome-reg  { font-size: 12px; color: var(--text-3); font-family: 'DM Mono', monospace; margin-top: 2px; }
 
         .timer-wrap {
-            background: var(--gold-dim);
-            border: 1.5px solid rgba(200,150,12,0.25);
-            border-radius: var(--r-sm);
-            padding: 12px 16px;
+            background: var(--gold-dim); border: 1.5px solid rgba(200,150,12,0.25);
+            border-radius: var(--r-sm); padding: 12px 16px;
             display: flex; align-items: center; justify-content: space-between;
             margin-bottom: 20px;
         }
@@ -170,14 +149,9 @@
         .timer-value { font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 500; color: var(--gold); }
         .timer-value.urgent { color: var(--error-text); }
 
-        .instructions-box {
-            background: var(--bg-surface);
-            border-radius: var(--r-sm);
-            padding: 16px 18px;
-            margin-bottom: 20px;
-        }
+        .instructions-box { background: var(--bg-surface); border-radius: var(--r-sm); padding: 16px 18px; margin-bottom: 20px; }
         .instructions-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-2); margin-bottom: 12px; }
-        .instructions-list { display: flex; flex-direction: column; gap: 8px; }
+        .instructions-list  { display: flex; flex-direction: column; gap: 8px; }
         .inst-row { display: flex; gap: 10px; align-items: flex-start; }
         .inst-num {
             width: 20px; height: 20px; border-radius: 50%;
@@ -196,29 +170,24 @@
             width: 18px; height: 18px; margin-top: 1px;
             accent-color: var(--accent); cursor: pointer; flex-shrink: 0;
         }
-        .confirm-wrap input { border: none; background: none; box-shadow: none; }
         .confirm-label { font-size: 13px; color: var(--text-2); line-height: 1.5; }
 
-        /* Redirecting screen */
         .redirect-wrap { text-align: center; padding: 12px 0; }
         .redirect-spinner {
             width: 44px; height: 44px; border-radius: 50%;
-            border: 3px solid var(--accent-dim);
-            border-top-color: var(--accent);
-            margin: 0 auto 16px;
-            animation: spin 0.8s linear infinite;
+            border: 3px solid var(--accent-dim); border-top-color: var(--accent);
+            margin: 0 auto 16px; animation: spin 0.8s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         .redirect-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
-        .redirect-sub { font-size: 13px; color: var(--text-3); line-height: 1.5; }
-        .redirect-link { display: inline-block; margin-top: 14px; font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: underline; cursor: pointer; }
+        .redirect-sub   { font-size: 13px; color: var(--text-3); line-height: 1.5; }
+        .redirect-link  { display: inline-block; margin-top: 14px; font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: underline; cursor: pointer; }
     </style>
 </head>
 <body>
-
 <div class="card">
 
-    <!-- Header — always visible -->
+    <!-- Header -->
     <div class="card-header">
         <div class="brand">
             <svg viewBox="0 0 1535.61 720.7" width="56" height="26" xmlns="http://www.w3.org/2000/svg">
@@ -276,12 +245,10 @@
                     <div class="welcome-reg"  id="studentReg"></div>
                 </div>
             </div>
-
             <div class="timer-wrap">
                 <span class="timer-label">Time Allowed</span>
                 <span class="timer-value" id="timerDisplay">45:00</span>
             </div>
-
             <div class="instructions-box">
                 <div class="instructions-title">Exam Instructions</div>
                 <div class="instructions-list">
@@ -293,16 +260,12 @@
                     <div class="inst-row"><div class="inst-num">6</div><div class="inst-text">Ensure you are in a quiet environment with a stable internet connection.</div></div>
                 </div>
             </div>
-
             <label class="confirm-wrap">
                 <input type="checkbox" id="confirmCheck" onchange="updateStartBtn()">
                 <span class="confirm-label">I have read and understood the instructions. I confirm this attempt is mine alone.</span>
             </label>
-
             <button class="btn btn-gold" id="startBtn" onclick="handleStart()" disabled>
-                <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M8 5v10l7-5-7-5z"/>
-                </svg>
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M8 5v10l7-5-7-5z"/></svg>
                 Start Exam Now
             </button>
         </div>
@@ -315,16 +278,15 @@
                 <div class="redirect-spinner"></div>
                 <div class="redirect-title">Opening your exam…</div>
                 <div class="redirect-sub">You are being redirected to the exam form.<br>Please do not close this tab.</div>
-                <span class="redirect-link" id="manualLink" onclick="doRedirect()">Click here if not redirected automatically</span>
+                <span class="redirect-link" onclick="doRedirect()">Click here if not redirected automatically</span>
             </div>
         </div>
     </div>
 
 </div>
-
 <script>
 // ════════════════════════════════════════════════════════════
-//  ⚙️  CONFIG — ONLY EDIT THESE TWO LINES
+//  CONFIG
 // ════════════════════════════════════════════════════════════
 const SCRIPT_URL   = 'https://script.google.com/macros/s/AKfycbzbCjk8RA9peuu4nhAy48N5WYRwEmLws1RIQ_mO_wA7T3aPYoG3iR1Qw0x3Ff-1QefYiQ/exec';
 const EXAM_MINUTES = 45;
@@ -334,7 +296,7 @@ const EXAM_MINUTES = 45;
 // ════════════════════════════════════════════════════════════
 let verifiedData  = null;
 let timerInterval = null;
-let secondsLeft   = EXAM_MINUTES ? EXAM_MINUTES * 60 : null;
+let secondsLeft   = EXAM_MINUTES * 60;
 
 // ════════════════════════════════════════════════════════════
 //  DOM REFS
@@ -350,18 +312,15 @@ const codeErr     = document.getElementById('codeErr');
 //  INPUT HANDLING
 // ════════════════════════════════════════════════════════════
 regInput.addEventListener('input', function() {
-    let v = this.value.replace(/[^A-Za-z0-9/]/g, '').toUpperCase();
-    this.value = v;
+    this.value = this.value.replace(/[^A-Za-z0-9/]/g, '').toUpperCase();
     clearErr(regInput, regErr);
     updateLoginBtn();
 });
-
 codeInput.addEventListener('input', function() {
     this.value = this.value.toUpperCase();
     clearErr(codeInput, codeErr);
     updateLoginBtn();
 });
-
 regInput.addEventListener('keydown',  e => { if (e.key === 'Enter') codeInput.focus(); });
 codeInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
 
@@ -370,16 +329,8 @@ function updateLoginBtn() {
     const codeOk = codeInput.value.trim().length >= 4;
     loginBtn.disabled = !(regOk && codeOk);
 }
-
-function showErr(input, el, msg) {
-    input.classList.add('invalid');
-    el.textContent = msg;
-    el.classList.add('show');
-}
-function clearErr(input, el) {
-    input.classList.remove('invalid');
-    el.classList.remove('show');
-}
+function showErr(input, el, msg) { input.classList.add('invalid'); el.textContent = msg; el.classList.add('show'); }
+function clearErr(input, el)     { input.classList.remove('invalid'); el.classList.remove('show'); }
 
 // ════════════════════════════════════════════════════════════
 //  SCREEN TRANSITIONS
@@ -389,108 +340,55 @@ function showScreen(id) {
     document.getElementById(id).classList.add('active');
 }
 
-// ════════════════════════════════════════════════════════════
-//  RESET BUTTON STATE
-// ════════════════════════════════════════════════════════════
 function resetBtn() {
     loginBtn.disabled = false;
-    loginBtn.innerHTML = `
-        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 3H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4"/>
-            <polyline points="16 3 20 7 12 11"/>
-        </svg>
-        Verify & Continue`;
+    loginBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4"/><polyline points="16 3 20 7 12 11"/></svg>Verify & Continue`;
 }
 
 // ════════════════════════════════════════════════════════════
-//  JSONP CALLBACK — Apps Script calls this with the result
+//  STAGE 1 — VERIFY  (plain fetch — same as check-in app)
 // ════════════════════════════════════════════════════════════
-function handleExamResponse(data) {
-    // Remove the script tag we injected
-    const old = document.getElementById('rfs_jsonp');
-    if (old) old.remove();
-
-    if (!data || data.status !== 'success') {
-        loginStatus.textContent = (data && data.message) ? data.message : 'Verification failed. Please try again.';
-        loginStatus.className   = 'status-msg error';
-        resetBtn();
-        return;
-    }
-
-    // ✅ Success
-    verifiedData = data;
-    showInstructions(data);
-}
-
-// ════════════════════════════════════════════════════════════
-//  STAGE 1 — LOGIN / VERIFY
-// ════════════════════════════════════════════════════════════
-function handleLogin() {
+async function handleLogin() {
     const reg  = regInput.value.trim();
     const code = codeInput.value.trim();
 
-    if (!/^RFS\/\d{4}\/\d{3}$/.test(reg)) {
-        showErr(regInput, regErr, 'Format must be RFS/XXXX/XXX');
-        return;
-    }
-    if (code.length < 4) {
-        showErr(codeInput, codeErr, 'Please enter your exam code');
-        return;
-    }
+    if (!/^RFS\/\d{4}\/\d{3}$/.test(reg)) { showErr(regInput, regErr, 'Format must be RFS/XXXX/XXX'); return; }
+    if (code.length < 4)                   { showErr(codeInput, codeErr, 'Please enter your exam code'); return; }
 
-    // UI: loading state
     loginBtn.disabled  = true;
     loginBtn.innerHTML = '<span style="font-size:14px">Verifying…</span>';
-    loginStatus.className    = 'status-msg';
+    loginStatus.className     = 'status-msg';
     loginStatus.style.display = 'none';
 
-    // Remove any previous JSONP script tag
-    const old = document.getElementById('rfs_jsonp');
-    if (old) old.remove();
+    try {
+        const url = SCRIPT_URL
+            + '?action=verify_exam'
+            + '&reg='  + encodeURIComponent(reg)
+            + '&code=' + encodeURIComponent(code)
+            + '&cb='   + Date.now();
 
-    // Build the URL — callback=handleExamResponse tells Apps Script
-    // to wrap its JSON response in our global function name
-    const url = SCRIPT_URL
-        + '?action=verify_exam'
-        + '&reg='      + encodeURIComponent(reg)
-        + '&code='     + encodeURIComponent(code)
-        + '&callback=' + 'handleExamResponse'
-        + '&t='        + Date.now(); // cache-bust
+        const response = await fetch(url);
+        const data     = await response.json();
 
-    // Set a timeout in case Apps Script never responds
-    const timeoutId = setTimeout(function() {
-        const s = document.getElementById('rfs_jsonp');
-        if (s) s.remove();
-        loginStatus.textContent = 'Request timed out. Please check your internet and try again.';
+        if (data.status !== 'success') {
+            loginStatus.textContent = data.message || 'Verification failed. Please try again.';
+            loginStatus.className   = 'status-msg error';
+            resetBtn();
+            return;
+        }
+
+        verifiedData = data;
+        showInstructions(data);
+
+    } catch(err) {
+        loginStatus.textContent = 'Connection error — please check your internet and try again.';
         loginStatus.className   = 'status-msg error';
         resetBtn();
-    }, 20000); // 20 seconds
-
-    // Inject a <script> tag — this bypasses CORS entirely
-    const script   = document.createElement('script');
-    script.id      = 'rfs_jsonp';
-    script.src     = url;
-    script.onerror = function() {
-        clearTimeout(timeoutId);
-        this.remove();
-        loginStatus.textContent = 'Could not reach server. Please check your internet connection.';
-        loginStatus.className   = 'status-msg error';
-        resetBtn();
-    };
-
-    // Wrap the global callback so we can clearTimeout before it fires
-    const originalCallback = window.handleExamResponse;
-    window.handleExamResponse = function(data) {
-        clearTimeout(timeoutId);
-        window.handleExamResponse = originalCallback;
-        originalCallback(data);
-    };
-
-    document.head.appendChild(script);
+    }
 }
 
 // ════════════════════════════════════════════════════════════
-//  STAGE 2 — INSTRUCTIONS + TIMER
+//  STAGE 2 — INSTRUCTIONS
 // ════════════════════════════════════════════════════════════
 function showInstructions(data) {
     const initials = data.firstName
@@ -501,13 +399,8 @@ function showInstructions(data) {
     document.getElementById('studentName').textContent   = 'Welcome, ' + data.name + '!';
     document.getElementById('studentReg').textContent    = data.regNumber;
 
-    if (EXAM_MINUTES) {
-        secondsLeft = EXAM_MINUTES * 60;
-        updateTimerDisplay();
-        document.getElementById('timerDisplay').parentElement.style.display = 'flex';
-    } else {
-        document.getElementById('timerDisplay').parentElement.style.display = 'none';
-    }
+    secondsLeft = EXAM_MINUTES * 60;
+    updateTimerDisplay();
 
     document.getElementById('confirmCheck').checked = false;
     document.getElementById('startBtn').disabled    = true;
@@ -515,12 +408,11 @@ function showInstructions(data) {
 }
 
 function updateTimerDisplay() {
-    if (secondsLeft === null) return;
     const m = Math.floor(secondsLeft / 60);
     const s = secondsLeft % 60;
-    const display = document.getElementById('timerDisplay');
-    display.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-    display.className   = 'timer-value' + (secondsLeft <= 300 ? ' urgent' : '');
+    const d = document.getElementById('timerDisplay');
+    d.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    d.className   = 'timer-value' + (secondsLeft <= 300 ? ' urgent' : '');
 }
 
 function updateStartBtn() {
@@ -528,19 +420,12 @@ function updateStartBtn() {
 }
 
 // ════════════════════════════════════════════════════════════
-//  STAGE 3 — START EXAM + REDIRECT
+//  STAGE 3 — START + REDIRECT
 // ════════════════════════════════════════════════════════════
 function handleStart() {
     if (!verifiedData) return;
     showScreen('screenRedirect');
-
-    if (EXAM_MINUTES) {
-        timerInterval = setInterval(function() {
-            secondsLeft--;
-            if (secondsLeft <= 0) clearInterval(timerInterval);
-        }, 1000);
-    }
-
+    timerInterval = setInterval(() => { secondsLeft--; if (secondsLeft <= 0) clearInterval(timerInterval); }, 1000);
     setTimeout(doRedirect, 1800);
 }
 
