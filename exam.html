@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RFS Examination Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --accent:       #2D6A2D;
+            --accent-dim:   rgba(45,106,45,0.12);
+            --accent-dark:  #1A4A1A;
+            --gold:         #C8960C;
+            --gold-dim:     rgba(200,150,12,0.12);
+            --success-bg:   #EAF5E4;
+            --success-text: #1A5C1A;
+            --error-bg:     #FEF0F0;
+            --error-text:   #C0392B;
+            --text:         #1A2010;
+            --text-2:       #4A5540;
+            --text-3:       #8A9A80;
+            --border:       rgba(0,0,0,0.09);
+            --card:         #FFFFFF;
+            --bg-surface:   #F3F5F0;
+            --r-sm: 8px; --r-md: 14px; --r-lg: 22px;
+            --shadow: 0 8px 48px rgba(0,0,0,0.45), 0 2px 12px rgba(0,0,0,0.25);
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: #1a2a1a;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px;
+            position: relative;
+            overflow-x: hidden;
+            color: var(--text);
+        }
+
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background-image: url('hotr-bg.jpg');
+            background-size: cover;
+            background-position: center 30%;
+            filter: blur(3px) brightness(0.32) saturate(0.6);
+            transform: scale(1.05);
+            z-index: 0;
+        }
+        body::after {
+            content: '';
+            position: fixed; inset: 0;
+            background: radial-gradient(ellipse at center, transparent 20%, rgba(5,15,5,0.65) 100%);
+            z-index: 0;
+        }
+
+        /* ── Card ── */
+        .card {
+            position: relative; z-index: 1;
+            background: var(--card);
+            border-radius: var(--r-lg);
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 460px;
+            overflow: hidden;
+            animation: rise 0.4s cubic-bezier(.22,.68,0,1.2) both;
+        }
+        @keyframes rise {
+            from { opacity:0; transform: translateY(20px) scale(0.97); }
+            to   { opacity:1; transform: none; }
+        }
+
+        /* ── Header ── */
+        .card-header {
+            padding: 24px 28px 18px;
+            border-bottom: 1px solid var(--border);
+        }
+        .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+        .brand-text { display: flex; flex-direction: column; gap: 2px; }
+        .brand-name { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #26361b; }
+        .brand-school { font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #7ac042; }
+        .brand-divider { width: 1px; height: 30px; background: rgba(0,0,0,0.12); flex-shrink: 0; }
+
+        .exam-title { font-size: 21px; font-weight: 700; color: var(--text); line-height: 1.2; }
+        .exam-meta {
+            display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+        }
+        .meta-tag {
+            font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px;
+            background: var(--bg-surface); color: var(--text-2);
+        }
+        .meta-tag.gold { background: var(--gold-dim); color: var(--gold); }
+
+        /* ── Screens ── */
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        .card-body { padding: 24px 28px 28px; }
+
+        /* ── Login screen ── */
+        .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+        .field label { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; }
+        .field .hint { font-size: 11px; color: var(--text-3); margin-top: 3px; }
+        .field .err-text { font-size: 11px; color: var(--error-text); display: none; }
+        .field .err-text.show { display: block; }
+
+        input[type="text"] {
+            width: 100%; height: 46px; padding: 0 14px;
+            background: var(--bg-surface);
+            border: 1.5px solid var(--border);
+            border-radius: var(--r-sm);
+            font-family: 'DM Mono', monospace;
+            font-size: 16px; font-weight: 500;
+            color: var(--text); letter-spacing: 0.05em;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            -webkit-appearance: none;
+            text-transform: uppercase;
+        }
+        input[type="text"]::placeholder { color: var(--text-3); font-size: 14px; letter-spacing: 0; text-transform: none; }
+        input[type="text"]:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px var(--accent-dim); }
+        input[type="text"].invalid { border-color: var(--error-text); box-shadow: 0 0 0 3px rgba(192,57,43,0.1); }
+
+        .btn {
+            width: 100%; height: 50px; border: none;
+            border-radius: var(--r-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 15px; font-weight: 600;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: opacity 0.15s, transform 0.1s;
+        }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn:enabled:hover { opacity: 0.88; }
+        .btn:enabled:active { transform: scale(0.98); }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-gold    { background: var(--gold); color: #fff; }
+
+        .status-msg {
+            margin-top: 14px; padding: 13px 16px;
+            border-radius: var(--r-sm); font-size: 13px; font-weight: 500;
+            text-align: center; display: none; line-height: 1.5;
+        }
+        .status-msg.error   { background: var(--error-bg);   color: var(--error-text);   display: block; }
+        .status-msg.success { background: var(--success-bg); color: var(--success-text); display: block; }
+
+        /* ── Instructions screen ── */
+        .welcome-strip {
+            background: var(--accent-dim);
+            border-radius: var(--r-sm);
+            padding: 14px 16px;
+            margin-bottom: 20px;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .welcome-avatar {
+            width: 44px; height: 44px; border-radius: 50%;
+            background: var(--accent); color: #fff;
+            font-size: 16px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .welcome-name { font-size: 15px; font-weight: 600; color: var(--text); }
+        .welcome-reg  { font-size: 12px; color: var(--text-3); font-family: 'DM Mono', monospace; margin-top: 2px; }
+
+        /* Timer */
+        .timer-wrap {
+            background: var(--gold-dim);
+            border: 1.5px solid rgba(200,150,12,0.25);
+            border-radius: var(--r-sm);
+            padding: 12px 16px;
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .timer-label { font-size: 12px; font-weight: 600; color: var(--gold); text-transform: uppercase; letter-spacing: 0.05em; }
+        .timer-value { font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 500; color: var(--gold); }
+        .timer-value.urgent { color: var(--error-text); }
+
+        /* Instructions list */
+        .instructions-box {
+            background: var(--bg-surface);
+            border-radius: var(--r-sm);
+            padding: 16px 18px;
+            margin-bottom: 20px;
+        }
+        .instructions-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-2); margin-bottom: 12px; }
+        .instructions-list { display: flex; flex-direction: column; gap: 8px; }
+        .inst-row { display: flex; gap: 10px; align-items: flex-start; }
+        .inst-num {
+            width: 20px; height: 20px; border-radius: 50%;
+            background: var(--accent); color: #fff;
+            font-size: 10px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; margin-top: 1px;
+        }
+        .inst-text { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+
+        /* Confirm checkbox */
+        .confirm-wrap {
+            display: flex; align-items: flex-start; gap: 10px;
+            margin-bottom: 16px; cursor: pointer;
+        }
+        .confirm-wrap input[type="checkbox"] {
+            width: 18px; height: 18px; margin-top: 1px;
+            accent-color: var(--accent); cursor: pointer; flex-shrink: 0;
+        }
+        .confirm-wrap input { /* override the text input styles above */ border: none; background: none; box-shadow: none; }
+        .confirm-label { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+
+        /* ── Redirecting screen ── */
+        .redirect-wrap { text-align: center; padding: 12px 0; }
+        .redirect-spinner {
+            width: 44px; height: 44px; border-radius: 50%;
+            border: 3px solid var(--accent-dim);
+            border-top-color: var(--accent);
+            margin: 0 auto 16px;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .redirect-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+        .redirect-sub { font-size: 13px; color: var(--text-3); line-height: 1.5; }
+        .redirect-link { display: inline-block; margin-top: 14px; font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: underline; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+
+    <!-- Header — always visible -->
+    <div class="card-header">
+        <div class="brand">
+            <svg viewBox="0 0 1535.61 720.7" width="56" height="26" xmlns="http://www.w3.org/2000/svg">
+                <path fill="#7ac042" d="M0,693.1l17.76-27.95,78.77-14.93,39.53-55.38c77.39-18.85,157.19-33.28,236.48-44.4,298.97-41.95,607.51-36.4,904.31,19.14,48.81,9.13,92.27,16.51,137.14,38.78,15.07,7.48,54.7,29.33,64.06,41.87,6.62,8.87,11.26,24.98,17.82,34.63,6.09,3.05,24.83,2.93,29.31,6.17,1.19.86,10.43,20.26,10.44,21.53-8.4,1.77-17.28-.18-25.46-.53-172.91-7.3-345.62-20.92-518.95-15.98-120.92,3.45-242.02,15.47-362.82,21.05-167.22,7.73-335,2.5-501.9-11.03-42.2-3.42-84.32-8.22-126.47-11.98v-1Z"/>
+                <path fill="#26361b" d="M905.76,112.87v160.78c24.25-7.17,48.56-17.58,74.47-15.96,28.01,1.75,53.53,16.33,75.81,32.13,50,35.45,119.73,106.25,181.15,113.65,13.1,1.58,26.08-1.17,36.47,9.51,5.34,5.49,12.01,21.51,12.01,28.95v22.47l-64.98,1v45.94c-35.89-4.17-71.67-10.41-107.6-14.86-242.16-30.01-485.68-27.78-727.54,4.01-19.03,2.5-37.9,6.26-57.05,7.91-2.5-13.93-2.65-28.83-1.58-43h-41.99v-31.46c0-3.13,1.55-12.2,2.48-15.5,2.27-8.01,6.95-12.37,15.27-13.7,101.98-.92,204.14,1.97,304.17-19.72,86.33-18.72,163.38-55.83,243.75-90.56.54-17.23-.14-34.53.17-51.77.1-5.48-.09-10.99,0-16.48,15.76-35.82,32.94-71.42,50.13-106.71.93-1.91,1.92-4.24,3-5.99.46-.74,1.51-2.57,1.85-.64Z"/>
+                <path fill="#f6eb19" d="M850.78,242.7c-75.13,29.86-146.12,67.66-224.73,88.6-38.12,10.16-77.21,16.63-116.54,20.16l-1.47-1.58c-9.55-57.54-3.35-116.46,19.35-170.07C583.95,46.3,728.79-28.69,870.99,10.3c109.33,29.97,193.87,126.56,210.72,238.39-1.54.38-2.17-.63-3.28-1.2-7.95-4.12-16.61-11.38-25.03-15.94-30.39-16.47-65.95-25.9-100.59-19.82l-47.04-98.85c-.35-1.93-1.4-.09-1.85.64-1.08,1.75-2.07,4.08-3,5.99-17.19,35.29-34.37,70.89-50.13,106.71-.09,5.49.1,11,0,16.48Z"/>
+            </svg>
+            <div class="brand-divider"></div>
+            <div class="brand-text">
+                <span class="brand-name">House on the Rock Lagos</span>
+                <span class="brand-school">Rock Foundation School</span>
+            </div>
+        </div>
+        <div class="exam-title">FTR Final Examination 2026</div>
+        <div class="exam-meta">
+            <span class="meta-tag">100 Questions</span>
+            <span class="meta-tag gold">45 Minutes</span>
+            <span class="meta-tag">FTR · 2026</span>
+        </div>
+    </div>
+
+    <!-- Screen 1: Login -->
+    <div class="screen active" id="screenLogin">
+        <div class="card-body">
+            <div class="field">
+                <label>Registration Number</label>
+                <input type="text" id="regInput" placeholder="RFS / XXXX / XXX" maxlength="14" autocomplete="off" inputmode="text">
+                <span class="hint">Format: RFS/2601/053</span>
+                <span class="err-text" id="regErr"></span>
+            </div>
+            <div class="field">
+                <label>Exam Access Code</label>
+                <input type="text" id="codeInput" placeholder="Enter your unique code" maxlength="10" autocomplete="off">
+                <span class="hint">Your personal code provided by admin</span>
+                <span class="err-text" id="codeErr"></span>
+            </div>
+            <button class="btn btn-primary" id="loginBtn" onclick="handleLogin()" disabled>
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 3H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4"/>
+                    <polyline points="16 3 20 7 12 11"/>
+                </svg>
+                Verify & Continue
+            </button>
+            <div class="status-msg" id="loginStatus"></div>
+        </div>
+    </div>
+
+    <!-- Screen 2: Instructions -->
+    <div class="screen" id="screenInstructions">
+        <div class="card-body">
+            <!-- Welcome strip -->
+            <div class="welcome-strip">
+                <div class="welcome-avatar" id="studentAvatar">?</div>
+                <div>
+                    <div class="welcome-name" id="studentName">Welcome!</div>
+                    <div class="welcome-reg"  id="studentReg"></div>
+                </div>
+            </div>
+
+            <!-- Countdown timer -->
+            <div class="timer-wrap">
+                <span class="timer-label">Time Allowed</span>
+                <span class="timer-value" id="timerDisplay">45:00</span>
+            </div>
+
+            <!-- Instructions -->
+            <div class="instructions-box">
+                <div class="instructions-title">Exam Instructions</div>
+                <div class="instructions-list">
+                    <div class="inst-row"><div class="inst-num">1</div><div class="inst-text">Do <strong>not</strong> take this exam if you are not physically in class.</div></div>
+                    <div class="inst-row"><div class="inst-num">2</div><div class="inst-text">Attempt <strong>all 100 questions</strong> — 60 multiple choice and 40 true/false.</div></div>
+                    <div class="inst-row"><div class="inst-num">3</div><div class="inst-text">Do <strong>not</strong> submit and retake the exam — a second submission will score zero.</div></div>
+                    <div class="inst-row"><div class="inst-num">4</div><div class="inst-text">Ensure your registration number is pre-filled correctly before answering.</div></div>
+                    <div class="inst-row"><div class="inst-num">5</div><div class="inst-text">You have <strong>45 minutes</strong> from when you click Start Exam.</div></div>
+                    <div class="inst-row"><div class="inst-num">6</div><div class="inst-text">Ensure you are in a quiet environment with a stable internet connection.</div></div>
+                </div>
+            </div>
+
+            <!-- Confirm checkbox -->
+            <label class="confirm-wrap">
+                <input type="checkbox" id="confirmCheck" onchange="updateStartBtn()">
+                <span class="confirm-label">I have read and understood the instructions. I confirm this attempt is mine alone.</span>
+            </label>
+
+            <button class="btn btn-gold" id="startBtn" onclick="handleStart()" disabled>
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M8 5v10l7-5-7-5z"/>
+                </svg>
+                Start Exam Now
+            </button>
+        </div>
+    </div>
+
+    <!-- Screen 3: Redirecting -->
+    <div class="screen" id="screenRedirect">
+        <div class="card-body">
+            <div class="redirect-wrap">
+                <div class="redirect-spinner"></div>
+                <div class="redirect-title">Opening your exam…</div>
+                <div class="redirect-sub">You are being redirected to the exam form.<br>Please do not close this tab.</div>
+                <span class="redirect-link" id="manualLink" onclick="doRedirect()">Click here if not redirected automatically</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  CONFIG
+// ════════════════════════════════════════════════════════════
+const SCRIPT_URL   = 'PASTE_YOUR_EXAM_APPS_SCRIPT_URL_HERE';
+const EXAM_MINUTES = 45; // TIMER_ENFORCE — comment this line to disable timer
+// const EXAM_MINUTES = null; // Uncomment this line to disable timer
+
+// ════════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════════
+let verifiedData = null;  // { name, firstName, formUrl, regNumber }
+let timerInterval = null;
+let secondsLeft   = EXAM_MINUTES ? EXAM_MINUTES * 60 : null;
+
+// ════════════════════════════════════════════════════════════
+//  DOM REFS
+// ════════════════════════════════════════════════════════════
+const regInput    = document.getElementById('regInput');
+const codeInput   = document.getElementById('codeInput');
+const loginBtn    = document.getElementById('loginBtn');
+const loginStatus = document.getElementById('loginStatus');
+const regErr      = document.getElementById('regErr');
+const codeErr     = document.getElementById('codeErr');
+
+// ════════════════════════════════════════════════════════════
+//  INPUT HANDLING
+// ════════════════════════════════════════════════════════════
+regInput.addEventListener('input', function() {
+    // Auto-format as RFS/XXXX/XXX
+    let v = this.value.replace(/[^A-Za-z0-9/]/g, '').toUpperCase();
+    this.value = v;
+    clearErr(regInput, regErr);
+    updateLoginBtn();
+});
+
+codeInput.addEventListener('input', function() {
+    this.value = this.value.toUpperCase();
+    clearErr(codeInput, codeErr);
+    updateLoginBtn();
+});
+
+regInput.addEventListener('keydown',  e => { if (e.key === 'Enter') codeInput.focus(); });
+codeInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+
+function updateLoginBtn() {
+    const regOk  = /^RFS\/\d{4}\/\d{3}$/.test(regInput.value.trim());
+    const codeOk = codeInput.value.trim().length >= 4;
+    loginBtn.disabled = !(regOk && codeOk);
+}
+
+function showErr(input, el, msg) {
+    input.classList.add('invalid');
+    el.textContent = msg; el.classList.add('show');
+}
+function clearErr(input, el) {
+    input.classList.remove('invalid');
+    el.classList.remove('show');
+}
+
+// ════════════════════════════════════════════════════════════
+//  SCREEN TRANSITIONS
+// ════════════════════════════════════════════════════════════
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+// ════════════════════════════════════════════════════════════
+//  STAGE 1 — LOGIN / VERIFY
+// ════════════════════════════════════════════════════════════
+async function handleLogin() {
+    const reg  = regInput.value.trim();
+    const code = codeInput.value.trim();
+
+    if (!/^RFS\/\d{4}\/\d{3}$/.test(reg)) {
+        showErr(regInput, regErr, 'Format must be RFS/XXXX/XXX');
+        return;
+    }
+    if (code.length < 4) {
+        showErr(codeInput, codeErr, 'Please enter your exam code');
+        return;
+    }
+
+    loginBtn.disabled  = true;
+    loginBtn.innerHTML = '<span style="font-size:14px">Verifying…</span>';
+    loginStatus.style.display = 'none';
+    loginStatus.className = 'status-msg';
+
+    try {
+        const url = SCRIPT_URL
+            + '?action=verify_exam'
+            + '&reg='  + encodeURIComponent(reg)
+            + '&code=' + encodeURIComponent(code)
+            + '&cb='   + Date.now();
+
+        const res  = await fetch(url);
+        const data = await res.json();
+
+        if (data.status !== 'success') {
+            loginStatus.textContent  = data.message || 'Verification failed. Please try again.';
+            loginStatus.className    = 'status-msg error';
+            loginBtn.disabled        = false;
+            loginBtn.innerHTML       = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4"/><polyline points="16 3 20 7 12 11"/></svg>Verify & Continue';
+            return;
+        }
+
+        // Success — store and move to instructions
+        verifiedData = data;
+        showInstructions(data);
+
+    } catch(err) {
+        loginStatus.textContent = 'Connection error — please check your internet and try again.';
+        loginStatus.className   = 'status-msg error';
+        loginBtn.disabled       = false;
+        loginBtn.innerHTML      = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4"/><polyline points="16 3 20 7 12 11"/></svg>Verify & Continue';
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+//  STAGE 2 — INSTRUCTIONS + TIMER
+// ════════════════════════════════════════════════════════════
+function showInstructions(data) {
+    const initials = data.firstName
+        ? (data.firstName.charAt(0) + (data.name.split(' ').pop() || '').charAt(0)).toUpperCase()
+        : data.name.substring(0, 2).toUpperCase();
+
+    document.getElementById('studentAvatar').textContent = initials;
+    document.getElementById('studentName').textContent   = 'Welcome, ' + data.name + '!';
+    document.getElementById('studentReg').textContent    = data.regNumber;
+
+    // Handle timer display
+    if (EXAM_MINUTES) { // TIMER_ENFORCE
+        secondsLeft = EXAM_MINUTES * 60;
+        updateTimerDisplay();
+        document.getElementById('timerDisplay').parentElement.style.display = 'flex';
+    } else {
+        document.getElementById('timerDisplay').parentElement.style.display = 'none';
+    }
+
+    document.getElementById('confirmCheck').checked = false;
+    document.getElementById('startBtn').disabled = true;
+    showScreen('screenInstructions');
+}
+
+function updateTimerDisplay() {
+    if (secondsLeft === null) return;
+    const m = Math.floor(secondsLeft / 60);
+    const s = secondsLeft % 60;
+    const display = document.getElementById('timerDisplay');
+    display.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    display.className   = 'timer-value' + (secondsLeft <= 300 ? ' urgent' : '');
+}
+
+function updateStartBtn() {
+    document.getElementById('startBtn').disabled = !document.getElementById('confirmCheck').checked;
+}
+
+// ════════════════════════════════════════════════════════════
+//  STAGE 3 — START EXAM + REDIRECT
+// ════════════════════════════════════════════════════════════
+function handleStart() {
+    if (!verifiedData) return;
+    showScreen('screenRedirect');
+
+    // Start countdown timer if enabled
+    if (EXAM_MINUTES) { // TIMER_ENFORCE
+        timerInterval = setInterval(function() {
+            secondsLeft--;
+            if (secondsLeft <= 0) {
+                clearInterval(timerInterval);
+                // Timer expired — redirect anyway, Google Form submission handles cutoff
+            }
+        }, 1000);
+    }
+
+    // Redirect after brief delay so student sees the screen
+    setTimeout(doRedirect, 1800);
+}
+
+function doRedirect() {
+    if (!verifiedData || !verifiedData.formUrl) return;
+    window.location.href = verifiedData.formUrl;
+}
+</script>
+</body>
+</html>
