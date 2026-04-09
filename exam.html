@@ -60,7 +60,6 @@
             z-index: 0;
         }
 
-        /* ── Card ── */
         .card {
             position: relative; z-index: 1;
             background: var(--card);
@@ -76,7 +75,6 @@
             to   { opacity:1; transform: none; }
         }
 
-        /* ── Header ── */
         .card-header {
             padding: 24px 28px 18px;
             border-bottom: 1px solid var(--border);
@@ -88,22 +86,15 @@
         .brand-divider { width: 1px; height: 30px; background: rgba(0,0,0,0.12); flex-shrink: 0; }
 
         .exam-title { font-size: 21px; font-weight: 700; color: var(--text); line-height: 1.2; }
-        .exam-meta {
-            display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap;
-        }
-        .meta-tag {
-            font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px;
-            background: var(--bg-surface); color: var(--text-2);
-        }
+        .exam-meta { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+        .meta-tag { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px; background: var(--bg-surface); color: var(--text-2); }
         .meta-tag.gold { background: var(--gold-dim); color: var(--gold); }
 
-        /* ── Screens ── */
         .screen { display: none; }
         .screen.active { display: block; }
-
         .card-body { padding: 24px 28px 28px; }
 
-        /* ── Login screen ── */
+        /* Login screen */
         .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
         .field label { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; }
         .field .hint { font-size: 11px; color: var(--text-3); margin-top: 3px; }
@@ -149,7 +140,7 @@
         .status-msg.error   { background: var(--error-bg);   color: var(--error-text);   display: block; }
         .status-msg.success { background: var(--success-bg); color: var(--success-text); display: block; }
 
-        /* ── Instructions screen ── */
+        /* Instructions screen */
         .welcome-strip {
             background: var(--accent-dim);
             border-radius: var(--r-sm);
@@ -167,7 +158,6 @@
         .welcome-name { font-size: 15px; font-weight: 600; color: var(--text); }
         .welcome-reg  { font-size: 12px; color: var(--text-3); font-family: 'DM Mono', monospace; margin-top: 2px; }
 
-        /* Timer */
         .timer-wrap {
             background: var(--gold-dim);
             border: 1.5px solid rgba(200,150,12,0.25);
@@ -180,7 +170,6 @@
         .timer-value { font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 500; color: var(--gold); }
         .timer-value.urgent { color: var(--error-text); }
 
-        /* Instructions list */
         .instructions-box {
             background: var(--bg-surface);
             border-radius: var(--r-sm);
@@ -199,7 +188,6 @@
         }
         .inst-text { font-size: 13px; color: var(--text-2); line-height: 1.5; }
 
-        /* Confirm checkbox */
         .confirm-wrap {
             display: flex; align-items: flex-start; gap: 10px;
             margin-bottom: 16px; cursor: pointer;
@@ -208,10 +196,10 @@
             width: 18px; height: 18px; margin-top: 1px;
             accent-color: var(--accent); cursor: pointer; flex-shrink: 0;
         }
-        .confirm-wrap input { /* override the text input styles above */ border: none; background: none; box-shadow: none; }
+        .confirm-wrap input { border: none; background: none; box-shadow: none; }
         .confirm-label { font-size: 13px; color: var(--text-2); line-height: 1.5; }
 
-        /* ── Redirecting screen ── */
+        /* Redirecting screen */
         .redirect-wrap { text-align: center; padding: 12px 0; }
         .redirect-spinner {
             width: 44px; height: 44px; border-radius: 50%;
@@ -281,7 +269,6 @@
     <!-- Screen 2: Instructions -->
     <div class="screen" id="screenInstructions">
         <div class="card-body">
-            <!-- Welcome strip -->
             <div class="welcome-strip">
                 <div class="welcome-avatar" id="studentAvatar">?</div>
                 <div>
@@ -290,13 +277,11 @@
                 </div>
             </div>
 
-            <!-- Countdown timer -->
             <div class="timer-wrap">
                 <span class="timer-label">Time Allowed</span>
                 <span class="timer-value" id="timerDisplay">45:00</span>
             </div>
 
-            <!-- Instructions -->
             <div class="instructions-box">
                 <div class="instructions-title">Exam Instructions</div>
                 <div class="instructions-list">
@@ -309,7 +294,6 @@
                 </div>
             </div>
 
-            <!-- Confirm checkbox -->
             <label class="confirm-wrap">
                 <input type="checkbox" id="confirmCheck" onchange="updateStartBtn()">
                 <span class="confirm-label">I have read and understood the instructions. I confirm this attempt is mine alone.</span>
@@ -340,16 +324,15 @@
 
 <script>
 // ════════════════════════════════════════════════════════════
-//  CONFIG
+//  ⚙️  CONFIG — ONLY EDIT THESE TWO LINES
 // ════════════════════════════════════════════════════════════
 const SCRIPT_URL   = 'https://script.google.com/macros/s/AKfycbzbCjk8RA9peuu4nhAy48N5WYRwEmLws1RIQ_mO_wA7T3aPYoG3iR1Qw0x3Ff-1QefYiQ/exec';
-const EXAM_MINUTES = 45; // TIMER_ENFORCE — comment this line to disable timer
-// const EXAM_MINUTES = null; // Uncomment this line to disable timer
+const EXAM_MINUTES = 45;
 
 // ════════════════════════════════════════════════════════════
 //  STATE
 // ════════════════════════════════════════════════════════════
-let verifiedData = null;  // { name, firstName, formUrl, regNumber }
+let verifiedData  = null;
 let timerInterval = null;
 let secondsLeft   = EXAM_MINUTES ? EXAM_MINUTES * 60 : null;
 
@@ -367,7 +350,6 @@ const codeErr     = document.getElementById('codeErr');
 //  INPUT HANDLING
 // ════════════════════════════════════════════════════════════
 regInput.addEventListener('input', function() {
-    // Auto-format as RFS/XXXX/XXX
     let v = this.value.replace(/[^A-Za-z0-9/]/g, '').toUpperCase();
     this.value = v;
     clearErr(regInput, regErr);
@@ -391,7 +373,8 @@ function updateLoginBtn() {
 
 function showErr(input, el, msg) {
     input.classList.add('invalid');
-    el.textContent = msg; el.classList.add('show');
+    el.textContent = msg;
+    el.classList.add('show');
 }
 function clearErr(input, el) {
     input.classList.remove('invalid');
@@ -407,9 +390,42 @@ function showScreen(id) {
 }
 
 // ════════════════════════════════════════════════════════════
+//  RESET BUTTON STATE
+// ════════════════════════════════════════════════════════════
+function resetBtn() {
+    loginBtn.disabled = false;
+    loginBtn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 3H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4"/>
+            <polyline points="16 3 20 7 12 11"/>
+        </svg>
+        Verify & Continue`;
+}
+
+// ════════════════════════════════════════════════════════════
+//  JSONP CALLBACK — Apps Script calls this with the result
+// ════════════════════════════════════════════════════════════
+function handleExamResponse(data) {
+    // Remove the script tag we injected
+    const old = document.getElementById('rfs_jsonp');
+    if (old) old.remove();
+
+    if (!data || data.status !== 'success') {
+        loginStatus.textContent = (data && data.message) ? data.message : 'Verification failed. Please try again.';
+        loginStatus.className   = 'status-msg error';
+        resetBtn();
+        return;
+    }
+
+    // ✅ Success
+    verifiedData = data;
+    showInstructions(data);
+}
+
+// ════════════════════════════════════════════════════════════
 //  STAGE 1 — LOGIN / VERIFY
 // ════════════════════════════════════════════════════════════
-async function handleLogin() {
+function handleLogin() {
     const reg  = regInput.value.trim();
     const code = codeInput.value.trim();
 
@@ -422,64 +438,55 @@ async function handleLogin() {
         return;
     }
 
+    // UI: loading state
     loginBtn.disabled  = true;
     loginBtn.innerHTML = '<span style="font-size:14px">Verifying…</span>';
+    loginStatus.className    = 'status-msg';
     loginStatus.style.display = 'none';
-    loginStatus.className = 'status-msg';
 
-    try {
-        const url = SCRIPT_URL
-            + '?action=verify_exam'
-            + '&reg='  + encodeURIComponent(reg)
-            + '&code=' + encodeURIComponent(code)
-            + '&cb='   + Date.now();
+    // Remove any previous JSONP script tag
+    const old = document.getElementById('rfs_jsonp');
+    if (old) old.remove();
 
-        // Use JSONP to avoid CORS issues with Apps Script
-    const data = await new Promise((resolve, reject) => {
-        const cbName = 'rfs_cb_' + Date.now();
-        const script = document.createElement('script');
-        
-        const timeout = setTimeout(() => {
-            delete window[cbName];
-            script.remove();
-            reject(new Error('timeout'));
-        }, 15000);
+    // Build the URL — callback=handleExamResponse tells Apps Script
+    // to wrap its JSON response in our global function name
+    const url = SCRIPT_URL
+        + '?action=verify_exam'
+        + '&reg='      + encodeURIComponent(reg)
+        + '&code='     + encodeURIComponent(code)
+        + '&callback=' + 'handleExamResponse'
+        + '&t='        + Date.now(); // cache-bust
 
-        window[cbName] = function(response) {
-            clearTimeout(timeout);
-            delete window[cbName];
-            script.remove();
-            resolve(response);
-        };
-
-        script.src = url + '&callback=' + cbName;
-        script.onerror = () => {
-            clearTimeout(timeout);
-            delete window[cbName];
-            script.remove();
-            reject(new Error('Script load error'));
-        };
-        document.head.appendChild(script);
-    });
-
-        if (data.status !== 'success') {
-            loginStatus.textContent  = data.message || 'Verification failed. Please try again.';
-            loginStatus.className    = 'status-msg error';
-            loginBtn.disabled        = false;
-            loginBtn.innerHTML       = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4"/><polyline points="16 3 20 7 12 11"/></svg>Verify & Continue';
-            return;
-        }
-
-        // Success — store and move to instructions
-        verifiedData = data;
-        showInstructions(data);
-
-    } catch(err) {
-        loginStatus.textContent = 'Connection error — please check your internet and try again.';
+    // Set a timeout in case Apps Script never responds
+    const timeoutId = setTimeout(function() {
+        const s = document.getElementById('rfs_jsonp');
+        if (s) s.remove();
+        loginStatus.textContent = 'Request timed out. Please check your internet and try again.';
         loginStatus.className   = 'status-msg error';
-        loginBtn.disabled       = false;
-        loginBtn.innerHTML      = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4"/><polyline points="16 3 20 7 12 11"/></svg>Verify & Continue';
-    }
+        resetBtn();
+    }, 20000); // 20 seconds
+
+    // Inject a <script> tag — this bypasses CORS entirely
+    const script   = document.createElement('script');
+    script.id      = 'rfs_jsonp';
+    script.src     = url;
+    script.onerror = function() {
+        clearTimeout(timeoutId);
+        this.remove();
+        loginStatus.textContent = 'Could not reach server. Please check your internet connection.';
+        loginStatus.className   = 'status-msg error';
+        resetBtn();
+    };
+
+    // Wrap the global callback so we can clearTimeout before it fires
+    const originalCallback = window.handleExamResponse;
+    window.handleExamResponse = function(data) {
+        clearTimeout(timeoutId);
+        window.handleExamResponse = originalCallback;
+        originalCallback(data);
+    };
+
+    document.head.appendChild(script);
 }
 
 // ════════════════════════════════════════════════════════════
@@ -494,8 +501,7 @@ function showInstructions(data) {
     document.getElementById('studentName').textContent   = 'Welcome, ' + data.name + '!';
     document.getElementById('studentReg').textContent    = data.regNumber;
 
-    // Handle timer display
-    if (EXAM_MINUTES) { // TIMER_ENFORCE
+    if (EXAM_MINUTES) {
         secondsLeft = EXAM_MINUTES * 60;
         updateTimerDisplay();
         document.getElementById('timerDisplay').parentElement.style.display = 'flex';
@@ -504,7 +510,7 @@ function showInstructions(data) {
     }
 
     document.getElementById('confirmCheck').checked = false;
-    document.getElementById('startBtn').disabled = true;
+    document.getElementById('startBtn').disabled    = true;
     showScreen('screenInstructions');
 }
 
@@ -528,18 +534,13 @@ function handleStart() {
     if (!verifiedData) return;
     showScreen('screenRedirect');
 
-    // Start countdown timer if enabled
-    if (EXAM_MINUTES) { // TIMER_ENFORCE
+    if (EXAM_MINUTES) {
         timerInterval = setInterval(function() {
             secondsLeft--;
-            if (secondsLeft <= 0) {
-                clearInterval(timerInterval);
-                // Timer expired — redirect anyway, Google Form submission handles cutoff
-            }
+            if (secondsLeft <= 0) clearInterval(timerInterval);
         }, 1000);
     }
 
-    // Redirect after brief delay so student sees the screen
     setTimeout(doRedirect, 1800);
 }
 
