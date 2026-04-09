@@ -312,7 +312,7 @@ const codeErr     = document.getElementById('codeErr');
 //  INPUT HANDLING
 // ════════════════════════════════════════════════════════════
 regInput.addEventListener('input', function() {
-    this.value = this.value.replace(/[^A-Za-z0-9/]/g, '').toUpperCase();
+    this.value = this.value.replace(/[^A-Za-z0-9\/]/g, '').toUpperCase();
     clearErr(regInput, regErr);
     updateLoginBtn();
 });
@@ -322,6 +322,8 @@ codeInput.addEventListener('input', function() {
     updateLoginBtn();
 });
 regInput.addEventListener('keydown',  e => { if (e.key === 'Enter') codeInput.focus(); });
+regInput.addEventListener('paste',  () => setTimeout(updateLoginBtn, 0));
+codeInput.addEventListener('paste', () => setTimeout(updateLoginBtn, 0));
 codeInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
 
 function updateLoginBtn() {
