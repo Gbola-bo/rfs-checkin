@@ -430,7 +430,56 @@ function handleStart() {
 
 function doRedirect() {
     if (!verifiedData || !verifiedData.formUrl) return;
-    window.location.href = verifiedData.formUrl;
+
+    // Open form in a new tab — URL never appears in this tab's address bar
+    window.open(verifiedData.formUrl, '_blank');
+
+    // Wipe the form URL from memory immediately
+    verifiedData.formUrl = null;
+
+    // Replace this tab's content with a neutral holding page
+    // (uses replace so the form URL is not in browser history either)
+    document.open();
+    document.write(`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RFS Examination Portal</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #1a2a1a;
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    text-align: center;
+    padding: 24px;
+  }
+  .wrap { max-width: 420px; }
+  .icon { font-size: 48px; margin-bottom: 20px; }
+  h2 { font-size: 22px; font-weight: 700; margin-bottom: 12px; color: #7ac042; }
+  p  { font-size: 14px; color: rgba(255,255,255,0.65); line-height: 1.6; }
+  .reg { font-family: monospace; font-size: 13px; margin-top: 16px;
+         background: rgba(255,255,255,0.08); padding: 8px 16px;
+         border-radius: 8px; display: inline-block; color: #7ac042; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="icon">✅</div>
+  <h2>Your exam is open</h2>
+  <p>Your exam form has been opened in a new tab.<br>
+     Please complete it there. Do not close that tab until you have submitted.</p>
+  <div class="reg">${verifiedData.regNumber}</div>
+  <p style="margin-top:20px; font-size:12px; color:rgba(255,255,255,0.35);">
+     This page is intentionally blank. Do not refresh or navigate back.
+  </p>
+</div>
+</body>
+</html>`);
+    document.close();
 }
 </script>
 </body>
