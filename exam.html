@@ -434,8 +434,33 @@ async function handleLogin() {
             + '&code=' + encodeURIComponent(code)
             + '&cb='   + Date.now();
 
-        const res  = await fetch(url);
-        const data = await res.json();
+        // Use JSONP to avoid CORS issues with Apps Script
+    const data = await new Promise((resolve, reject) => {
+        const cbName = 'rfs_cb_' + Date.now();
+        const script = document.createElement('script');
+        
+        const timeout = setTimeout(() => {
+            delete window[cbName];
+            script.remove();
+            reject(new Error('timeout'));
+        }, 15000);
+
+        window[cbName] = function(response) {
+            clearTimeout(timeout);
+            delete window[cbName];
+            script.remove();
+            resolve(response);
+        };
+
+        script.src = url + '&callback=' + cbName;
+        script.onerror = () => {
+            clearTimeout(timeout);
+            delete window[cbName];
+            script.remove();
+            reject(new Error('Script load error'));
+        };
+        document.head.appendChild(script);
+    });
 
         if (data.status !== 'success') {
             loginStatus.textContent  = data.message || 'Verification failed. Please try again.';
