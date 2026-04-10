@@ -346,6 +346,28 @@ function resetBtn() {
 }
 
 // ════════════════════════════════════════════════════════════
+//  URL OBFUSCATION — XOR cipher, key = exam code
+//  The form URL is never transmitted in plaintext.
+//  Apps Script encodes it; HTML decodes it using the code
+//  the student already typed — which is never sent back.
+// ════════════════════════════════════════════════════════════
+function xorDecode(encoded, key) {
+    try {
+        const bytes  = atob(encoded);
+        const keyStr = key.toUpperCase();
+        let   result = '';
+        for (let i = 0; i < bytes.length; i++) {
+            result += String.fromCharCode(
+                bytes.charCodeAt(i) ^ keyStr.charCodeAt(i % keyStr.length)
+            );
+        }
+        return result;
+    } catch(e) {
+        return null;
+    }
+}
+
+// ════════════════════════════════════════════════════════════
 //  STAGE 1 — VERIFY  (plain fetch — same as check-in app)
 // ════════════════════════════════════════════════════════════
 async function handleLogin() {
@@ -376,6 +398,9 @@ async function handleLogin() {
             return;
         }
 
+        // Decode the obfuscated form URL using the exam code as key
+        // The raw formUrl is never sent — only an obfuscated version
+        data.formUrl = xorDecode(data.encodedUrl, code);
         verifiedData = data;
         showInstructions(data);
 
