@@ -300,6 +300,31 @@
         }
         #iframeBlockedBanner a { color: #C0392B; font-weight: 700; }
 
+        /* ── Exam closed banner on login screen ── */
+        #examClosedBanner {
+            display: none;
+            background: #FEF3C7; color: #92400E;
+            border-radius: var(--r-sm);
+            padding: 12px 16px; margin-bottom: 14px;
+            font-size: 13px; font-weight: 500;
+            line-height: 1.5; text-align: center;
+        }
+        #examClosedBanner.show { display: block; }
+        #examClosedBanner .closed-title {
+            font-weight: 700; font-size: 14px;
+            display: block; margin-bottom: 4px;
+        }
+        #examClosedBanner .closed-pulse {
+            display: inline-block; width: 8px; height: 8px;
+            background: #92400E; border-radius: 50%;
+            margin-right: 6px; vertical-align: middle;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%       { opacity: 0.4; transform: scale(0.7); }
+        }
+
         /* ── Location pill ── */
         .loc-pill { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 99px; white-space: nowrap; flex-shrink: 0; }
         .loc-pill.loading { background: #FEF3C7; color: #92400E; }
@@ -364,6 +389,14 @@
     <!-- Screen 1: Login -->
     <div class="screen active" id="screenLogin">
         <div class="card-body">
+            <!-- Exam closed banner — shown when ExamOpen = FALSE -->
+            <div id="examClosedBanner">
+                <span class="closed-title">
+                    <span class="closed-pulse"></span>Exam Not Yet Open
+                </span>
+                The exam window is not currently open. Please wait — this page will update automatically when your coordinator opens it.
+            </div>
+
             <div class="field">
                 <label>Registration Number</label>
                 <input type="text" id="regInput" placeholder="RFS / XXXX / XXX" maxlength="14" autocomplete="off" inputmode="text">
@@ -517,6 +550,8 @@ let secondsLeft     = EXAM_MINUTES * 60;
 let userLocation    = null;   // { latitude, longitude }
 let studentType     = null;   // 'PHYSICAL' or 'ONLINE'
 let examInProgress  = false;  // true while iframe exam is open
+let examIsOpen      = false;  // result of background check_exam_open poll
+let examOpenPoller  = null;   // interval ID for background polling
 
 const CAMPUS_LAT     = 7.1873914349294274;
 const CAMPUS_LNG     = 3.3713889900500704;
@@ -561,7 +596,8 @@ function updateLoginBtn() {
         locationOk = pill && pill.classList.contains('ok');
     }
 
-    loginBtn.disabled = !(regOk && codeOk && onlineOk && locationOk);
+    // Exam must be open (from background check)
+    loginBtn.disabled = !(regOk && codeOk && onlineOk && locationOk && examIsOpen);
 }
 
 function handleOnlineToggle() {
@@ -612,6 +648,116 @@ function xorDecode(encoded, key) {
 }
 
 // ════════════════════════════════════════════════════════════
+//  SESSION PERSISTENCE — survives refresh/reload on mobile
+// ════════════════════════════════════════════════════════════
+function saveSession(examStarted) {
+    if (!verifiedData) return;
+    try {
+        const session = {
+            verifiedData : verifiedData,
+            studentType  : studentType,
+            examStarted  : examStarted || false,
+            startedAt    : examStarted
+                ? (JSON.parse(sessionStorage.getItem('rfsExamSession') || '{}').startedAt || Date.now())
+                : null,
+            savedAt      : Date.now()
+        };
+        sessionStorage.setItem('rfsExamSession', JSON.stringify(session));
+    } catch(e) { /* sessionStorage unavailable — silent fail */ }
+}
+
+function clearSession() {
+    try { sessionStorage.removeItem('rfsExamSession'); } catch(e) {}
+}
+
+function restoreSession() {
+    try {
+        const raw = sessionStorage.getItem('rfsExamSession');
+        if (!raw) return false;
+
+        const session = JSON.parse(raw);
+        if (!session.verifiedData || !session.verifiedData.formUrl) return false;
+
+        // Check session hasn't expired (EXAM_MINUTES + 5 min grace)
+        const maxAge = (EXAM_MINUTES + 5) * 60 * 1000;
+        const age    = Date.now() - (session.startedAt || session.savedAt);
+        if (age > maxAge) { clearSession(); return false; }
+
+        // Restore state
+        verifiedData = session.verifiedData;
+        studentType  = session.studentType;
+
+        if (session.examStarted && session.startedAt) {
+            // Calculate remaining time from when exam actually started
+            const elapsed = Math.floor((Date.now() - session.startedAt) / 1000);
+            secondsLeft   = Math.max(0, EXAM_MINUTES * 60 - elapsed);
+
+            if (secondsLeft <= 0) {
+                // Time already expired — clear and show time-up
+                clearSession();
+                // Brief delay so DOM is ready
+                setTimeout(() => {
+                    document.getElementById('barReg').textContent = verifiedData.regNumber || '';
+                    document.getElementById('timeUpReg').textContent = verifiedData.regNumber || '';
+                    document.getElementById('timeUpScreen').classList.add('active');
+                }, 100);
+                return true;
+            }
+
+            // Reopen exam iframe
+            setTimeout(() => reopenExam(), 100);
+            return true;
+        }
+
+        // Was on instructions screen — restore that
+        setTimeout(() => showInstructions(verifiedData), 100);
+        return true;
+
+    } catch(e) { return false; }
+}
+
+function reopenExam() {
+    if (!verifiedData || !verifiedData.formUrl) return;
+
+    // Populate bar
+    document.getElementById('barReg').textContent = verifiedData.regNumber || '';
+    if (studentType === 'ONLINE') {
+        document.getElementById('barOnlineBadge').style.display = 'inline-block';
+    }
+
+    // Update bar timer display immediately with restored time
+    const m = Math.floor(secondsLeft / 60);
+    const s = secondsLeft % 60;
+    const el = document.getElementById('barTimer');
+    el.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    el.className   = 'bar-timer' + (secondsLeft <= 300 ? ' urgent' : '');
+
+    // Reload the form (pre-filled URL still valid)
+    const frame = document.getElementById('examFrame');
+    frame.src = verifiedData.formUrl;
+
+    // Show overlay + submit bar
+    document.getElementById('examOverlay').classList.add('active');
+    document.getElementById('submitBar').classList.add('visible');
+    document.body.style.overflow = 'hidden';
+
+    // Wipe URL from memory
+    verifiedData.formUrl = null;
+    saveSession(true);
+
+    examInProgress = true;
+    startBarTimer();
+
+    // Iframe block detection
+    setTimeout(() => {
+        try {
+            const test = frame.contentWindow.location.href;
+            // reachable = about:blank = blocked
+        } catch(e) { /* cross-origin = fine */ }
+    }, 5000);
+}
+
+// ════════════════════════════════════════════════════════════
 //  GEOLOCATION
 // ════════════════════════════════════════════════════════════
 function calcDistance(lat1, lon1, lat2, lon2) {
@@ -659,6 +805,48 @@ function setLocPill(text, state) {
 }
 
 // ════════════════════════════════════════════════════════════
+//  EXAM OPEN CHECK — runs on page load + polls every 30s
+//  Shows/hides banner, enables/disables Verify button
+// ════════════════════════════════════════════════════════════
+async function checkExamOpen() {
+    try {
+        const url  = SCRIPT_URL + '?action=check_exam_open&cb=' + Date.now();
+        const res  = await fetch(url);
+        const data = await res.json();
+
+        const isOpen  = data.status === 'success' && data.open === true;
+        const banner  = document.getElementById('examClosedBanner');
+        const wasOpen = examIsOpen;
+        examIsOpen    = isOpen;
+
+        if (isOpen) {
+            // Exam is open — hide banner, re-enable button if fields are valid
+            banner.classList.remove('show');
+            updateLoginBtn();
+
+            // If it just opened (was closed before), stop polling — no need to keep checking
+            if (!wasOpen && examOpenPoller) {
+                clearInterval(examOpenPoller);
+                examOpenPoller = null;
+            }
+        } else {
+            // Exam is closed — show banner, force button disabled
+            banner.classList.add('show');
+            loginBtn.disabled = true;
+        }
+    } catch(e) {
+        // Network error — don't block the UI, just leave current state
+    }
+}
+
+function startExamOpenPolling() {
+    // Run immediately on load
+    checkExamOpen();
+    // Then re-check every 30 seconds so banner disappears automatically when opened
+    examOpenPoller = setInterval(checkExamOpen, 30000);
+}
+
+// ════════════════════════════════════════════════════════════
 //  STAGE 1 — VERIFY  (plain fetch — same as check-in app)
 // ════════════════════════════════════════════════════════════
 async function handleLogin() {
@@ -676,17 +864,6 @@ async function handleLogin() {
     const onlineCode = isOnline ? document.getElementById('onlineCodeInput').value.trim() : '';
 
     try {
-        // ── Step 0: Check exam window is open — before anything is consumed ──
-        const openUrl  = SCRIPT_URL + '?action=check_exam_open&cb=' + Date.now();
-        const openRes  = await fetch(openUrl);
-        const openData = await openRes.json();
-        if (openData.status !== 'success' || !openData.open) {
-            loginStatus.textContent = openData.message || 'The exam is not currently open. Please wait for your coordinator.';
-            loginStatus.className   = 'status-msg error';
-            resetBtn();
-            return;
-        }
-
         // ── Step 1: For online students, validate session code FIRST
         //    before consuming the exam code ──
         if (isOnline) {
@@ -727,6 +904,12 @@ async function handleLogin() {
         data.formUrl = xorDecode(data.encodedUrl, code);
         verifiedData = data;
         studentType  = isOnline ? 'ONLINE' : (data.studentType || 'PHYSICAL');
+
+        // Save session so a refresh/reload can restore it
+        saveSession();
+
+        // Stop background polling — no longer needed once verified
+        if (examOpenPoller) { clearInterval(examOpenPoller); examOpenPoller = null; }
 
         showInstructions(data);
 
@@ -807,7 +990,8 @@ async function handleStart() {
 
         // ── All checks passed — start ──
     showScreen('screenRedirect');
-    // timerInterval kept for legacy reference but barTimer owns the actual countdown
+    // Record exam start time for session restore
+    saveSession(true);
     setTimeout(doRedirect, 1800);
 }
 
@@ -836,16 +1020,13 @@ function startBarTimer() {
 }
 
 function showTimeUp() {
-    // Stop timers
     clearInterval(barTimerInterval);
     clearInterval(timerInterval);
     examInProgress = false;
+    clearSession(); // session expired — prevent restore
 
-    // Populate reg on time-up screen
     const reg = document.getElementById('barReg').textContent || '';
     document.getElementById('timeUpReg').textContent = reg;
-
-    // Show time-up screen
     document.getElementById('timeUpScreen').classList.add('active');
 }
 
@@ -928,24 +1109,26 @@ function showIframeBlocked(formUrl) {
 }
 
 function showSubmitted() {
-    // Stop both timers
     clearInterval(barTimerInterval);
     clearInterval(timerInterval);
+    examInProgress = false;
+    clearSession(); // session done — prevent restore on next load
 
-    // Populate reg number on submitted screen
     const reg = document.getElementById('barReg').textContent || (verifiedData && verifiedData.regNumber) || '';
     document.getElementById('subReg').textContent = reg;
-
-    // Show submitted screen over everything
     document.getElementById('submittedScreen').classList.add('active');
 }
 
 // Submission detection: student taps "I Have Submitted" button manually (see confirmSubmitted)
 // ════════════════════════════════════════════════════════════
-//  INIT — Start GPS on page load. Physical students must be
-//  On campus before Verify button unlocks.
+//  INIT — Restore session if exists, otherwise start GPS
+//         and begin background exam-open polling.
 // ════════════════════════════════════════════════════════════
-startLocation();
+if (!restoreSession()) {
+    // No active session — normal flow
+    startLocation();           // start GPS immediately
+    startExamOpenPolling();    // check + poll exam open status in background
+}
 
 // Warn student if they try to refresh or leave during exam
 window.addEventListener('beforeunload', function(e) {
