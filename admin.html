@@ -61,6 +61,26 @@
         .logout-btn { font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: var(--r-sm); background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.65); border: 1px solid rgba(255,255,255,0.12); cursor: pointer; transition: background 0.15s; }
         .logout-btn:hover { background: rgba(255,255,255,0.14); }
 
+         /* ── Exam open/close button ── */
+        .exam-toggle {
+            display: flex; align-items: center; gap: 7px;
+            padding: 5px 12px; border-radius: var(--r-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 12px; font-weight: 600;
+            cursor: pointer; border: none;
+            transition: background 0.2s, opacity 0.15s;
+            white-space: nowrap;
+        }
+        .exam-toggle:disabled { opacity: 0.5; cursor: not-allowed; }
+        .exam-toggle.checking { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.12); }
+        .exam-toggle.closed   { background: rgba(45,106,45,0.25);   color: #7ac042; border: 1px solid rgba(122,192,66,0.3); }
+        .exam-toggle.open     { background: rgba(192,57,43,0.25);   color: #ff6b5b; border: 1px solid rgba(192,57,43,0.4); }
+        .exam-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+        .exam-toggle.closed .exam-dot { background: #7ac042; }
+        .exam-toggle.open   .exam-dot { background: #ff6b5b; animation: pulse-red 1.2s ease-in-out infinite; }
+        @keyframes pulse-red { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+        
         /* ── Main layout ── */
         .main { max-width: 860px; margin: 0 auto; padding: 24px 16px; display: none; }
         .main.show { display: block; }
@@ -471,11 +491,13 @@
 
 <script>
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz5nLwhQOijtweajBY-Wyp91fCCaf4znGx54wU6m_PMBL4uTJjO5KGMSWNEGoJMpNfXiw/exec';
+const EXAM_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzbCjk8RA9peuu4nhAy48N5WYRwEmLws1RIQ_mO_wA7T3aPYoG3iR1Qw0x3Ff-1QefYiQ/exec';
 
 // ── State ─────────────────────────────────────────────────────
 let admin       = null;   // { name, role }
 let sessionData = null;   // current loaded session status
 let testModeOn  = false;
+let examIsOpen  = null;   // null=unknown, true=open, false=closed
 
 // ── Session persistence (survives refresh, clears on tab close) ─
 function saveSession() {
@@ -867,6 +889,77 @@ async function loadLog() {
             return '<div class="log-item"><div class="log-dot"></div><div class="log-body"><div class="log-action">' + escHtml(log.action) + '</div><div class="log-meta">' + escHtml(log.adminName) + (session ? ' &nbsp;·&nbsp; ' + escHtml(session) : '') + (timeStr ? ' &nbsp;·&nbsp; ' + timeStr : '') + '</div></div></div>';
         }).join('');
     } catch(e) { logList.innerHTML = '<div class="log-empty">Connection error.</div>'; }
+}
+
+// ── Exam Open / Close ─────────────────────────────────────────
+async function checkExamStatus() {
+    const btn   = document.getElementById('examToggleBtn');
+    const label = document.getElementById('examToggleLabel');
+    btn.className = 'exam-toggle checking';
+    btn.disabled  = true;
+    label.textContent = 'Checking…';
+    try {
+        const url  = EXAM_SCRIPT_URL + '?action=check_exam_open&cb=' + Date.now();
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (data.status === 'success') {
+            examIsOpen = data.open;
+            updateExamBtn();
+        } else {
+            label.textContent = 'Exam status unknown';
+            btn.disabled = false;
+        }
+    } catch(e) {
+        label.textContent = 'Exam status unknown';
+        btn.disabled = false;
+    }
+}
+
+function updateExamBtn() {
+    const btn   = document.getElementById('examToggleBtn');
+    const label = document.getElementById('examToggleLabel');
+    btn.disabled = false;
+    if (examIsOpen) {
+        btn.className     = 'exam-toggle open';
+        label.textContent = 'Close Exam';
+    } else {
+        btn.className     = 'exam-toggle closed';
+        label.textContent = 'Open Exam';
+    }
+}
+
+async function toggleExamOpen() {
+    if (examIsOpen === null) { await checkExamStatus(); return; }
+    const btn      = document.getElementById('examToggleBtn');
+    const label    = document.getElementById('examToggleLabel');
+    const newState = !examIsOpen;
+    const action   = newState ? 'Opening exam…' : 'Closing exam…';
+
+    btn.disabled      = true;
+    label.textContent = action;
+    showToast(action, 'warn');
+
+    try {
+        const url  = EXAM_SCRIPT_URL
+            + '?action=set_exam_open'
+            + '&value=' + (newState ? 'TRUE' : 'FALSE')
+            + '&cb='    + Date.now();
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (data.status === 'success') {
+            examIsOpen = newState;
+            updateExamBtn();
+            showToast(newState ? 'Exam is now OPEN — students can access the portal' : 'Exam is now CLOSED', newState ? 'ok' : 'warn');
+        } else {
+            showToast(data.message || 'Failed to update exam status', 'err');
+            btn.disabled = false;
+            updateExamBtn();
+        }
+    } catch(e) {
+        showToast('Connection error', 'err');
+        btn.disabled = false;
+        updateExamBtn();
+    }
 }
 
 // ── Helpers ───────────────────────────────────────────────────
