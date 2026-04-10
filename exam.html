@@ -182,6 +182,23 @@
         .redirect-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
         .redirect-sub   { font-size: 13px; color: var(--text-3); line-height: 1.5; }
         .redirect-link  { display: inline-block; margin-top: 14px; font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: underline; cursor: pointer; }
+
+        /* ── Location pill ── */
+        .loc-pill { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 99px; white-space: nowrap; flex-shrink: 0; }
+        .loc-pill.loading { background: #FEF3C7; color: #92400E; }
+        .loc-pill.ok      { background: var(--success-bg); color: var(--success-text); }
+        .loc-pill.err     { background: var(--error-bg); color: var(--error-text); }
+
+        /* ── Online session code field (instructions screen) ── */
+        .online-session-wrap { display: none; margin-bottom: 16px; }
+        .online-session-wrap.show { display: block; }
+        .online-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: #E6F1FB; color: #185FA5;
+            font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+            text-transform: uppercase; padding: 3px 10px;
+            border-radius: 99px; margin-bottom: 12px;
+        }
     </style>
 </head>
 <body>
@@ -224,6 +241,12 @@
                 <span class="hint">Your personal code provided by admin</span>
                 <span class="err-text" id="codeErr"></span>
             </div>
+            <!-- Location status — only shown for physical students -->
+            <div id="locRow" style="display:none; align-items:center; justify-content:space-between; background:var(--bg-surface); border-radius:var(--r-sm); padding:10px 14px; margin-bottom:14px;">
+                <span style="font-size:12px; color:var(--text-3); font-weight:500;">Your location</span>
+                <span class="loc-pill loading" id="locPill">Locating…</span>
+            </div>
+
             <button class="btn btn-primary" id="loginBtn" onclick="handleLogin()" disabled>
                 <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M9 3H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4"/>
@@ -260,6 +283,19 @@
                     <div class="inst-row"><div class="inst-num">6</div><div class="inst-text">Ensure you are in a quiet environment with a stable internet connection.</div></div>
                 </div>
             </div>
+            <!-- Online session code — only shown for ONLINE students -->
+            <div class="online-session-wrap" id="onlineSessionWrap">
+                <div class="online-badge">
+                    <svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor"><circle cx="6" cy="6" r="5"/></svg>
+                    Online Student
+                </div>
+                <div class="field" style="margin-bottom:0;">
+                    <label>Online Session Code</label>
+                    <input type="text" id="sessionCodeInput" placeholder="Enter session code" maxlength="10" autocomplete="off" oninput="updateStartBtn()">
+                    <span class="hint" style="margin-top:4px;">Shared by the exam coordinator for this session</span>
+                </div>
+            </div>
+
             <label class="confirm-wrap">
                 <input type="checkbox" id="confirmCheck" onchange="updateStartBtn()">
                 <span class="confirm-label">I have read and understood the instructions. I confirm this attempt is mine alone.</span>
@@ -294,9 +330,16 @@ const EXAM_MINUTES = 45;
 // ════════════════════════════════════════════════════════════
 //  STATE
 // ════════════════════════════════════════════════════════════
-let verifiedData  = null;
-let timerInterval = null;
-let secondsLeft   = EXAM_MINUTES * 60;
+let verifiedData    = null;
+let timerInterval   = null;
+let secondsLeft     = EXAM_MINUTES * 60;
+let userLocation    = null;   // { latitude, longitude }
+let studentType     = null;   // 'PHYSICAL' or 'ONLINE'
+let sessionCodeValid = false; // validated server-side on Start
+
+const CAMPUS_LAT     = 6.44059;
+const CAMPUS_LNG     = 3.50089;
+const MAX_DISTANCE_M = 500;
 
 // ════════════════════════════════════════════════════════════
 //  DOM REFS
@@ -368,6 +411,53 @@ function xorDecode(encoded, key) {
 }
 
 // ════════════════════════════════════════════════════════════
+//  GEOLOCATION
+// ════════════════════════════════════════════════════════════
+function calcDistance(lat1, lon1, lat2, lon2) {
+    const R    = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a    = Math.sin(dLat/2) ** 2 +
+                 Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                 Math.sin(dLon/2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function startLocation() {
+    if (!navigator.geolocation) {
+        setLocPill('Not supported', 'err');
+        return;
+    }
+    function onSuccess(pos) {
+        userLocation = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+        const dist = calcDistance(CAMPUS_LAT, CAMPUS_LNG, userLocation.latitude, userLocation.longitude);
+        if (dist <= MAX_DISTANCE_M) {
+            setLocPill('On campus', 'ok');
+        } else {
+            setLocPill((dist / 1000).toFixed(2) + 'km away', 'err');
+        }
+        updateLoginBtn();
+    }
+    function onError(err) {
+        if (err.code === 1) setLocPill('Access denied', 'err');
+        else if (err.code === 3) {
+            // Timeout — retry with high accuracy
+            navigator.geolocation.getCurrentPosition(onSuccess, () => setLocPill('Unavailable', 'err'),
+                { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 });
+        } else setLocPill('Unavailable', 'err');
+    }
+    navigator.geolocation.getCurrentPosition(onSuccess, onError,
+        { timeout: 8000, enableHighAccuracy: true, maximumAge: 60000 });
+}
+
+function setLocPill(text, state) {
+    const pill = document.getElementById('locPill');
+    if (!pill) return;
+    pill.textContent = text;
+    pill.className   = 'loc-pill ' + state;
+}
+
+// ════════════════════════════════════════════════════════════
 //  STAGE 1 — VERIFY  (plain fetch — same as check-in app)
 // ════════════════════════════════════════════════════════════
 async function handleLogin() {
@@ -402,6 +492,15 @@ async function handleLogin() {
         // The raw formUrl is never sent — only an obfuscated version
         data.formUrl = xorDecode(data.encodedUrl, code);
         verifiedData = data;
+        studentType  = data.studentType || 'PHYSICAL';
+
+        // Show location row only for physical students and start GPS
+        if (studentType === 'PHYSICAL') {
+            const locRow = document.getElementById('locRow');
+            if (locRow) locRow.style.display = 'flex';
+            startLocation();
+        }
+
         showInstructions(data);
 
     } catch(err) {
@@ -426,6 +525,13 @@ function showInstructions(data) {
     secondsLeft = EXAM_MINUTES * 60;
     updateTimerDisplay();
 
+    // Show online session code field if online student
+    const onlineWrap = document.getElementById('onlineSessionWrap');
+    if (onlineWrap) {
+        if (studentType === 'ONLINE') onlineWrap.classList.add('show');
+        else onlineWrap.classList.remove('show');
+    }
+
     document.getElementById('confirmCheck').checked = false;
     document.getElementById('startBtn').disabled    = true;
     showScreen('screenInstructions');
@@ -440,14 +546,69 @@ function updateTimerDisplay() {
 }
 
 function updateStartBtn() {
-    document.getElementById('startBtn').disabled = !document.getElementById('confirmCheck').checked;
+    const confirmed  = document.getElementById('confirmCheck').checked;
+    const sessionOk  = studentType !== 'ONLINE' ||
+                       (document.getElementById('sessionCodeInput').value.trim().length >= 4);
+    document.getElementById('startBtn').disabled = !(confirmed && sessionOk);
 }
 
 // ════════════════════════════════════════════════════════════
 //  STAGE 3 — START + REDIRECT
 // ════════════════════════════════════════════════════════════
-function handleStart() {
+async function handleStart() {
     if (!verifiedData) return;
+
+    const startBtn = document.getElementById('startBtn');
+    startBtn.disabled  = true;
+    startBtn.innerHTML = '<span style="font-size:14px">Checking…</span>';
+
+    // ── Physical students: enforce location ──
+    if (studentType === 'PHYSICAL') {
+        if (!userLocation) {
+            startBtn.disabled  = false;
+            startBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M8 5v10l7-5-7-5z"/></svg>Start Exam Now';
+            alert('Your location is not available yet. Please allow location access and try again.');
+            return;
+        }
+        const dist = calcDistance(CAMPUS_LAT, CAMPUS_LNG, userLocation.latitude, userLocation.longitude);
+        if (dist > MAX_DISTANCE_M) {
+            startBtn.disabled  = false;
+            startBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M8 5v10l7-5-7-5z"/></svg>Start Exam Now';
+            alert('You must be on campus to take this exam. You are ' + (dist / 1000).toFixed(2) + 'km away. Please contact admin if this is an error.');
+            return;
+        }
+    }
+
+    // ── Online students: validate session code with server ──
+    if (studentType === 'ONLINE') {
+        const sessionCode = document.getElementById('sessionCodeInput').value.trim();
+        if (!sessionCode) {
+            startBtn.disabled  = false;
+            startBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M8 5v10l7-5-7-5z"/></svg>Start Exam Now';
+            return;
+        }
+        try {
+            const url = SCRIPT_URL
+                + '?action=validate_session_code'
+                + '&code=' + encodeURIComponent(sessionCode)
+                + '&cb='   + Date.now();
+            const res  = await fetch(url);
+            const data = await res.json();
+            if (data.status !== 'success') {
+                startBtn.disabled  = false;
+                startBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M8 5v10l7-5-7-5z"/></svg>Start Exam Now';
+                alert(data.message || 'Invalid session code. Please check and try again.');
+                return;
+            }
+        } catch(err) {
+            startBtn.disabled  = false;
+            startBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M8 5v10l7-5-7-5z"/></svg>Start Exam Now';
+            alert('Connection error. Please check your internet and try again.');
+            return;
+        }
+    }
+
+    // ── All checks passed — start ──
     showScreen('screenRedirect');
     timerInterval = setInterval(() => { secondsLeft--; if (secondsLeft <= 0) clearInterval(timerInterval); }, 1000);
     setTimeout(doRedirect, 1800);
