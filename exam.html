@@ -331,7 +331,7 @@
                 <span class="err-text" id="codeErr"></span>
             </div>
             <!-- Location status — only shown for physical students -->
-            <div id="locRow" style="display:none; align-items:center; justify-content:space-between; background:var(--bg-surface); border-radius:var(--r-sm); padding:10px 14px; margin-bottom:14px;">
+            <div id="locRow" style="display:flex; align-items:center; justify-content:space-between; background:var(--bg-surface); border-radius:var(--r-sm); padding:10px 14px; margin-bottom:14px;">
                 <span style="font-size:12px; color:var(--text-3); font-weight:500;">Your location</span>
                 <span class="loc-pill loading" id="locPill">Locating…</span>
             </div>
@@ -495,11 +495,19 @@ regInput.addEventListener('keydown',  e => { if (e.key === 'Enter') codeInput.fo
 codeInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
 
 function updateLoginBtn() {
-    const regOk      = /^RFS\/\d{4}\/\d{3}$/.test(regInput.value.trim());
-    const codeOk     = codeInput.value.trim().length >= 4;
-    const isOnline   = document.getElementById('onlineToggle').checked;
-    const onlineOk   = !isOnline || document.getElementById('onlineCodeInput').value.trim().length >= 4;
-    loginBtn.disabled = !(regOk && codeOk && onlineOk);
+    const regOk    = /^RFS\/\d{4}\/\d{3}$/.test(regInput.value.trim());
+    const codeOk   = codeInput.value.trim().length >= 4;
+    const isOnline = document.getElementById('onlineToggle').checked;
+    const onlineOk = !isOnline || document.getElementById('onlineCodeInput').value.trim().length >= 4;
+
+    // Physical students: location must show On campus before Verify unlocks
+    let locationOk = true;
+    if (!isOnline) {
+        const pill = document.getElementById('locPill');
+        locationOk = pill && pill.classList.contains('ok');
+    }
+
+    loginBtn.disabled = !(regOk && codeOk && onlineOk && locationOk);
 }
 
 function handleOnlineToggle() {
@@ -508,7 +516,7 @@ function handleOnlineToggle() {
     const locRow   = document.getElementById('locRow');
     field.classList.toggle('show', isOnline);
     // Hide location row if online — they don't need GPS
-    if (locRow) locRow.style.display = isOnline ? 'none' : 'none'; // locRow only shows post-verify for physical
+    if (locRow) locRow.style.display = isOnline ? 'none' : 'flex';
     updateLoginBtn();
 }
 function showErr(input, el, msg) { input.classList.add('invalid'); el.textContent = msg; el.classList.add('show'); }
@@ -868,6 +876,11 @@ function startSubmissionPolling(frame) {
         showSubmitted();
     });
 }
+// ════════════════════════════════════════════════════════════
+//  INIT — Start GPS on page load. Physical students must be
+//  On campus before Verify button unlocks.
+// ════════════════════════════════════════════════════════════
+startLocation();
 </script>
 </body>
 </html>
