@@ -438,6 +438,15 @@
     <iframe id="examFrame" src="about:blank" allow="geolocation" allowfullscreen></iframe>
 </div>
 
+<!-- Submit overlay — shown on the form  -->
+<div id="examOverlay">
+   <div class="overlay-bar">
+       <span id="timerDisplay">45:00</span>
+       <button onclick="closeOverlay()" class="btn-exit">I have finished my exam</button>
+   </div>
+   <iframe id="examFrame"></iframe>
+</div>
+    
 <!-- Submitted screen — shown after form is submitted -->
 <div id="submittedScreen">
     <div class="sub-icon">✅</div>
@@ -792,7 +801,13 @@ function doRedirect() {
     startBarTimer();
 
     // ── Submission detection ──────────────────────────────────
-    startSubmissionPolling(frame);
+    //startSubmissionPolling(frame);
+
+// AND CHANGE YOUR IFRAME LOAD TO THIS:
+frame.onload = function() {
+    // Just hide the "Loading..." spinner if you have one
+    document.getElementById('spinner').style.display = 'none';
+};
 
     // ── Iframe block detection ────────────────────────────────
     // If Google blocks the iframe, it loads instantly with no content.
