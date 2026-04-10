@@ -225,6 +225,25 @@
             min-height: 0;
         }
 
+        /* Submitted screen — shown over iframe after form submission */
+        #submittedScreen {
+            display: none;
+            position: fixed; inset: 0; z-index: 10000;
+            flex-direction: column;
+            align-items: center; justify-content: center;
+            background: #1a2a1a; color: #fff;
+            text-align: center; padding: 32px 24px;
+        }
+        #submittedScreen.active { display: flex; }
+        .sub-icon  { font-size: 64px; margin-bottom: 20px; }
+        .sub-title { font-size: 24px; font-weight: 700; color: #7ac042; margin-bottom: 12px; }
+        .sub-text  { font-size: 14px; color: rgba(255,255,255,0.65); line-height: 1.7; max-width: 320px; }
+        .sub-reg   { font-family: monospace; font-size: 13px; margin-top: 20px;
+                     background: rgba(255,255,255,0.08); padding: 8px 18px;
+                     border-radius: 8px; display: inline-block; color: #7ac042; }
+        .sub-note  { font-size: 11px; color: rgba(255,255,255,0.3);
+                     margin-top: 28px; line-height: 1.6; max-width: 300px; }
+
         /* Blocked fallback banner */
         #iframeBlockedBanner {
             display: none;
@@ -311,8 +330,8 @@
                 <span class="hint">Your personal code provided by admin</span>
                 <span class="err-text" id="codeErr"></span>
             </div>
-            <!-- Location status — visible immediately for physical students -->
-            <div id="locRow" style="display:flex; align-items:center; justify-content:space-between; background:var(--bg-surface); border-radius:var(--r-sm); padding:10px 14px; margin-bottom:14px;">
+            <!-- Location status — only shown for physical students -->
+            <div id="locRow" style="display:none; align-items:center; justify-content:space-between; background:var(--bg-surface); border-radius:var(--r-sm); padding:10px 14px; margin-bottom:14px;">
                 <span style="font-size:12px; color:var(--text-3); font-weight:500;">Your location</span>
                 <span class="loc-pill loading" id="locPill">Locating…</span>
             </div>
@@ -369,16 +388,11 @@
                     <div class="inst-row"><div class="inst-num">7</div><div class="inst-text"><strong>If you lose connection mid-exam, do not panic.</strong> Google Forms saves your answers automatically. Reconnect and your answers will still be there — just continue from where you stopped.</div></div>
                 </div>
             </div>
-            <!-- Online session code — only shown for ONLINE students -->
+            <!-- Online badge — shown for ONLINE students (code already validated at login) -->
             <div class="online-session-wrap" id="onlineSessionWrap">
                 <div class="online-badge">
                     <svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor"><circle cx="6" cy="6" r="5"/></svg>
-                    Online Student
-                </div>
-                <div class="field" style="margin-bottom:0;">
-                    <label>Online Session Code</label>
-                    <input type="text" id="sessionCodeInput" placeholder="Enter session code" maxlength="10" autocomplete="off" oninput="updateStartBtn()">
-                    <span class="hint" style="margin-top:4px;">Shared by the exam coordinator for this session</span>
+                    Online Student — Session Verified ✓
                 </div>
             </div>
 
@@ -422,6 +436,15 @@
         ⚠️ Your exam could not load here. <a id="blockedLink" href="#" target="_blank">Tap here to open it directly</a> — your session is still active.
     </div>
     <iframe id="examFrame" src="about:blank" allow="geolocation" allowfullscreen></iframe>
+</div>
+
+<!-- Submitted screen — shown after form is submitted -->
+<div id="submittedScreen">
+    <div class="sub-icon">✅</div>
+    <div class="sub-title">Exam Submitted!</div>
+    <div class="sub-text">Your responses have been recorded. Well done for completing the exam.</div>
+    <div class="sub-reg" id="subReg"></div>
+    <div class="sub-note">You may now close this tab. Do not attempt to go back or retake the exam — a second submission will score zero.</div>
 </div>
 
 <script>
@@ -472,19 +495,11 @@ regInput.addEventListener('keydown',  e => { if (e.key === 'Enter') codeInput.fo
 codeInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
 
 function updateLoginBtn() {
-    const regOk    = /^RFS\/\d{4}\/\d{3}$/.test(regInput.value.trim());
-    const codeOk   = codeInput.value.trim().length >= 4;
-    const isOnline = document.getElementById('onlineToggle').checked;
-    const onlineOk = !isOnline || document.getElementById('onlineCodeInput').value.trim().length >= 4;
-
-    // For physical students: location must be confirmed on campus before verify is allowed
-    let locationOk = true;
-    if (!isOnline) {
-        const pill = document.getElementById('locPill');
-        locationOk = pill && pill.classList.contains('ok');
-    }
-
-    loginBtn.disabled = !(regOk && codeOk && onlineOk && locationOk);
+    const regOk      = /^RFS\/\d{4}\/\d{3}$/.test(regInput.value.trim());
+    const codeOk     = codeInput.value.trim().length >= 4;
+    const isOnline   = document.getElementById('onlineToggle').checked;
+    const onlineOk   = !isOnline || document.getElementById('onlineCodeInput').value.trim().length >= 4;
+    loginBtn.disabled = !(regOk && codeOk && onlineOk);
 }
 
 function handleOnlineToggle() {
@@ -492,8 +507,8 @@ function handleOnlineToggle() {
     const field    = document.getElementById('onlineCodeField');
     const locRow   = document.getElementById('locRow');
     field.classList.toggle('show', isOnline);
-    // Hide location row for online students — they don't need GPS
-    if (locRow) locRow.style.display = isOnline ? 'none' : 'flex';
+    // Hide location row if online — they don't need GPS
+    if (locRow) locRow.style.display = isOnline ? 'none' : 'none'; // locRow only shows post-verify for physical
     updateLoginBtn();
 }
 function showErr(input, el, msg) { input.classList.add('invalid'); el.textContent = msg; el.classList.add('show'); }
@@ -595,10 +610,30 @@ async function handleLogin() {
     loginBtn.innerHTML = '<span style="font-size:14px">Verifying…</span>';
     loginStatus.className     = 'status-msg';
 
-    const isOnline     = document.getElementById('onlineToggle').checked;
-    const onlineCode   = isOnline ? document.getElementById('onlineCodeInput').value.trim() : '';
+    const isOnline   = document.getElementById('onlineToggle').checked;
+    const onlineCode = isOnline ? document.getElementById('onlineCodeInput').value.trim() : '';
 
     try {
+        // ── Step 1: For online students, validate session code FIRST
+        //    before consuming the exam code ──
+        if (isOnline) {
+            loginBtn.innerHTML = '<span style="font-size:14px">Checking session code…</span>';
+            const scUrl = SCRIPT_URL
+                + '?action=validate_session_code'
+                + '&code=' + encodeURIComponent(onlineCode)
+                + '&cb='   + Date.now();
+            const scRes  = await fetch(scUrl);
+            const scData = await scRes.json();
+            if (scData.status !== 'success') {
+                loginStatus.textContent = scData.message || 'Invalid session code. Please check and try again.';
+                loginStatus.className   = 'status-msg error';
+                resetBtn();
+                return;
+            }
+            loginBtn.innerHTML = '<span style="font-size:14px">Verifying…</span>';
+        }
+
+        // ── Step 2: Verify exam credentials + consume the code ──
         const url = SCRIPT_URL
             + '?action=verify_exam'
             + '&reg='      + encodeURIComponent(reg)
@@ -616,18 +651,9 @@ async function handleLogin() {
             return;
         }
 
-        // Decode the obfuscated form URL using the exam code as key
-        // The raw formUrl is never sent — only an obfuscated version
         data.formUrl = xorDecode(data.encodedUrl, code);
         verifiedData = data;
-        // If student declared online on login screen, override studentType
-        if (isOnline) {
-            studentType = 'ONLINE';
-            // Store the online code they entered so instructions screen can pre-fill it
-            data.onlineCodePrefill = onlineCode;
-        } else {
-            studentType = data.studentType || 'PHYSICAL';
-        }
+        studentType  = isOnline ? 'ONLINE' : (data.studentType || 'PHYSICAL');
 
         showInstructions(data);
 
@@ -653,17 +679,11 @@ function showInstructions(data) {
     secondsLeft = EXAM_MINUTES * 60;
     updateTimerDisplay();
 
-    // Show online session code field if online student
+    // Show online badge if online student
     const onlineWrap = document.getElementById('onlineSessionWrap');
     if (onlineWrap) {
         if (studentType === 'ONLINE') onlineWrap.classList.add('show');
         else onlineWrap.classList.remove('show');
-    }
-
-    // Pre-fill session code from login screen if online student
-    if (studentType === 'ONLINE' && data.onlineCodePrefill) {
-        const sci = document.getElementById('sessionCodeInput');
-        if (sci) { sci.value = data.onlineCodePrefill; }
     }
 
     document.getElementById('confirmCheck').checked = false;
@@ -679,24 +699,9 @@ function updateTimerDisplay() {
     d.className   = 'timer-value' + (secondsLeft <= 300 ? ' urgent' : '');
 }
 
-function showStartError(msg) {
-    // Show error inline on instructions screen — cannot be suppressed like alert()
-    let el = document.getElementById('startError');
-    if (!el) {
-        el = document.createElement('div');
-        el.id = 'startError';
-        el.style.cssText = 'margin-top:12px;padding:12px 16px;border-radius:8px;font-size:13px;font-weight:500;text-align:center;line-height:1.5;background:var(--error-bg);color:var(--error-text);';
-        document.getElementById('startBtn').insertAdjacentElement('afterend', el);
-    }
-    el.textContent = msg;
-    el.style.display = 'block';
-}
-
 function updateStartBtn() {
-    const confirmed  = document.getElementById('confirmCheck').checked;
-    const sessionOk  = studentType !== 'ONLINE' ||
-                       (document.getElementById('sessionCodeInput').value.trim().length >= 4);
-    document.getElementById('startBtn').disabled = !(confirmed && sessionOk);
+    const confirmed = document.getElementById('confirmCheck').checked;
+    document.getElementById('startBtn').disabled = !confirmed;
 }
 
 // ════════════════════════════════════════════════════════════
@@ -709,54 +714,25 @@ async function handleStart() {
     startBtn.disabled  = true;
     startBtn.innerHTML = '<span style="font-size:14px">Checking…</span>';
 
-    // ── Physical students: location already checked pre-verify,
-    //    but double-check here as a final safety net ──
+    // ── Physical students: enforce location ──
     if (studentType === 'PHYSICAL') {
         if (!userLocation) {
             startBtn.disabled  = false;
             startBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M8 5v10l7-5-7-5z"/></svg>Start Exam Now';
-            showStartError('Location not available. Please allow location access and try again.');
+            alert('Your location is not available yet. Please allow location access and try again.');
             return;
         }
         const dist = calcDistance(CAMPUS_LAT, CAMPUS_LNG, userLocation.latitude, userLocation.longitude);
         if (dist > MAX_DISTANCE_M) {
             startBtn.disabled  = false;
             startBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M8 5v10l7-5-7-5z"/></svg>Start Exam Now';
-            showStartError('You must be on campus to start. You are ' + (dist / 1000).toFixed(2) + 'km away. Contact admin if this is an error.');
+            alert('You must be on campus to take this exam. You are ' + (dist / 1000).toFixed(2) + 'km away. Please contact admin if this is an error.');
             return;
         }
     }
 
-    // ── Online students: validate session code with server ──
-    if (studentType === 'ONLINE') {
-        const sessionCode = document.getElementById('sessionCodeInput').value.trim();
-        if (!sessionCode) {
-            startBtn.disabled  = false;
-            startBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M8 5v10l7-5-7-5z"/></svg>Start Exam Now';
-            return;
-        }
-        try {
-            const url = SCRIPT_URL
-                + '?action=validate_session_code'
-                + '&code=' + encodeURIComponent(sessionCode)
-                + '&cb='   + Date.now();
-            const res  = await fetch(url);
-            const data = await res.json();
-            if (data.status !== 'success') {
-                startBtn.disabled  = false;
-                startBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M8 5v10l7-5-7-5z"/></svg>Start Exam Now';
-                showStartError(data.message || 'Invalid session code. Please check and try again.');
-                return;
-            }
-        } catch(err) {
-            startBtn.disabled  = false;
-            startBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M8 5v10l7-5-7-5z"/></svg>Start Exam Now';
-            showStartError('Connection error. Please check your internet and try again.');
-            return;
-        }
-    }
 
-    // ── All checks passed — start ──
+        // ── All checks passed — start ──
     showScreen('screenRedirect');
     timerInterval = setInterval(() => { secondsLeft--; if (secondsLeft <= 0) clearInterval(timerInterval); }, 1000);
     setTimeout(doRedirect, 1800);
@@ -807,6 +783,9 @@ function doRedirect() {
     // Start bar countdown
     startBarTimer();
 
+    // ── Submission detection ──────────────────────────────────
+    startSubmissionPolling(frame);
+
     // ── Iframe block detection ────────────────────────────────
     // If Google blocks the iframe, it loads instantly with no content.
     // We detect this: if the iframe fires load quickly AND is blank, show fallback.
@@ -842,12 +821,53 @@ function showIframeBlocked(formUrl) {
     banner.style.display = 'block';
 }
 
-// ════════════════════════════════════════════════════════════
-//  INIT — Start GPS immediately on page load so location is
-//  known before the student hits Verify. Code is only consumed
-//  AFTER location check passes — off-campus = button stays grey.
-// ════════════════════════════════════════════════════════════
-startLocation();
+function showSubmitted() {
+    // Stop both timers
+    clearInterval(barTimerInterval);
+    clearInterval(timerInterval);
+
+    // Populate reg number on submitted screen
+    const reg = document.getElementById('barReg').textContent || (verifiedData && verifiedData.regNumber) || '';
+    document.getElementById('subReg').textContent = reg;
+
+    // Show submitted screen over everything
+    document.getElementById('submittedScreen').classList.add('active');
+}
+
+// ── Submission detection via iframe title polling ─────────
+// Google Forms changes the page title to something containing
+// "response" or "submitted" after successful submission.
+// We can't read iframe content cross-origin, but we CAN
+// catch the title change via the iframe's load event —
+// each page navigation inside the iframe fires a new load.
+let submissionPoller = null;
+
+function startSubmissionPolling(frame) {
+    // Poll every 1.5s — check if iframe title changed to submission confirmation
+    submissionPoller = setInterval(() => {
+        try {
+            // Cross-origin: this throws — form is still active, all good
+            const title = frame.contentDocument.title;
+            // If we can read it (same-origin somehow) or it's blank, ignore
+        } catch(e) {
+            // Still cross-origin = form still open = keep polling
+        }
+    }, 1500);
+
+    // The reliable trigger: every time Google Forms navigates after submit,
+    // the iframe fires a load event. We watch for the confirmation page
+    // by catching the load event AFTER the first successful load.
+    let initialLoadDone = false;
+    frame.addEventListener('load', function onLoad() {
+        if (!initialLoadDone) {
+            initialLoadDone = true; // first load = form itself
+            return;
+        }
+        // Second load = submission confirmation page
+        clearInterval(submissionPoller);
+        showSubmitted();
+    });
+}
 </script>
 </body>
 </html>
