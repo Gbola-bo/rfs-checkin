@@ -437,15 +437,6 @@
     </div>
     <iframe id="examFrame" src="about:blank" allow="geolocation" allowfullscreen></iframe>
 </div>
-
-<!-- Submit overlay — shown on the form  -->
-<div id="examOverlay">
-   <div class="overlay-bar">
-       <span id="timerDisplay">45:00</span>
-       <button onclick="closeOverlay()" class="btn-exit">I have finished my exam</button>
-   </div>
-   <iframe id="examFrame"></iframe>
-</div>
     
 <!-- Submitted screen — shown after form is submitted -->
 <div id="submittedScreen">
@@ -803,11 +794,25 @@ function doRedirect() {
     // ── Submission detection ──────────────────────────────────
     //startSubmissionPolling(frame);
 
-// AND CHANGE YOUR IFRAME LOAD TO THIS:
+let loadCount = 0;
 frame.onload = function() {
-    // Just hide the "Loading..." spinner if you have one
-    document.getElementById('spinner').style.display = 'none';
+    loadCount++;
+    console.log("Form page loaded. Current count:", loadCount);
+
+    // If the form has 3 pages:
+    // Load 1 = Page 1
+    // Load 2 = Page 2
+    // Load 3 = Page 3
+    // Load 4 = Submission Confirmation Page
+    if (loadCount === 4) {
+        handleFinalSubmission();
+    }
 };
+
+function handleFinalSubmission() {
+    alert("Submission detected! You may now close this window.");
+    // Add your logic to redirect or close the overlay here
+}
 
     // ── Iframe block detection ────────────────────────────────
     // If Google blocks the iframe, it loads instantly with no content.
