@@ -311,8 +311,8 @@
                 <span class="hint">Your personal code provided by admin</span>
                 <span class="err-text" id="codeErr"></span>
             </div>
-            <!-- Location status — only shown for physical students -->
-            <div id="locRow" style="display:none; align-items:center; justify-content:space-between; background:var(--bg-surface); border-radius:var(--r-sm); padding:10px 14px; margin-bottom:14px;">
+            <!-- Location status — visible immediately for physical students -->
+            <div id="locRow" style="display:flex; align-items:center; justify-content:space-between; background:var(--bg-surface); border-radius:var(--r-sm); padding:10px 14px; margin-bottom:14px;">
                 <span style="font-size:12px; color:var(--text-3); font-weight:500;">Your location</span>
                 <span class="loc-pill loading" id="locPill">Locating…</span>
             </div>
@@ -472,11 +472,19 @@ regInput.addEventListener('keydown',  e => { if (e.key === 'Enter') codeInput.fo
 codeInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
 
 function updateLoginBtn() {
-    const regOk      = /^RFS\/\d{4}\/\d{3}$/.test(regInput.value.trim());
-    const codeOk     = codeInput.value.trim().length >= 4;
-    const isOnline   = document.getElementById('onlineToggle').checked;
-    const onlineOk   = !isOnline || document.getElementById('onlineCodeInput').value.trim().length >= 4;
-    loginBtn.disabled = !(regOk && codeOk && onlineOk);
+    const regOk    = /^RFS\/\d{4}\/\d{3}$/.test(regInput.value.trim());
+    const codeOk   = codeInput.value.trim().length >= 4;
+    const isOnline = document.getElementById('onlineToggle').checked;
+    const onlineOk = !isOnline || document.getElementById('onlineCodeInput').value.trim().length >= 4;
+
+    // For physical students: location must be confirmed on campus before verify is allowed
+    let locationOk = true;
+    if (!isOnline) {
+        const pill = document.getElementById('locPill');
+        locationOk = pill && pill.classList.contains('ok');
+    }
+
+    loginBtn.disabled = !(regOk && codeOk && onlineOk && locationOk);
 }
 
 function handleOnlineToggle() {
@@ -484,8 +492,8 @@ function handleOnlineToggle() {
     const field    = document.getElementById('onlineCodeField');
     const locRow   = document.getElementById('locRow');
     field.classList.toggle('show', isOnline);
-    // Hide location row if online — they don't need GPS
-    if (locRow) locRow.style.display = isOnline ? 'none' : 'none'; // locRow only shows post-verify for physical
+    // Hide location row for online students — they don't need GPS
+    if (locRow) locRow.style.display = isOnline ? 'none' : 'flex';
     updateLoginBtn();
 }
 function showErr(input, el, msg) { input.classList.add('invalid'); el.textContent = msg; el.classList.add('show'); }
@@ -621,13 +629,6 @@ async function handleLogin() {
             studentType = data.studentType || 'PHYSICAL';
         }
 
-        // Show location row only for physical students and start GPS
-        if (studentType === 'PHYSICAL') {
-            const locRow = document.getElementById('locRow');
-            if (locRow) locRow.style.display = 'flex';
-            startLocation();
-        }
-
         showInstructions(data);
 
     } catch(err) {
@@ -678,6 +679,19 @@ function updateTimerDisplay() {
     d.className   = 'timer-value' + (secondsLeft <= 300 ? ' urgent' : '');
 }
 
+function showStartError(msg) {
+    // Show error inline on instructions screen — cannot be suppressed like alert()
+    let el = document.getElementById('startError');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'startError';
+        el.style.cssText = 'margin-top:12px;padding:12px 16px;border-radius:8px;font-size:13px;font-weight:500;text-align:center;line-height:1.5;background:var(--error-bg);color:var(--error-text);';
+        document.getElementById('startBtn').insertAdjacentElement('afterend', el);
+    }
+    el.textContent = msg;
+    el.style.display = 'block';
+}
+
 function updateStartBtn() {
     const confirmed  = document.getElementById('confirmCheck').checked;
     const sessionOk  = studentType !== 'ONLINE' ||
@@ -695,19 +709,20 @@ async function handleStart() {
     startBtn.disabled  = true;
     startBtn.innerHTML = '<span style="font-size:14px">Checking…</span>';
 
-    // ── Physical students: enforce location ──
+    // ── Physical students: location already checked pre-verify,
+    //    but double-check here as a final safety net ──
     if (studentType === 'PHYSICAL') {
         if (!userLocation) {
             startBtn.disabled  = false;
             startBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M8 5v10l7-5-7-5z"/></svg>Start Exam Now';
-            alert('Your location is not available yet. Please allow location access and try again.');
+            showStartError('Location not available. Please allow location access and try again.');
             return;
         }
         const dist = calcDistance(CAMPUS_LAT, CAMPUS_LNG, userLocation.latitude, userLocation.longitude);
         if (dist > MAX_DISTANCE_M) {
             startBtn.disabled  = false;
             startBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M8 5v10l7-5-7-5z"/></svg>Start Exam Now';
-            alert('You must be on campus to take this exam. You are ' + (dist / 1000).toFixed(2) + 'km away. Please contact admin if this is an error.');
+            showStartError('You must be on campus to start. You are ' + (dist / 1000).toFixed(2) + 'km away. Contact admin if this is an error.');
             return;
         }
     }
@@ -730,13 +745,13 @@ async function handleStart() {
             if (data.status !== 'success') {
                 startBtn.disabled  = false;
                 startBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M8 5v10l7-5-7-5z"/></svg>Start Exam Now';
-                alert(data.message || 'Invalid session code. Please check and try again.');
+                showStartError(data.message || 'Invalid session code. Please check and try again.');
                 return;
             }
         } catch(err) {
             startBtn.disabled  = false;
             startBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M8 5v10l7-5-7-5z"/></svg>Start Exam Now';
-            alert('Connection error. Please check your internet and try again.');
+            showStartError('Connection error. Please check your internet and try again.');
             return;
         }
     }
@@ -826,6 +841,13 @@ function showIframeBlocked(formUrl) {
     link.href    = formUrl;
     banner.style.display = 'block';
 }
+
+// ════════════════════════════════════════════════════════════
+//  INIT — Start GPS immediately on page load so location is
+//  known before the student hits Verify. Code is only consumed
+//  AFTER location check passes — off-campus = button stays grey.
+// ════════════════════════════════════════════════════════════
+startLocation();
 </script>
 </body>
 </html>
