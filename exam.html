@@ -244,6 +244,52 @@
         .sub-note  { font-size: 11px; color: rgba(255,255,255,0.3);
                      margin-top: 28px; line-height: 1.6; max-width: 300px; }
 
+        /* ── Submit button bar pinned above iframe ── */
+        #submitBar {
+            display: none;
+            background: #1a2a1a;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            padding: 10px 16px;
+            flex-shrink: 0;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        #submitBar.visible { display: flex; }
+        .submit-bar-text {
+            font-size: 12px; color: rgba(255,255,255,0.5); line-height: 1.4;
+            flex: 1;
+        }
+        .submit-bar-text strong { color: rgba(255,255,255,0.85); display: block; }
+        #submitDoneBtn {
+            background: #2D6A2D; color: #fff;
+            border: none; border-radius: 8px;
+            padding: 10px 18px; font-size: 13px; font-weight: 700;
+            cursor: pointer; white-space: nowrap; flex-shrink: 0;
+            font-family: 'DM Sans', sans-serif;
+            transition: opacity 0.15s;
+        }
+        #submitDoneBtn:active { opacity: 0.8; }
+
+        /* ── Time-up screen ── */
+        #timeUpScreen {
+            display: none;
+            position: fixed; inset: 0; z-index: 10001;
+            flex-direction: column;
+            align-items: center; justify-content: center;
+            background: #1a0a0a; color: #fff;
+            text-align: center; padding: 32px 24px;
+        }
+        #timeUpScreen.active { display: flex; }
+        .timeup-icon  { font-size: 64px; margin-bottom: 20px; }
+        .timeup-title { font-size: 24px; font-weight: 700; color: #C0392B; margin-bottom: 12px; }
+        .timeup-text  { font-size: 14px; color: rgba(255,255,255,0.65); line-height: 1.7; max-width: 320px; }
+        .timeup-reg   { font-family: monospace; font-size: 13px; margin-top: 20px;
+                        background: rgba(255,255,255,0.08); padding: 8px 18px;
+                        border-radius: 8px; display: inline-block; color: #e74c3c; }
+        .timeup-note  { font-size: 11px; color: rgba(255,255,255,0.3);
+                        margin-top: 28px; line-height: 1.6; max-width: 300px; }
+
         /* Blocked fallback banner */
         #iframeBlockedBanner {
             display: none;
@@ -462,7 +508,7 @@ let timerInterval   = null;
 let secondsLeft     = EXAM_MINUTES * 60;
 let userLocation    = null;   // { latitude, longitude }
 let studentType     = null;   // 'PHYSICAL' or 'ONLINE'
-let sessionCodeValid = false; // validated server-side on Start
+let examInProgress  = false;  // true while iframe exam is open
 
 const CAMPUS_LAT     = 7.1873914349294274;
 const CAMPUS_LNG     = 3.3713889900500704;
@@ -615,13 +661,24 @@ async function handleLogin() {
     if (code.length < 4)                   { showErr(codeInput, codeErr, 'Please enter your exam code'); return; }
 
     loginBtn.disabled  = true;
-    loginBtn.innerHTML = '<span style="font-size:14px">Verifying…</span>';
-    loginStatus.className     = 'status-msg';
+    loginBtn.innerHTML = '<span style="font-size:14px">Checking exam status…</span>';
+    loginStatus.className = 'status-msg';
 
     const isOnline   = document.getElementById('onlineToggle').checked;
     const onlineCode = isOnline ? document.getElementById('onlineCodeInput').value.trim() : '';
 
     try {
+        // ── Step 0: Check exam window is open — before anything is consumed ──
+        const openUrl  = SCRIPT_URL + '?action=check_exam_open&cb=' + Date.now();
+        const openRes  = await fetch(openUrl);
+        const openData = await openRes.json();
+        if (openData.status !== 'success' || !openData.open) {
+            loginStatus.textContent = openData.message || 'The exam is not currently open. Please wait for your coordinator.';
+            loginStatus.className   = 'status-msg error';
+            resetBtn();
+            return;
+        }
+
         // ── Step 1: For online students, validate session code FIRST
         //    before consuming the exam code ──
         if (isOnline) {
@@ -754,7 +811,13 @@ let barTimerInterval = null;
 function startBarTimer() {
     const el = document.getElementById('barTimer');
     function tick() {
-        if (secondsLeft <= 0) { clearInterval(barTimerInterval); return; }
+        if (secondsLeft <= 0) {
+            clearInterval(barTimerInterval);
+            el.textContent = '00:00';
+            el.className   = 'bar-timer urgent';
+            showTimeUp();
+            return;
+        }
         secondsLeft--;
         const m = Math.floor(secondsLeft / 60);
         const s = secondsLeft % 60;
@@ -762,6 +825,20 @@ function startBarTimer() {
         el.className   = 'bar-timer' + (secondsLeft <= 300 ? ' urgent' : '');
     }
     barTimerInterval = setInterval(tick, 1000);
+}
+
+function showTimeUp() {
+    // Stop timers
+    clearInterval(barTimerInterval);
+    clearInterval(timerInterval);
+    examInProgress = false;
+
+    // Populate reg on time-up screen
+    const reg = document.getElementById('barReg').textContent || '';
+    document.getElementById('timeUpReg').textContent = reg;
+
+    // Show time-up screen
+    document.getElementById('timeUpScreen').classList.add('active');
 }
 
 function doRedirect() {
@@ -779,67 +856,60 @@ function doRedirect() {
     const frame = document.getElementById('examFrame');
     frame.src = formUrl;
 
-    // Show overlay — covers everything fullscreen
+    // Show overlay + submit bar
     document.getElementById('examOverlay').classList.add('active');
+    document.getElementById('submitBar').classList.add('visible');
 
     // Lock body scroll so only the iframe scrolls
     document.body.style.overflow = 'hidden';
 
-    // Wipe URL from memory so it cannot be retrieved from JS console
+    // Wipe URL from memory immediately
     verifiedData.formUrl = null;
+
+    // Activate beforeunload warning — cannot suppress alert() but CAN show browser warning
+    examInProgress = true;
 
     // Start bar countdown
     startBarTimer();
 
-    // ── Submission detection ──────────────────────────────────
-    //startSubmissionPolling(frame);
-
-let loadCount = 0;
-frame.onload = function() {
-    loadCount++;
-    console.log("Form page loaded. Current count:", loadCount);
-
-    // If the form has 3 pages:
-    // Load 1 = Page 1
-    // Load 2 = Page 2
-    // Load 3 = Page 3
-    // Load 4 = Submission Confirmation Page
-    if (loadCount === 999) {
-        handleFinalSubmission();
-    }
-};
-
-function handleFinalSubmission() {
-    alert("Submission detected! You may now close this window.");
-    // Add your logic to redirect or close the overlay here
-}
-
-    // ── Iframe block detection ────────────────────────────────
-    // If Google blocks the iframe, it loads instantly with no content.
-    // We detect this: if the iframe fires load quickly AND is blank, show fallback.
+    // ── Iframe block detection ──────────────────────────────────
     let loadTimer = setTimeout(() => {
-        // After 5s if frame appears blank (cross-origin so we can't read src)
-        // show the fallback banner with a direct link
         try {
-            // This will throw cross-origin error if Google loaded = good
             const test = frame.contentWindow.location.href;
-            // If we get here without error, it's about:blank = blocked
             showIframeBlocked(formUrl);
-        } catch(e) {
-            // Cross-origin error = Google loaded successfully = all good
-        }
+        } catch(e) { /* cross-origin = loaded fine */ }
     }, 5000);
 
     frame.addEventListener('load', () => {
         clearTimeout(loadTimer);
         try {
             const loc = frame.contentWindow.location.href;
-            // Accessible means still about:blank = blocked
             if (loc === 'about:blank') showIframeBlocked(formUrl);
-        } catch(e) {
-            // Cross-origin = loaded fine
-        }
+        } catch(e) { /* cross-origin = loaded fine */ }
     });
+}
+
+// Student taps "I Have Submitted" — confirm then show submitted screen
+function confirmSubmitted() {
+    const btn = document.getElementById('submitDoneBtn');
+    // First tap: ask for confirmation by changing button text
+    if (btn.dataset.confirmed !== 'true') {
+        btn.textContent = 'Tap again to confirm';
+        btn.style.background = '#C8960C';
+        btn.dataset.confirmed = 'true';
+        // Reset after 4s if they don't tap again
+        setTimeout(() => {
+            if (btn.dataset.confirmed === 'true') {
+                btn.textContent = 'I Have Submitted ✓';
+                btn.style.background = '#2D6A2D';
+                btn.dataset.confirmed = 'false';
+            }
+        }, 4000);
+        return;
+    }
+    // Second tap: confirmed — show submitted screen
+    examInProgress = false;
+    showSubmitted();
 }
 
 function showIframeBlocked(formUrl) {
@@ -862,45 +932,21 @@ function showSubmitted() {
     document.getElementById('submittedScreen').classList.add('active');
 }
 
-// ── Submission detection via iframe title polling ─────────
-// Google Forms changes the page title to something containing
-// "response" or "submitted" after successful submission.
-// We can't read iframe content cross-origin, but we CAN
-// catch the title change via the iframe's load event —
-// each page navigation inside the iframe fires a new load.
-let submissionPoller = null;
-
-function startSubmissionPolling(frame) {
-    // Poll every 1.5s — check if iframe title changed to submission confirmation
-    submissionPoller = setInterval(() => {
-        try {
-            // Cross-origin: this throws — form is still active, all good
-            const title = frame.contentDocument.title;
-            // If we can read it (same-origin somehow) or it's blank, ignore
-        } catch(e) {
-            // Still cross-origin = form still open = keep polling
-        }
-    }, 1500);
-
-    // The reliable trigger: every time Google Forms navigates after submit,
-    // the iframe fires a load event. We watch for the confirmation page
-    // by catching the load event AFTER the first successful load.
-    let initialLoadDone = false;
-    frame.addEventListener('load', function onLoad() {
-        if (!initialLoadDone) {
-            initialLoadDone = true; // first load = form itself
-            return;
-        }
-        // Second load = submission confirmation page
-        clearInterval(submissionPoller);
-        showSubmitted();
-    });
-}
+// Submission detection: student taps "I Have Submitted" button manually (see confirmSubmitted)
 // ════════════════════════════════════════════════════════════
 //  INIT — Start GPS on page load. Physical students must be
 //  On campus before Verify button unlocks.
 // ════════════════════════════════════════════════════════════
 startLocation();
+
+// Warn student if they try to refresh or leave during exam
+window.addEventListener('beforeunload', function(e) {
+    if (examInProgress) {
+        e.preventDefault();
+        e.returnValue = 'Your exam is in progress. Leaving will not cancel your attempt but you may lose your place.';
+        return e.returnValue;
+    }
+});
 </script>
 </body>
 </html>
