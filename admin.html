@@ -61,6 +61,25 @@
         .logout-btn { font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: var(--r-sm); background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.65); border: 1px solid rgba(255,255,255,0.12); cursor: pointer; transition: background 0.15s; }
         .logout-btn:hover { background: rgba(255,255,255,0.14); }
 
+        /* ── Exam open/close button ── */
+        .exam-toggle {
+            display: flex; align-items: center; gap: 7px;
+            padding: 5px 12px; border-radius: var(--r-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 12px; font-weight: 600;
+            cursor: pointer; border: none;
+            transition: background 0.2s, opacity 0.15s;
+            white-space: nowrap;
+        }
+        .exam-toggle:disabled { opacity: 0.5; cursor: not-allowed; }
+        .exam-toggle.checking { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.12); }
+        .exam-toggle.closed   { background: rgba(45,106,45,0.25);   color: #7ac042; border: 1px solid rgba(122,192,66,0.3); }
+        .exam-toggle.open     { background: rgba(192,57,43,0.25);   color: #ff6b5b; border: 1px solid rgba(192,57,43,0.4); }
+        .exam-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+        .exam-toggle.closed .exam-dot { background: #7ac042; }
+        .exam-toggle.open   .exam-dot { background: #ff6b5b; animation: pulse-red 1.2s ease-in-out infinite; }
+        @keyframes pulse-red { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
         /* ── Main layout ── */
         .main { max-width: 860px; margin: 0 auto; padding: 24px 16px; display: none; }
         .main.show { display: block; }
@@ -128,42 +147,6 @@
         .btn-danger   { background: var(--danger); color: #fff; }
         .btn-outline  { background: transparent; color: var(--text-2); border: 1.5px solid var(--border); }
         .btn-full     { width: 100%; flex: none; }
-
-        /* ── Attendance summary cards ── */
-        .att-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
-        .att-card { background: var(--surface); border-radius: var(--r-sm); padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
-        .att-card-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); }
-        .att-card-value { font-size: 28px; font-weight: 600; color: var(--text); line-height: 1; }
-        .att-card-sub { font-size: 11px; color: var(--text-3); }
-        .att-card.physical .att-card-value { color: #1A5C1A; }
-        .att-card.online   .att-card-value { color: #185FA5; }
-        .att-card.absent   .att-card-value { color: var(--danger); }
-
-        /* ── Search bar ── */
-        .att-search-wrap { position: relative; margin-bottom: 14px; }
-        .att-search-wrap input { padding-left: 36px; font-family: 'DM Sans', sans-serif; font-size: 13px; letter-spacing: 0; height: 38px; }
-        .att-search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
-
-        /* ── Filter pills ── */
-        .att-filters { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
-        .att-filter { font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 99px; border: 1.5px solid var(--border); background: transparent; color: var(--text-2); cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
-        .att-filter.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-
-        /* ── Student list ── */
-        .att-list { display: flex; flex-direction: column; gap: 0; }
-        .att-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
-        .att-row:last-child { border-bottom: none; }
-        .att-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--accent-dim); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--accent); flex-shrink: 0; }
-        .att-name { flex: 1; min-width: 0; }
-        .att-name-main { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .att-name-reg { font-size: 11px; color: var(--text-3); font-family: 'DM Mono', monospace; }
-        .att-status { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px; white-space: nowrap; flex-shrink: 0; }
-        .att-status.physical { background: var(--success-bg); color: var(--success-text); }
-        .att-status.online   { background: #E6F1FB; color: #185FA5; }
-        .att-status.absent   { background: var(--error-bg); color: var(--error-text); }
-        .att-empty { text-align: center; padding: 24px; color: var(--text-3); font-size: 13px; }
-
-        @media (max-width: 400px) { .att-summary { grid-template-columns: 1fr 1fr; } }
 
         /* ── Activity log ── */
         .log-list { display: flex; flex-direction: column; gap: 0; }
@@ -255,6 +238,10 @@
             <div class="toggle-switch" id="toggleSwitch"></div>
             <span class="test-toggle-label">Test Mode</span>
         </div>
+        <button class="exam-toggle checking" id="examToggleBtn" onclick="toggleExamOpen()" title="Open or close the exam portal">
+            <span class="exam-dot"></span>
+            <span id="examToggleLabel">Checking…</span>
+        </button>
         <button class="logout-btn" onclick="handleLogout()">Logout</button>
     </div>
 </div>
@@ -303,7 +290,6 @@
     <div class="tabs" id="tabsRow">
         <button class="tab-btn active" onclick="switchTab('sunday', this)">Sunday</button>
         <button class="tab-btn" onclick="switchTab('saturday', this)">Saturday</button>
-        <button class="tab-btn" onclick="switchTab('attendance', this)">Attendance</button>
         <button class="tab-btn" onclick="switchTab('log', this)">Activity Log</button>
     </div>
 
@@ -393,60 +379,6 @@
         </div>
     </div>
 
-    <!-- Attendance Panel -->
-    <div class="panel" id="panelAttendance">
-        <div class="card">
-            <div class="section-head">
-                <div>
-                    <div class="section-head-title">Today's Attendance</div>
-                    <div class="section-head-sub" id="attDateSub">Load a session to view attendance</div>
-                </div>
-                <button class="btn btn-outline" style="flex:none; height:32px; font-size:12px; padding:0 12px;" onclick="loadAttendance()">Refresh</button>
-            </div>
-            <div class="section-body">
-                <!-- Summary cards -->
-                <div class="att-summary">
-                    <div class="att-card physical">
-                        <span class="att-card-label">Physical</span>
-                        <span class="att-card-value" id="attPhysical">—</span>
-                        <span class="att-card-sub">In person</span>
-                    </div>
-                    <div class="att-card online">
-                        <span class="att-card-label">Online</span>
-                        <span class="att-card-value" id="attOnline">—</span>
-                        <span class="att-card-sub">Remote</span>
-                    </div>
-                    <div class="att-card absent">
-                        <span class="att-card-label">Absent</span>
-                        <span class="att-card-value" id="attAbsent">—</span>
-                        <span class="att-card-sub">Not checked in</span>
-                    </div>
-                </div>
-
-                <!-- Search -->
-                <div class="att-search-wrap">
-                    <svg class="att-search-icon" width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                        <circle cx="8.5" cy="8.5" r="5.5"/><path d="M15 15l-3-3"/>
-                    </svg>
-                    <input type="text" id="attSearch" placeholder="Search by name or reg number…" oninput="filterAttendance()" style="width:100%;">
-                </div>
-
-                <!-- Filter pills -->
-                <div class="att-filters">
-                    <button class="att-filter active" data-filter="all"      onclick="setAttFilter('all', this)">All</button>
-                    <button class="att-filter"        data-filter="physical" onclick="setAttFilter('physical', this)">Physical</button>
-                    <button class="att-filter"        data-filter="online"   onclick="setAttFilter('online', this)">Online</button>
-                    <button class="att-filter"        data-filter="absent"   onclick="setAttFilter('absent', this)">Absent</button>
-                </div>
-
-                <!-- Student list -->
-                <div class="att-list" id="attList">
-                    <div class="att-empty">Load a session then open this tab to view attendance</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Activity Log Panel -->
     <div class="panel" id="panelLog">
         <div class="card">
@@ -470,12 +402,14 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz5nLwhQOijtweajBY-Wyp91fCCaf4znGx54wU6m_PMBL4uTJjO5KGMSWNEGoJMpNfXiw/exec';
+const SCRIPT_URL      = 'https://script.google.com/macros/s/AKfycbz5nLwhQOijtweajBY-Wyp91fCCaf4znGx54wU6m_PMBL4uTJjO5KGMSWNEGoJMpNfXiw/exec';
+const EXAM_SCRIPT_URL = 'PASTE_YOUR_EXAM_APPS_SCRIPT_URL_HERE';
 
 // ── State ─────────────────────────────────────────────────────
 let admin       = null;   // { name, role }
 let sessionData = null;   // current loaded session status
 let testModeOn  = false;
+let examIsOpen  = null;   // null=unknown, true=open, false=closed
 
 // ── Session persistence (survives refresh, clears on tab close) ─
 function saveSession() {
@@ -570,8 +504,7 @@ function switchTab(name, btn) {
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('panel' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
-    if (name === 'log')        loadLog();
-    if (name === 'attendance') loadAttendance();
+    if (name === 'log') loadLog();
 }
 
 // ── Load session ──────────────────────────────────────────────
@@ -732,124 +665,6 @@ async function toggleTestMode() {
     } catch(e) { showToast('Connection error', 'err'); }
 }
 
-// ── Attendance ────────────────────────────────────────────────
-let attAllStudents   = [];   // full roster from student DB for this stream
-let attTodayRecords  = [];   // today's check-in rows from attendance sheet
-let attFilterMode    = 'all';
-
-async function loadAttendance() {
-    const cls = document.getElementById('selClass').value;
-    const yr  = document.getElementById('selYear').value;
-    const st  = document.getElementById('selStream').value;
-    if (!cls || !yr || !st) { showToast('Load a session first', 'err'); return; }
-
-    document.getElementById('attList').innerHTML = '<div class="att-empty">Loading…</div>';
-    document.getElementById('attPhysical').textContent = '—';
-    document.getElementById('attOnline').textContent   = '—';
-    document.getElementById('attAbsent').textContent   = '—';
-
-    try {
-        const url = SCRIPT_URL + '?action=admin_get_attendance'
-            + '&adminName=' + encodeURIComponent(admin.name)
-            + '&password='  + encodeURIComponent(getStoredPass())
-            + '&class='     + encodeURIComponent(cls)
-            + '&year='      + encodeURIComponent(yr)
-            + '&stream='    + encodeURIComponent(st);
-
-        const res  = await fetch(url);
-        const data = await res.json();
-
-        if (data.status !== 'success') {
-            document.getElementById('attList').innerHTML = '<div class="att-empty">' + escHtml(data.message || 'Failed to load attendance.') + '</div>';
-            return;
-        }
-
-        attAllStudents  = data.students  || [];
-        attTodayRecords = data.records   || [];
-
-        // Update date sub
-        const today = new Date();
-        document.getElementById('attDateSub').textContent =
-            today.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-
-        renderAttendance();
-
-    } catch(e) {
-        document.getElementById('attList').innerHTML = '<div class="att-empty">Connection error. Please try again.</div>';
-    }
-}
-
-function renderAttendance() {
-    // Build a map of who checked in today: regNumber → mode (PHYSICAL / ONLINE)
-    // Exclude TEST entries per spec
-    const checkedIn = {};
-    attTodayRecords.forEach(function(r) {
-        const event = (r.event || '').toUpperCase();
-        if (event.indexOf('TEST') !== -1) return; // skip test entries
-        // For Sunday we just need one entry. For Saturday we count SAT-IN as present.
-        if (event === 'SUN' || event === 'SAT-IN') {
-            checkedIn[r.reg] = (r.mode || 'PHYSICAL').toUpperCase();
-        }
-    });
-
-    let physical = 0, online = 0, absent = 0;
-    const search  = (document.getElementById('attSearch').value || '').toLowerCase();
-
-    // Build per-student status list
-    const rows = attAllStudents.map(function(s) {
-        const mode   = checkedIn[s.reg] || null;
-        const status = mode === 'PHYSICAL' ? 'physical' : mode === 'ONLINE' ? 'online' : 'absent';
-        if (status === 'physical') physical++;
-        else if (status === 'online') online++;
-        else absent++;
-        return { name: s.name, reg: s.reg, status: status };
-    });
-
-    // Update summary
-    document.getElementById('attPhysical').textContent = physical;
-    document.getElementById('attOnline').textContent   = online;
-    document.getElementById('attAbsent').textContent   = absent;
-
-    // Filter
-    const filtered = rows.filter(function(r) {
-        const matchFilter = attFilterMode === 'all' || r.status === attFilterMode;
-        const matchSearch = !search ||
-            r.name.toLowerCase().includes(search) ||
-            r.reg.toLowerCase().includes(search);
-        return matchFilter && matchSearch;
-    });
-
-    if (filtered.length === 0) {
-        document.getElementById('attList').innerHTML = '<div class="att-empty">No students match this filter.</div>';
-        return;
-    }
-
-    document.getElementById('attList').innerHTML = filtered.map(function(r) {
-        const parts    = r.name.trim().split(' ');
-        const initials = parts.length >= 2
-            ? (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
-            : r.name.substring(0, 2).toUpperCase();
-        const label = r.status === 'physical' ? 'Physical' : r.status === 'online' ? 'Online' : 'Absent';
-        return '<div class="att-row">'
-            + '<div class="att-avatar">' + escHtml(initials) + '</div>'
-            + '<div class="att-name">'
-            +   '<div class="att-name-main">' + escHtml(r.name) + '</div>'
-            +   '<div class="att-name-reg">'  + escHtml(r.reg)  + '</div>'
-            + '</div>'
-            + '<span class="att-status ' + r.status + '">' + label + '</span>'
-            + '</div>';
-    }).join('');
-}
-
-function filterAttendance() { renderAttendance(); }
-
-function setAttFilter(mode, btn) {
-    attFilterMode = mode;
-    document.querySelectorAll('.att-filter').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    renderAttendance();
-}
-
 // ── Activity Log ──────────────────────────────────────────────
 async function loadLog() {
     const logList = document.getElementById('logList');
@@ -867,6 +682,77 @@ async function loadLog() {
             return '<div class="log-item"><div class="log-dot"></div><div class="log-body"><div class="log-action">' + escHtml(log.action) + '</div><div class="log-meta">' + escHtml(log.adminName) + (session ? ' &nbsp;·&nbsp; ' + escHtml(session) : '') + (timeStr ? ' &nbsp;·&nbsp; ' + timeStr : '') + '</div></div></div>';
         }).join('');
     } catch(e) { logList.innerHTML = '<div class="log-empty">Connection error.</div>'; }
+}
+
+// ── Exam Open / Close ─────────────────────────────────────────
+async function checkExamStatus() {
+    const btn   = document.getElementById('examToggleBtn');
+    const label = document.getElementById('examToggleLabel');
+    btn.className = 'exam-toggle checking';
+    btn.disabled  = true;
+    label.textContent = 'Checking…';
+    try {
+        const url  = EXAM_SCRIPT_URL + '?action=check_exam_open&cb=' + Date.now();
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (data.status === 'success') {
+            examIsOpen = data.open;
+            updateExamBtn();
+        } else {
+            label.textContent = 'Exam status unknown';
+            btn.disabled = false;
+        }
+    } catch(e) {
+        label.textContent = 'Exam status unknown';
+        btn.disabled = false;
+    }
+}
+
+function updateExamBtn() {
+    const btn   = document.getElementById('examToggleBtn');
+    const label = document.getElementById('examToggleLabel');
+    btn.disabled = false;
+    if (examIsOpen) {
+        btn.className     = 'exam-toggle open';
+        label.textContent = 'Close Exam';
+    } else {
+        btn.className     = 'exam-toggle closed';
+        label.textContent = 'Open Exam';
+    }
+}
+
+async function toggleExamOpen() {
+    if (examIsOpen === null) { await checkExamStatus(); return; }
+    const btn      = document.getElementById('examToggleBtn');
+    const label    = document.getElementById('examToggleLabel');
+    const newState = !examIsOpen;
+    const action   = newState ? 'Opening exam…' : 'Closing exam…';
+
+    btn.disabled      = true;
+    label.textContent = action;
+    showToast(action, 'warn');
+
+    try {
+        const url  = EXAM_SCRIPT_URL
+            + '?action=set_exam_open'
+            + '&value=' + (newState ? 'TRUE' : 'FALSE')
+            + '&cb='    + Date.now();
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (data.status === 'success') {
+            examIsOpen = newState;
+            updateExamBtn();
+            showToast(newState ? 'Exam is now OPEN — students can access the portal' : 'Exam is now CLOSED', newState ? 'ok' : 'warn');
+        } else {
+            showToast(data.message || 'Failed to update exam status', 'err');
+            btn.disabled = false;
+            updateExamBtn();
+        }
+    } catch(e) {
+        showToast('Connection error', 'err');
+        btn.disabled = false;
+        updateExamBtn();
+    }
 }
 
 // ── Helpers ───────────────────────────────────────────────────
