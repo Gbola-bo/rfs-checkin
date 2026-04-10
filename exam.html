@@ -183,6 +183,58 @@
         .redirect-sub   { font-size: 13px; color: var(--text-3); line-height: 1.5; }
         .redirect-link  { display: inline-block; margin-top: 14px; font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: underline; cursor: pointer; }
 
+        /* ── Fullscreen exam iframe overlay ── */
+        #examOverlay {
+            display: none;
+            position: fixed; inset: 0; z-index: 9999;
+            flex-direction: column;
+            background: #fff;
+        }
+        #examOverlay.active { display: flex; }
+
+        /* Status bar pinned at top */
+        #examBar {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #1a2a1a; color: #fff;
+            padding: 0 16px;
+            height: 48px; flex-shrink: 0;
+            gap: 8px;
+        }
+        #examBarLeft  { display: flex; align-items: center; gap: 8px; min-width: 0; }
+        #examBarRight { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .bar-logo { font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+                    text-transform: uppercase; color: #7ac042; white-space: nowrap; }
+        .bar-reg  { font-family: monospace; font-size: 11px; color: rgba(255,255,255,0.55);
+                    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .bar-timer {
+            font-family: monospace; font-size: 15px; font-weight: 600;
+            color: #C8960C; background: rgba(200,150,12,0.15);
+            padding: 4px 10px; border-radius: 6px; white-space: nowrap;
+        }
+        .bar-timer.urgent { color: #C0392B; background: rgba(192,57,43,0.12); }
+        .bar-online-badge {
+            font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
+            text-transform: uppercase; color: #185FA5;
+            background: #E6F1FB; padding: 3px 8px; border-radius: 99px;
+        }
+
+        /* Iframe takes remaining height */
+        #examFrame {
+            flex: 1; width: 100%; border: none;
+            /* iOS Safari needs explicit height */
+            min-height: 0;
+        }
+
+        /* Blocked fallback banner */
+        #iframeBlockedBanner {
+            display: none;
+            background: #FEF0F0; color: #C0392B;
+            font-size: 13px; font-weight: 500;
+            padding: 10px 16px; text-align: center;
+            flex-shrink: 0; line-height: 1.5;
+        }
+        #iframeBlockedBanner a { color: #C0392B; font-weight: 700; }
+
         /* ── Location pill ── */
         .loc-pill { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 99px; white-space: nowrap; flex-shrink: 0; }
         .loc-pill.loading { background: #FEF3C7; color: #92400E; }
@@ -314,6 +366,7 @@
                     <div class="inst-row"><div class="inst-num">4</div><div class="inst-text">Ensure your registration number is pre-filled correctly before answering.</div></div>
                     <div class="inst-row"><div class="inst-num">5</div><div class="inst-text">You have <strong>45 minutes</strong> from when you click Start Exam.</div></div>
                     <div class="inst-row"><div class="inst-num">6</div><div class="inst-text">Ensure you are in a quiet environment with a stable internet connection.</div></div>
+                    <div class="inst-row"><div class="inst-num">7</div><div class="inst-text"><strong>If you lose connection mid-exam, do not panic.</strong> Google Forms saves your answers automatically. Reconnect and your answers will still be there — just continue from where you stopped.</div></div>
                 </div>
             </div>
             <!-- Online session code — only shown for ONLINE students -->
@@ -340,19 +393,37 @@
         </div>
     </div>
 
-    <!-- Screen 3: Redirecting -->
+    <!-- Screen 3: Loading (briefly shown before iframe overlay appears) -->
     <div class="screen" id="screenRedirect">
         <div class="card-body">
             <div class="redirect-wrap">
                 <div class="redirect-spinner"></div>
-                <div class="redirect-title">Opening your exam…</div>
-                <div class="redirect-sub">You are being redirected to the exam form.<br>Please do not close this tab.</div>
-                <span class="redirect-link" onclick="doRedirect()">Click here if not redirected automatically</span>
+                <div class="redirect-title">Loading your exam…</div>
+                <div class="redirect-sub">Please wait while your exam is prepared.</div>
             </div>
         </div>
     </div>
 
 </div>
+
+<!-- Fullscreen exam overlay — outside .card so it can cover everything -->
+<div id="examOverlay">
+    <div id="examBar">
+        <div id="examBarLeft">
+            <span class="bar-logo">RFS Exam</span>
+            <span class="bar-reg" id="barReg"></span>
+        </div>
+        <div id="examBarRight">
+            <span id="barOnlineBadge" class="bar-online-badge" style="display:none;">Online</span>
+            <span class="bar-timer" id="barTimer">45:00</span>
+        </div>
+    </div>
+    <div id="iframeBlockedBanner">
+        ⚠️ Your exam could not load here. <a id="blockedLink" href="#" target="_blank">Tap here to open it directly</a> — your session is still active.
+    </div>
+    <iframe id="examFrame" src="about:blank" allow="geolocation" allowfullscreen></iframe>
+</div>
+
 <script>
 // ════════════════════════════════════════════════════════════
 //  CONFIG
@@ -522,9 +593,10 @@ async function handleLogin() {
     try {
         const url = SCRIPT_URL
             + '?action=verify_exam'
-            + '&reg='  + encodeURIComponent(reg)
-            + '&code=' + encodeURIComponent(code)
-            + '&cb='   + Date.now();
+            + '&reg='      + encodeURIComponent(reg)
+            + '&code='     + encodeURIComponent(code)
+            + '&isOnline=' + (isOnline ? 'true' : 'false')
+            + '&cb='       + Date.now();
 
         const response = await fetch(url);
         const data     = await response.json();
@@ -675,58 +747,84 @@ async function handleStart() {
     setTimeout(doRedirect, 1800);
 }
 
+// ════════════════════════════════════════════════════════════
+//  BAR TIMER — runs independently inside the overlay
+// ════════════════════════════════════════════════════════════
+let barTimerInterval = null;
+
+function startBarTimer() {
+    const el = document.getElementById('barTimer');
+    function tick() {
+        if (secondsLeft <= 0) { clearInterval(barTimerInterval); return; }
+        secondsLeft--;
+        const m = Math.floor(secondsLeft / 60);
+        const s = secondsLeft % 60;
+        el.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+        el.className   = 'bar-timer' + (secondsLeft <= 300 ? ' urgent' : '');
+    }
+    barTimerInterval = setInterval(tick, 1000);
+}
+
 function doRedirect() {
     if (!verifiedData || !verifiedData.formUrl) return;
 
-    // Open form in a new tab — URL never appears in this tab's address bar
-    window.open(verifiedData.formUrl, '_blank');
+    const formUrl = verifiedData.formUrl;
 
-    // Wipe the form URL from memory immediately
+    // Populate status bar
+    document.getElementById('barReg').textContent = verifiedData.regNumber || '';
+    if (studentType === 'ONLINE') {
+        document.getElementById('barOnlineBadge').style.display = 'inline-block';
+    }
+
+    // Set iframe src
+    const frame = document.getElementById('examFrame');
+    frame.src = formUrl;
+
+    // Show overlay — covers everything fullscreen
+    document.getElementById('examOverlay').classList.add('active');
+
+    // Lock body scroll so only the iframe scrolls
+    document.body.style.overflow = 'hidden';
+
+    // Wipe URL from memory so it cannot be retrieved from JS console
     verifiedData.formUrl = null;
 
-    // Replace this tab's content with a neutral holding page
-    // (uses replace so the form URL is not in browser history either)
-    document.open();
-    document.write(`<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RFS Examination Portal</title>
-<style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: #1a2a1a;
-    min-height: 100vh;
-    display: flex; align-items: center; justify-content: center;
-    color: #fff;
-    text-align: center;
-    padding: 24px;
-  }
-  .wrap { max-width: 420px; }
-  .icon { font-size: 48px; margin-bottom: 20px; }
-  h2 { font-size: 22px; font-weight: 700; margin-bottom: 12px; color: #7ac042; }
-  p  { font-size: 14px; color: rgba(255,255,255,0.65); line-height: 1.6; }
-  .reg { font-family: monospace; font-size: 13px; margin-top: 16px;
-         background: rgba(255,255,255,0.08); padding: 8px 16px;
-         border-radius: 8px; display: inline-block; color: #7ac042; }
-</style>
-</head>
-<body>
-<div class="wrap">
-  <div class="icon">✅</div>
-  <h2>Your exam is open</h2>
-  <p>Your exam form has been opened in a new tab.<br>
-     Please complete it there. Do not close that tab until you have submitted.</p>
-  <div class="reg">${verifiedData.regNumber}</div>
-  <p style="margin-top:20px; font-size:12px; color:rgba(255,255,255,0.35);">
-     This page is intentionally blank. Do not refresh or navigate back.
-  </p>
-</div>
-</body>
-</html>`);
-    document.close();
+    // Start bar countdown
+    startBarTimer();
+
+    // ── Iframe block detection ────────────────────────────────
+    // If Google blocks the iframe, it loads instantly with no content.
+    // We detect this: if the iframe fires load quickly AND is blank, show fallback.
+    let loadTimer = setTimeout(() => {
+        // After 5s if frame appears blank (cross-origin so we can't read src)
+        // show the fallback banner with a direct link
+        try {
+            // This will throw cross-origin error if Google loaded = good
+            const test = frame.contentWindow.location.href;
+            // If we get here without error, it's about:blank = blocked
+            showIframeBlocked(formUrl);
+        } catch(e) {
+            // Cross-origin error = Google loaded successfully = all good
+        }
+    }, 5000);
+
+    frame.addEventListener('load', () => {
+        clearTimeout(loadTimer);
+        try {
+            const loc = frame.contentWindow.location.href;
+            // Accessible means still about:blank = blocked
+            if (loc === 'about:blank') showIframeBlocked(formUrl);
+        } catch(e) {
+            // Cross-origin = loaded fine
+        }
+    });
+}
+
+function showIframeBlocked(formUrl) {
+    const banner = document.getElementById('iframeBlockedBanner');
+    const link   = document.getElementById('blockedLink');
+    link.href    = formUrl;
+    banner.style.display = 'block';
 }
 </script>
 </body>
