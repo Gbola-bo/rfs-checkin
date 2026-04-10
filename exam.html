@@ -189,6 +189,24 @@
         .loc-pill.ok      { background: var(--success-bg); color: var(--success-text); }
         .loc-pill.err     { background: var(--error-bg); color: var(--error-text); }
 
+        /* ── Online toggle on login screen ── */
+        .online-toggle-wrap {
+            background: var(--bg-surface); border-radius: var(--r-sm);
+            padding: 12px 14px; margin-bottom: 14px;
+        }
+        .online-check-row {
+            display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 0;
+        }
+        .online-check-row input[type="checkbox"] {
+            width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0;
+        }
+        .online-check-label { font-size: 13px; font-weight: 600; color: var(--text-2); }
+        .online-code-field {
+            display: none; margin-top: 12px; padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+        .online-code-field.show { display: block; }
+
         /* ── Online session code field (instructions screen) ── */
         .online-session-wrap { display: none; margin-bottom: 16px; }
         .online-session-wrap.show { display: block; }
@@ -245,6 +263,21 @@
             <div id="locRow" style="display:none; align-items:center; justify-content:space-between; background:var(--bg-surface); border-radius:var(--r-sm); padding:10px 14px; margin-bottom:14px;">
                 <span style="font-size:12px; color:var(--text-3); font-weight:500;">Your location</span>
                 <span class="loc-pill loading" id="locPill">Locating…</span>
+            </div>
+
+            <!-- Online attendance toggle -->
+            <div class="online-toggle-wrap">
+                <label class="online-check-row">
+                    <input type="checkbox" id="onlineToggle" onchange="handleOnlineToggle()">
+                    <span class="online-check-label">I am attending online</span>
+                </label>
+                <div class="online-code-field" id="onlineCodeField">
+                    <label class="field" style="margin-bottom:0;">
+                        <span style="font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.05em;">Online Attendance Code</span>
+                        <input type="text" id="onlineCodeInput" placeholder="Enter the code shown on the screen" maxlength="10" autocomplete="off" oninput="this.value=this.value.toUpperCase();updateLoginBtn()">
+                        <span style="font-size:11px;color:var(--text-3);margin-top:3px;">Enter the code shown on the screen</span>
+                    </label>
+                </div>
             </div>
 
             <button class="btn btn-primary" id="loginBtn" onclick="handleLogin()" disabled>
@@ -368,9 +401,21 @@ regInput.addEventListener('keydown',  e => { if (e.key === 'Enter') codeInput.fo
 codeInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
 
 function updateLoginBtn() {
-    const regOk  = /^RFS\/\d{4}\/\d{3}$/.test(regInput.value.trim());
-    const codeOk = codeInput.value.trim().length >= 4;
-    loginBtn.disabled = !(regOk && codeOk);
+    const regOk      = /^RFS\/\d{4}\/\d{3}$/.test(regInput.value.trim());
+    const codeOk     = codeInput.value.trim().length >= 4;
+    const isOnline   = document.getElementById('onlineToggle').checked;
+    const onlineOk   = !isOnline || document.getElementById('onlineCodeInput').value.trim().length >= 4;
+    loginBtn.disabled = !(regOk && codeOk && onlineOk);
+}
+
+function handleOnlineToggle() {
+    const isOnline = document.getElementById('onlineToggle').checked;
+    const field    = document.getElementById('onlineCodeField');
+    const locRow   = document.getElementById('locRow');
+    field.classList.toggle('show', isOnline);
+    // Hide location row if online — they don't need GPS
+    if (locRow) locRow.style.display = isOnline ? 'none' : 'none'; // locRow only shows post-verify for physical
+    updateLoginBtn();
 }
 function showErr(input, el, msg) { input.classList.add('invalid'); el.textContent = msg; el.classList.add('show'); }
 function clearErr(input, el)     { input.classList.remove('invalid'); el.classList.remove('show'); }
@@ -471,6 +516,9 @@ async function handleLogin() {
     loginBtn.innerHTML = '<span style="font-size:14px">Verifying…</span>';
     loginStatus.className     = 'status-msg';
 
+    const isOnline     = document.getElementById('onlineToggle').checked;
+    const onlineCode   = isOnline ? document.getElementById('onlineCodeInput').value.trim() : '';
+
     try {
         const url = SCRIPT_URL
             + '?action=verify_exam'
@@ -492,7 +540,14 @@ async function handleLogin() {
         // The raw formUrl is never sent — only an obfuscated version
         data.formUrl = xorDecode(data.encodedUrl, code);
         verifiedData = data;
-        studentType  = data.studentType || 'PHYSICAL';
+        // If student declared online on login screen, override studentType
+        if (isOnline) {
+            studentType = 'ONLINE';
+            // Store the online code they entered so instructions screen can pre-fill it
+            data.onlineCodePrefill = onlineCode;
+        } else {
+            studentType = data.studentType || 'PHYSICAL';
+        }
 
         // Show location row only for physical students and start GPS
         if (studentType === 'PHYSICAL') {
@@ -530,6 +585,12 @@ function showInstructions(data) {
     if (onlineWrap) {
         if (studentType === 'ONLINE') onlineWrap.classList.add('show');
         else onlineWrap.classList.remove('show');
+    }
+
+    // Pre-fill session code from login screen if online student
+    if (studentType === 'ONLINE' && data.onlineCodePrefill) {
+        const sci = document.getElementById('sessionCodeInput');
+        if (sci) { sci.value = data.onlineCodePrefill; }
     }
 
     document.getElementById('confirmCheck').checked = false;
