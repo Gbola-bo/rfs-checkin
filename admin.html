@@ -215,7 +215,17 @@
     display: none; /* Hidden by default */
     align-items: center; 
     gap: 8px; 
-    /* ... rest of your existing CSS ... */
+    /* existing rules stay, ADD these: */
+    
+    .topbar { padding: 10px 12px; }
+    
+    .topbar-info { display: none; } /* hide "RFS Admin / Logged in as" on mobile */
+    
+    .exam-toggle { padding: 5px 8px; }
+    #examToggleLabel { display: none; } /* hide "Open Exam" text, keep just the dot */
+    
+    .test-toggle-label { display: none; } /* hide "Test Mode" text, keep just the toggle switch */
+    .test-toggle-wrap { padding: 6px 8px; }
 }
         }
     </style>
