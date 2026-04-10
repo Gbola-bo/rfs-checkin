@@ -482,8 +482,16 @@
         ⚠️ Your exam could not load here. <a id="blockedLink" href="#" target="_blank">Tap here to open it directly</a> — your session is still active.
     </div>
     <iframe id="examFrame" src="about:blank" allow="geolocation" allowfullscreen></iframe>
+    <!-- Submit bar pinned at bottom of iframe -->
+    <div id="submitBar">
+        <div class="submit-bar-text">
+            <strong>Done with the exam?</strong>
+            Only tap after you have submitted the form above.
+        </div>
+        <button id="submitDoneBtn" onclick="confirmSubmitted()">I Have Submitted ✓</button>
+    </div>
 </div>
-    
+
 <!-- Submitted screen — shown after form is submitted -->
 <div id="submittedScreen">
     <div class="sub-icon">✅</div>
@@ -799,7 +807,7 @@ async function handleStart() {
 
         // ── All checks passed — start ──
     showScreen('screenRedirect');
-    timerInterval = setInterval(() => { secondsLeft--; if (secondsLeft <= 0) clearInterval(timerInterval); }, 1000);
+    // timerInterval kept for legacy reference but barTimer owns the actual countdown
     setTimeout(doRedirect, 1800);
 }
 
