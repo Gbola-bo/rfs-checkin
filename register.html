@@ -25,12 +25,12 @@
             --surface:      #F3F5F0;
             --card:         #FFFFFF;
             --r-sm: 8px; --r-md: 12px; --r-lg: 20px;
-            --shadow: 0 8px 48px rgba(0,0,0,0.45), 0 2px 12px rgba(0,0,0,0.25);
+            --shadow: 0 2px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.05);
         }
 
         body {
             font-family: 'DM Sans', sans-serif;
-            background: #1a2a1a;
+            background: #EEF0EB;
             min-height: 100vh;
             display: flex;
             align-items: flex-start;
@@ -41,25 +41,7 @@
             color: var(--text);
         }
 
-        body::before {
-            content: '';
-            position: fixed; inset: 0;
-            background-image: url('hotr-bg.jpg');
-            background-size: cover;
-            background-position: center 30%;
-            filter: blur(3px) brightness(0.35) saturate(0.65);
-            transform: scale(1.05);
-            z-index: 0;
-        }
-        body::after {
-            content: '';
-            position: fixed; inset: 0;
-            background: radial-gradient(ellipse at center, transparent 25%, rgba(5,15,5,0.6) 100%);
-            z-index: 0;
-        }
-
         .card {
-            position: relative; z-index: 1;
             background: var(--card);
             border-radius: var(--r-lg);
             box-shadow: var(--shadow);
@@ -352,7 +334,13 @@
 
         <div class="field">
             <label>When did you join House on the Rock? <span class="required-star">*</span></label>
-            <input type="date" id="joinedHOTR" max="">
+            <div style="position:relative;">
+                <input type="date" id="joinedHOTR" max="" style="padding-left:40px;">
+                <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-3);" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="3" width="16" height="15" rx="2"/>
+                    <path d="M7 1v4M13 1v4M2 8h16"/>
+                </svg>
+            </div>
             <span class="err-text" id="joinedErr"></span>
         </div>
 
@@ -375,7 +363,7 @@
             <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M16 16v-4a2 2 0 00-2-2H6a2 2 0 00-2 2v4"/><circle cx="10" cy="6" r="3"/>
             </svg>
-            Complete Registration
+            Register
         </button>
 
         <div class="status-msg" id="statusMsg"></div>
@@ -420,8 +408,8 @@
                 <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
             </svg>
         </div>
-        <div class="success-title" style="color:var(--warning-text);">Already Registered</div>
-        <div class="success-name">We already have your record in our Database.</div>
+        <div class="success-title" style="color:var(--warning-text);">You're already registered, <span id="dupName"></span>!</div>
+        <div class="success-name">We already have your record in our database.</div>
 
         <div class="reg-display" style="border-color:var(--warning-text);">
             <div class="reg-display-label">Your Registration Number</div>
@@ -567,22 +555,25 @@ async function handleSubmit() {
 
         } else if (data.status === 'duplicate') {
             // Show duplicate screen
-            document.getElementById('formBody').style.display          = 'none';
+            document.getElementById('formBody').style.display = 'none';
             document.getElementById('duplicateScreen').classList.add('show');
-            document.getElementById('dupReg').textContent = data.regNumber;
+            document.getElementById('dupReg').textContent  = data.regNumber;
+            // Personalise the title with their name from the database
+            const dupNameEl = document.getElementById('dupName');
+            if (dupNameEl && data.name) dupNameEl.textContent = data.name;
 
         } else {
             document.getElementById('statusMsg').textContent  = data.message || 'Registration failed. Please try again.';
             document.getElementById('statusMsg').className    = 'status-msg error';
             btn.disabled  = false;
-            btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16v-4a2 2 0 00-2-2H6a2 2 0 00-2 2v4"/><circle cx="10" cy="6" r="3"/></svg>Complete Registration';
+            btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16v-4a2 2 0 00-2-2H6a2 2 0 00-2 2v4"/><circle cx="10" cy="6" r="3"/></svg>Register';
         }
 
     } catch(err) {
         document.getElementById('statusMsg').textContent = 'Connection error — please check your internet and try again.';
         document.getElementById('statusMsg').className   = 'status-msg error';
         btn.disabled  = false;
-        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16v-4a2 2 0 00-2-2H6a2 2 0 00-2 2v4"/><circle cx="10" cy="6" r="3"/></svg>Complete Registration';
+        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16v-4a2 2 0 00-2-2H6a2 2 0 00-2 2v4"/><circle cx="10" cy="6" r="3"/></svg>Register';
     }
 }
 </script>
