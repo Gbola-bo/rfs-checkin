@@ -301,19 +301,19 @@
         <div class="field-grid-2">
             <div class="field">
                 <label>Surname <span class="required-star">*</span></label>
-                <input type="text" id="surname" placeholder="e.g. Okpegboro" autocomplete="family-name">
+                <input type="text" id="surname" placeholder="e.g. Okpegboro" auto="family-name">
                 <span class="err-text" id="surnameErr"></span>
             </div>
             <div class="field">
                 <label>First Name <span class="required-star">*</span></label>
-                <input type="text" id="firstName" placeholder="e.g. Glory" autocomplete="given-name">
+                <input type="text" id="firstName" placeholder="e.g. Glory" auto="given-name">
                 <span class="err-text" id="firstNameErr"></span>
             </div>
         </div>
 
         <div class="field">
             <label>Other Name</label>
-            <input type="text" id="otherName" placeholder="Middle name (optional)" autocomplete="additional-name">
+            <input type="text" id="otherName" placeholder="Middle name (optional)" auto="additional-name">
         </div>
 
         <div class="field">
@@ -336,13 +336,13 @@
 
         <div class="field">
             <label>Email Address <span class="required-star">*</span></label>
-            <input type="email" id="email" placeholder="yourname@email.com" autocomplete="email">
+            <input type="email" id="email" placeholder="yourname@email.com" auto="email">
             <span class="err-text" id="emailErr"></span>
         </div>
 
         <div class="field">
             <label>Phone Number (WhatsApp) <span class="required-star">*</span></label>
-            <input type="tel" id="phone" placeholder="e.g. 08022237233" autocomplete="tel">
+            <input type="tel" id="phone" placeholder="e.g. 08022237233" auto="tel">
             <span class="hint">Enter your WhatsApp number — this is how we'll reach you</span>
             <span class="err-text" id="phoneErr"></span>
         </div>
@@ -375,7 +375,7 @@
             <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M16 16v-4a2 2 0 00-2-2H6a2 2 0 00-2 2v4"/><circle cx="10" cy="6" r="3"/>
             </svg>
-            Complete Registration
+             Registration
         </button>
 
         <div class="status-msg" id="statusMsg"></div>
@@ -575,14 +575,14 @@ async function handleSubmit() {
             document.getElementById('statusMsg').textContent  = data.message || 'Registration failed. Please try again.';
             document.getElementById('statusMsg').className    = 'status-msg error';
             btn.disabled  = false;
-            btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16v-4a2 2 0 00-2-2H6a2 2 0 00-2 2v4"/><circle cx="10" cy="6" r="3"/></svg>Complete Registration';
+            btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16v-4a2 2 0 00-2-2H6a2 2 0 00-2 2v4"/><circle cx="10" cy="6" r="3"/></svg>Register';
         }
 
     } catch(err) {
         document.getElementById('statusMsg').textContent = 'Connection error — please check your internet and try again.';
         document.getElementById('statusMsg').className   = 'status-msg error';
         btn.disabled  = false;
-        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16v-4a2 2 0 00-2-2H6a2 2 0 00-2 2v4"/><circle cx="10" cy="6" r="3"/></svg>Complete Registration';
+        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16v-4a2 2 0 00-2-2H6a2 2 0 00-2 2v4"/><circle cx="10" cy="6" r="3"/></svg>Register';
     }
 }
 </script>
