@@ -287,7 +287,7 @@
         </div>
         <button class="exam-toggle checking" id="examToggleBtn" onclick="toggleExamOpen()" title="Open or close the exam portal">
             <span class="exam-dot"></span>
-            <span id="examToggleLabel">Checking…</span>
+            <span id="examToggleLabel">Exam</span>
         </button>
         <button class="logout-btn" onclick="handleLogout()">Logout</button>
     </div>
@@ -912,7 +912,7 @@ async function checkExamStatus() {
     const label = document.getElementById('examToggleLabel');
     btn.className = 'exam-toggle checking';
     btn.disabled  = true;
-    label.textContent = 'Checking…';
+    label.textContent = 'Exam';
     try {
         const url  = EXAM_SCRIPT_URL + '?action=check_exam_open&cb=' + Date.now();
         const res  = await fetch(url);
