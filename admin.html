@@ -185,6 +185,51 @@
 
         @media (max-width: 400px) { .att-summary { grid-template-columns: 1fr 1fr; } }
 
+        /* ── Score upload panel ── */
+        .upload-zone { border: 2px dashed var(--border); border-radius: var(--r-md); padding: 20px; text-align: center; cursor: pointer; transition: border-color 0.15s, background 0.15s; margin-bottom: 14px; }
+        .upload-zone:hover, .upload-zone.drag-over { border-color: var(--accent); background: var(--accent-dim); }
+        .upload-zone-icon { color: var(--text-3); margin-bottom: 8px; }
+        .upload-zone-title { font-size: 13px; font-weight: 600; color: var(--text-2); margin-bottom: 4px; }
+        .upload-zone-sub { font-size: 12px; color: var(--text-3); }
+        .upload-result { background: var(--surface); border-radius: var(--r-sm); padding: 12px 14px; font-size: 13px; color: var(--text-2); margin-top: 12px; display: none; }
+        .upload-result.show { display: block; }
+
+        /* ── Permissions panel ── */
+        .perm-list { display: flex; flex-direction: column; gap: 0; }
+        .perm-row { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+        .perm-row:last-child { border-bottom: none; }
+        .perm-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warning-text); flex-shrink: 0; margin-top: 4px; }
+        .perm-body { flex: 1; min-width: 0; }
+        .perm-reg { font-size: 12px; font-weight: 600; font-family: 'DM Mono', monospace; color: var(--text); }
+        .perm-meta { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+        .perm-empty { text-align: center; padding: 24px; color: var(--text-3); font-size: 13px; }
+
+        /* ── Report panel ── */
+        .report-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+        .rpt-card { background: var(--surface); border-radius: var(--r-sm); padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
+        .rpt-card-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); }
+        .rpt-card-value { font-size: 28px; font-weight: 600; color: var(--text); line-height: 1; }
+        .rpt-card.eligible   .rpt-card-value { color: #1A5C1A; }
+        .rpt-card.passed     .rpt-card-value { color: #185FA5; }
+        .rpt-card.failed     .rpt-card-value { color: var(--danger); }
+        .rpt-table-wrap { overflow-x: auto; }
+        .rpt-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .rpt-table th { background: var(--surface); padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-3); border-bottom: 1px solid var(--border); white-space: nowrap; }
+        .rpt-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        .rpt-table tr:last-child td { border-bottom: none; }
+        .rpt-table tr:hover td { background: var(--surface); }
+        .rpt-badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 99px; white-space: nowrap; }
+        .rpt-badge.ELIGIBLE    { background: var(--success-bg); color: var(--success-text); }
+        .rpt-badge.ELIGIBLE-W  { background: #E6F1FB; color: #185FA5; }
+        .rpt-badge.MAKE-UP     { background: var(--warning-bg); color: var(--warning-text); }
+        .rpt-badge.NOT-ELIGIBLE { background: var(--error-bg); color: var(--error-text); }
+        .rpt-badge.PASSED      { background: var(--success-bg); color: var(--success-text); }
+        .rpt-badge.PASSED-W    { background: #E6F1FB; color: #185FA5; }
+        .rpt-badge.FAIL        { background: var(--error-bg); color: var(--error-text); }
+        .rpt-badge.DEFERRED    { background: var(--warning-bg); color: var(--warning-text); }
+        .rpt-badge.PENDING     { background: var(--surface); color: var(--text-3); }
+        @media (max-width: 400px) { .report-summary { grid-template-columns: 1fr 1fr; } }
+
         /* ── Activity log ── */
         .log-list { display: flex; flex-direction: column; gap: 0; }
         .log-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
@@ -339,6 +384,9 @@
         <button class="tab-btn active" onclick="switchTab('sunday', this)">Sunday</button>
         <button class="tab-btn" onclick="switchTab('saturday', this)">Saturday</button>
         <button class="tab-btn" onclick="switchTab('attendance', this)">Attendance</button>
+        <button class="tab-btn" onclick="switchTab('scores', this)">Scores</button>
+        <button class="tab-btn" onclick="switchTab('permissions', this)">Permissions</button>
+        <button class="tab-btn" onclick="switchTab('report', this)">Report</button>
         <button class="tab-btn" onclick="switchTab('log', this)">Activity Log</button>
     </div>
 
@@ -482,6 +530,122 @@
         </div>
     </div>
 
+    <!-- Scores Panel -->
+    <div class="panel" id="panelScores">
+        <div class="card">
+            <div class="section-head">
+                <div>
+                    <div class="section-head-title">Upload Test / Assignment / Exam Scores</div>
+                    <div class="section-head-sub">Export Google Form responses as CSV and upload here</div>
+                </div>
+            </div>
+            <div class="section-body">
+                <div class="sel-grid" style="margin-bottom:14px;">
+                    <div class="sel-field">
+                        <label>Assessment Type</label>
+                        <select id="scoreType" onchange="updateTopicList()">
+                            <option value="TEST">Test</option>
+                            <option value="ASSIGNMENT">Assignment</option>
+                            <option value="EXAM">Exam</option>
+                        </select>
+                    </div>
+                    <div class="sel-field">
+                        <label>Topic</label>
+                        <select id="scoreTopic"></select>
+                    </div>
+                </div>
+                <div class="upload-zone" id="uploadZone" onclick="document.getElementById('csvFileInput').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+                    <div class="upload-zone-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    </div>
+                    <div class="upload-zone-title">Click to upload CSV or drag and drop</div>
+                    <div class="upload-zone-sub">Google Form response sheet exported as CSV<br>Expected columns: Timestamp, Score, Reg Number, Surname, First Name</div>
+                </div>
+                <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleFileSelect(this)">
+                <div class="upload-result" id="uploadResult"></div>
+                <button class="btn btn-primary btn-full" id="btnUploadScores" onclick="uploadScores()" disabled style="margin-top:12px;">Upload Scores</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Permissions Panel -->
+    <div class="panel" id="panelPermissions">
+        <div class="card">
+            <div class="section-head">
+                <div>
+                    <div class="section-head-title">Grant Excused Absence</div>
+                    <div class="section-head-sub">Student sent an email — record their excuse here</div>
+                </div>
+            </div>
+            <div class="section-body">
+                <div class="code-grid" style="margin-bottom:14px;">
+                    <div class="code-field">
+                        <label>Registration Number</label>
+                        <input type="text" id="excuseReg" placeholder="RFS/2601/053" style="font-family:'DM Mono',monospace; text-transform:uppercase;">
+                    </div>
+                    <div class="code-field">
+                        <label>Date to Excuse</label>
+                        <input type="date" id="excuseDate">
+                    </div>
+                </div>
+                <div class="code-field" style="margin-bottom:14px;">
+                    <label>Reason</label>
+                    <input type="text" id="excuseReason" placeholder="e.g. Medical appointment, travel, etc.">
+                </div>
+                <button class="btn btn-primary btn-full" id="btnGrantExcuse" onclick="grantExcuse()" disabled>Grant Excuse</button>
+            </div>
+        </div>
+        <div class="card">
+            <div class="section-head">
+                <div>
+                    <div class="section-head-title">Excused Absences</div>
+                    <div class="section-head-sub">All granted excuses for this stream</div>
+                </div>
+                <button class="btn btn-outline" style="flex:none; height:32px; font-size:12px; padding:0 12px;" onclick="loadExcuses()">Refresh</button>
+            </div>
+            <div class="section-body" style="padding-top:8px; padding-bottom:8px;">
+                <div class="perm-list" id="excuseList">
+                    <div class="perm-empty">Load a session to view excuses</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Panel -->
+    <div class="panel" id="panelReport">
+        <div class="card">
+            <div class="section-head">
+                <div>
+                    <div class="section-head-title">Stream Report</div>
+                    <div class="section-head-sub">Computed fresh from all records — attendance, scores, eligibility, final status</div>
+                </div>
+                <button class="btn btn-primary" style="flex:none; height:32px; font-size:12px; padding:0 14px;" onclick="generateReport()">Generate</button>
+            </div>
+            <div class="section-body">
+                <div class="report-summary" id="reportSummary" style="display:none;">
+                    <div class="rpt-card eligible">
+                        <span class="rpt-card-label">Eligible</span>
+                        <span class="rpt-card-value" id="rptEligible">—</span>
+                        <span style="font-size:11px; color:var(--text-3);">Sit for exam</span>
+                    </div>
+                    <div class="rpt-card passed">
+                        <span class="rpt-card-label">Passed</span>
+                        <span class="rpt-card-value" id="rptPassed">—</span>
+                        <span style="font-size:11px; color:var(--text-3);">Final result</span>
+                    </div>
+                    <div class="rpt-card failed">
+                        <span class="rpt-card-label">Failed</span>
+                        <span class="rpt-card-value" id="rptFailed">—</span>
+                        <span style="font-size:11px; color:var(--text-3);">Did not pass</span>
+                    </div>
+                </div>
+                <div id="reportTableWrap">
+                    <div class="att-empty">Click Generate to compute the stream report</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Activity Log Panel -->
     <div class="panel" id="panelLog">
         <div class="card">
@@ -505,7 +669,8 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz5nLwhQOijtweajBY-Wyp91fCCaf4znGx54wU6m_PMBL4uTJjO5KGMSWNEGoJMpNfXiw/exec';
+const SCRIPT_URL         = 'https://script.google.com/macros/s/AKfycbz5nLwhQOijtweajBY-Wyp91fCCaf4znGx54wU6m_PMBL4uTJjO5KGMSWNEGoJMpNfXiw/exec';
+const UNIFIED_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyiWNTYNyJfSzD5c2-3q7kev7vc1Mpv6StTOl5OVyCWzyYepPjzjD-YsRmtDSYUpJxw/exec'; // new unified script
 const EXAM_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzbCjk8RA9peuu4nhAy48N5WYRwEmLws1RIQ_mO_wA7T3aPYoG3iR1Qw0x3Ff-1QefYiQ/exec';
 
 // ── State ─────────────────────────────────────────────────────
@@ -535,6 +700,7 @@ window.addEventListener('DOMContentLoaded', function() {
     if (loadSavedSession()) {
         showDashboard();
     }
+    updateTopicList();
     document.getElementById('loginName').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('loginPassword').focus(); });
     document.getElementById('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
 });
@@ -601,15 +767,7 @@ function handleLogout() {
     document.getElementById('testBanner').classList.remove('show');
 }
 
-// ── Tab switching ─────────────────────────────────────────────
-function switchTab(name, btn) {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('panel' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
-    if (name === 'log')        loadLog();
-    if (name === 'attendance') loadAttendance();
-}
+// ── Tab switching now handled in new JS block above ──────────
 
 // ── Load session ──────────────────────────────────────────────
 async function loadSession() {
@@ -975,6 +1133,278 @@ async function toggleExamOpen() {
         btn.disabled = false;
         updateExamBtn();
     }
+}
+
+// ── Tab switch — trigger new panels ──────────────────────────
+const _origSwitchTab = switchTab;
+function switchTab(name, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+    if (name === 'log')         loadLog();
+    if (name === 'attendance')  loadAttendance();
+    if (name === 'scores')      updateTopicList();
+    if (name === 'permissions') { updateExcuseForm(); loadExcuses(); }
+}
+
+// ── Score Upload ──────────────────────────────────────────────
+const TEST_TOPICS = [
+    'Principles of HOTR','Lordship of Christ','Authority of the Scriptures',
+    'Repentance from Dead Works','Faith Towards God','Doctrine of Baptisms (Water)',
+    'Laying on of Hands','Resurrection of the Dead','Eternal Judgement'
+];
+const ASSIGNMENT_TOPICS = ['AS1','AS2','AS3'];
+let csvFileData = null;
+
+function updateTopicList() {
+    const type  = document.getElementById('scoreType').value;
+    const sel   = document.getElementById('scoreTopic');
+    sel.innerHTML = '';
+    const topics = type === 'TEST' ? TEST_TOPICS : type === 'ASSIGNMENT' ? ASSIGNMENT_TOPICS : ['Final Exam'];
+    topics.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; sel.appendChild(o); });
+}
+
+function handleDragOver(e)  { e.preventDefault(); document.getElementById('uploadZone').classList.add('drag-over'); }
+function handleDragLeave(e) { document.getElementById('uploadZone').classList.remove('drag-over'); }
+function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('uploadZone').classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) readCSVFile(file);
+}
+function handleFileSelect(input) { if (input.files[0]) readCSVFile(input.files[0]); }
+
+function readCSVFile(file) {
+    if (!file.name.endsWith('.csv')) { showToast('Please upload a CSV file', 'err'); return; }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        csvFileData = e.target.result;
+        const lines = csvFileData.trim().split('\n').filter(l => l.trim());
+        const rowCount = Math.max(0, lines.length - 1); // exclude header
+        const result = document.getElementById('uploadResult');
+        result.textContent = '✓ File loaded — ' + rowCount + ' rows detected (excluding header). Click "Upload Scores" to proceed.';
+        result.className = 'upload-result show';
+        document.getElementById('btnUploadScores').disabled = false;
+        document.getElementById('uploadZone').querySelector('.upload-zone-title').textContent = file.name;
+    };
+    reader.readAsText(file);
+}
+
+async function uploadScores() {
+    if (!csvFileData) { showToast('Please select a CSV file first', 'err'); return; }
+    const cls    = document.getElementById('selClass').value;
+    const yr     = document.getElementById('selYear').value;
+    const st     = document.getElementById('selStream').value;
+    const type   = document.getElementById('scoreType').value;
+    const topic  = document.getElementById('scoreTopic').value;
+    const btn    = document.getElementById('btnUploadScores');
+
+    btn.disabled  = true;
+    btn.textContent = 'Uploading…';
+    showToast('Uploading scores for ' + topic + '…', 'warn');
+
+    try {
+        const url = UNIFIED_SCRIPT_URL
+            + '?action=admin_upload_scores'
+            + '&adminName='      + encodeURIComponent(admin.name)
+            + '&password='       + encodeURIComponent(getStoredPass())
+            + '&class='          + encodeURIComponent(cls)
+            + '&year='           + encodeURIComponent(yr)
+            + '&stream='         + encodeURIComponent(st)
+            + '&assessmentType=' + encodeURIComponent(type)
+            + '&topic='          + encodeURIComponent(topic)
+            + '&csvData='        + encodeURIComponent(csvFileData);
+
+        const res  = await fetch(url);
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            showToast(data.message, 'ok');
+            const result = document.getElementById('uploadResult');
+            let msg = '✓ ' + data.written + ' score(s) uploaded for ' + topic;
+            if (data.skipped > 0) msg += ' · ' + data.skipped + ' row(s) skipped';
+            if (data.errors && data.errors.length > 0) msg += '\n⚠ ' + data.errors.join('\n');
+            result.textContent = msg;
+            result.className = 'upload-result show';
+            csvFileData = null;
+            document.getElementById('uploadZone').querySelector('.upload-zone-title').textContent = 'Click to upload CSV or drag and drop';
+        } else {
+            showToast(data.message || 'Upload failed', 'err');
+        }
+    } catch(e) { showToast('Connection error', 'err'); }
+
+    btn.disabled    = false;
+    btn.textContent = 'Upload Scores';
+}
+
+// ── Permissions ───────────────────────────────────────────────
+function updateExcuseForm() {
+    const btn = document.getElementById('btnGrantExcuse');
+    btn.disabled = false;
+    // Set today's date as default
+    document.getElementById('excuseDate').valueAsDate = new Date();
+}
+
+async function grantExcuse() {
+    const cls    = document.getElementById('selClass').value;
+    const yr     = document.getElementById('selYear').value;
+    const st     = document.getElementById('selStream').value;
+    const reg    = document.getElementById('excuseReg').value.trim().toUpperCase();
+    const date   = document.getElementById('excuseDate').value;
+    const reason = document.getElementById('excuseReason').value.trim();
+
+    if (!reg)    { showToast('Please enter a registration number', 'err'); return; }
+    if (!date)   { showToast('Please select a date', 'err'); return; }
+    if (!reason) { showToast('Please enter a reason', 'err'); return; }
+
+    showToast('Granting excuse for ' + reg + '…', 'warn');
+    try {
+        const url = UNIFIED_SCRIPT_URL
+            + '?action=admin_grant_excuse'
+            + '&adminName=' + encodeURIComponent(admin.name)
+            + '&password='  + encodeURIComponent(getStoredPass())
+            + '&class='     + encodeURIComponent(cls)
+            + '&year='      + encodeURIComponent(yr)
+            + '&stream='    + encodeURIComponent(st)
+            + '&reg='       + encodeURIComponent(reg)
+            + '&date='      + encodeURIComponent(date)
+            + '&reason='    + encodeURIComponent(reason);
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (data.status === 'success') {
+            showToast(data.message, 'ok');
+            document.getElementById('excuseReg').value    = '';
+            document.getElementById('excuseReason').value = '';
+            await loadExcuses();
+        } else showToast(data.message || 'Failed', 'err');
+    } catch(e) { showToast('Connection error', 'err'); }
+}
+
+async function loadExcuses() {
+    const cls = document.getElementById('selClass').value;
+    const yr  = document.getElementById('selYear').value;
+    const st  = document.getElementById('selStream').value;
+    const list = document.getElementById('excuseList');
+    list.innerHTML = '<div class="perm-empty">Loading…</div>';
+    try {
+        const url = UNIFIED_SCRIPT_URL
+            + '?action=admin_get_excuses'
+            + '&adminName=' + encodeURIComponent(admin.name)
+            + '&password='  + encodeURIComponent(getStoredPass())
+            + '&class='     + encodeURIComponent(cls)
+            + '&year='      + encodeURIComponent(yr)
+            + '&stream='    + encodeURIComponent(st);
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (data.status !== 'success') { list.innerHTML = '<div class="perm-empty">Could not load excuses.</div>'; return; }
+        if (!data.excuses || data.excuses.length === 0) { list.innerHTML = '<div class="perm-empty">No excused absences recorded for this stream.</div>'; return; }
+        list.innerHTML = data.excuses.map(function(ex) {
+            return '<div class="perm-row"><div class="perm-dot"></div><div class="perm-body">'
+                + '<div class="perm-reg">' + escHtml(ex.reg) + '</div>'
+                + '<div class="perm-meta">' + escHtml(ex.date) + ' &nbsp;·&nbsp; ' + escHtml(ex.reason) + ' &nbsp;·&nbsp; Granted by ' + escHtml(ex.grantedBy) + '</div>'
+                + '</div></div>';
+        }).join('');
+    } catch(e) { list.innerHTML = '<div class="perm-empty">Connection error.</div>'; }
+}
+
+// ── Report ────────────────────────────────────────────────────
+let reportData = null;
+
+async function generateReport() {
+    const cls = document.getElementById('selClass').value;
+    const yr  = document.getElementById('selYear').value;
+    const st  = document.getElementById('selStream').value;
+    const wrap = document.getElementById('reportTableWrap');
+    document.getElementById('reportSummary').style.display = 'none';
+    wrap.innerHTML = '<div class="att-empty">Generating report…</div>';
+    showToast('Computing report for ' + cls + ' ' + yr + ' Stream ' + st + '…', 'warn');
+    try {
+        const url = UNIFIED_SCRIPT_URL
+            + '?action=admin_compute_report'
+            + '&adminName=' + encodeURIComponent(admin.name)
+            + '&password='  + encodeURIComponent(getStoredPass())
+            + '&class='     + encodeURIComponent(cls)
+            + '&year='      + encodeURIComponent(yr)
+            + '&stream='    + encodeURIComponent(st);
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (data.status !== 'success') { wrap.innerHTML = '<div class="att-empty">' + escHtml(data.message || 'Failed to generate report.') + '</div>'; return; }
+
+        reportData = data.results;
+        renderReport(data);
+        showToast('Report generated — ' + data.total + ' students', 'ok');
+    } catch(e) {
+        wrap.innerHTML = '<div class="att-empty">Connection error. Please try again.</div>';
+        showToast('Connection error', 'err');
+    }
+}
+
+function renderReport(data) {
+    const results = data.results || [];
+
+    // Summary counts
+    const eligible = results.filter(r => r.eligibility === 'ELIGIBLE' || r.eligibility === 'ELIGIBLE-W').length;
+    const passed   = results.filter(r => r.finalStatus === 'PASSED' || r.finalStatus === 'PASSED-W').length;
+    const failed   = results.filter(r => r.finalStatus === 'FAIL').length;
+
+    document.getElementById('rptEligible').textContent = eligible;
+    document.getElementById('rptPassed').textContent   = passed;
+    document.getElementById('rptFailed').textContent   = failed;
+    document.getElementById('reportSummary').style.display = 'grid';
+
+    // Table
+    const wrap = document.getElementById('reportTableWrap');
+    if (results.length === 0) { wrap.innerHTML = '<div class="att-empty">No active students found for this stream.</div>'; return; }
+
+    const rows = results.map(function(r) {
+        const eligBadge = '<span class="rpt-badge ' + r.eligibility.replace(/\s/g,'-') + '">' + escHtml(r.eligibility) + '</span>';
+        const statBadge = '<span class="rpt-badge ' + r.finalStatus + '">' + escHtml(r.finalStatus) + '</span>';
+        return '<tr>'
+            + '<td style="font-family:monospace;font-size:11px;">' + escHtml(r.reg) + '</td>'
+            + '<td>' + escHtml(r.lastName + ' ' + r.firstName) + '</td>'
+            + '<td>' + r.attended + '</td>'
+            + '<td>' + r.attPct + '%</td>'
+            + '<td>' + eligBadge + '</td>'
+            + '<td>' + r.testAvg.toFixed(1) + '</td>'
+            + '<td>' + r.examScore + '</td>'
+            + '<td>' + r.grandTotal.toFixed(1) + '</td>'
+            + '<td>' + statBadge + '</td>'
+            + '</tr>';
+    }).join('');
+
+    wrap.innerHTML = '<div class="rpt-table-wrap"><table class="rpt-table">'
+        + '<thead><tr>'
+        + '<th>Reg No.</th><th>Name</th><th>Attended</th><th>Att %</th>'
+        + '<th>Eligibility</th><th>Test Avg</th><th>Exam</th><th>Total</th><th>Status</th>'
+        + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
+        + '<div style="margin-top:12px;text-align:right;">'
+        + '<button class="btn btn-outline" style="flex:none;height:32px;font-size:12px;padding:0 14px;" onclick="downloadReport()">Download CSV</button>'
+        + '</div>';
+}
+
+function downloadReport() {
+    if (!reportData || reportData.length === 0) return;
+    const TEST_TOPICS_SHORT = ['POTR','LOC','AOS','RFDW','FTG','DOB','LOH','ROTD','EJ'];
+    const headers = ['Reg Number','Last Name','First Name','Attended','Excused','Att%','Eligibility',
+        ...TEST_TOPICS_SHORT,'Test Avg','AS1','AS2','AS3','Assign Marks',
+        'Exam Score','Att Marks','Exam Marks','Test Marks','Grand Total','Final Status'];
+    const rows = reportData.map(function(r) {
+        return [
+            r.reg, r.lastName, r.firstName, r.attended, r.excused, r.attPct, r.eligibility,
+            ...(r.testScores || [0,0,0,0,0,0,0,0,0]),
+            r.testAvg,
+            ...(r.assignScores || [0,0,0]),
+            r.assignMarks,
+            r.examScore, r.attMarks, r.examMarks, r.testMarks, r.grandTotal, r.finalStatus
+        ].join(',');
+    });
+    const csv  = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
+    a.download = 'RFS_Report_' + new Date().toISOString().split('T')[0] + '.csv';
+    a.click();
 }
 
 // ── Helpers ───────────────────────────────────────────────────
