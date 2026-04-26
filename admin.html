@@ -342,40 +342,23 @@
 <!-- Main -->
 <div class="main" id="mainContent">
 
-    <!-- Session selector -->
-    <div class="session-card">
+    <!-- Active session display (auto-loaded, no manual selection needed) -->
+    <div class="session-card" id="sessionCard">
         <div class="section-head">
             <div>
-                <div class="section-head-title">Select Session</div>
-                <div class="section-head-sub">Choose the class stream you want to manage</div>
+                <div class="section-head-title">Active Session</div>
+                <div class="section-head-sub" id="sessionCardSub">Loading active session…</div>
             </div>
+            <div id="sessionStatusPill" class="pill pill-closed">Loading</div>
         </div>
-        <div class="section-body">
-            <div class="sel-grid">
-                <div class="sel-field">
-                    <label>Class</label>
-                    <select id="selClass"><option value="FTR">FTR</option></select>
-                </div>
-                <div class="sel-field">
-                    <label>Year</label>
-                    <select id="selYear">
-                        <option value="2026">2026</option><option value="2027">2027</option>
-                        <option value="2028">2028</option><option value="2029">2029</option>
-                        <option value="2030">2030</option><option value="2031">2031</option>
-                        <option value="2032">2032</option><option value="2033">2033</option>
-                        <option value="2034">2034</option><option value="2035">2035</option>
-                    </select>
-                </div>
-                <div class="sel-field">
-                    <label>Stream</label>
-                    <select id="selStream">
-                        <option value="1">Stream 1</option>
-                        <option value="2">Stream 2</option>
-                        <option value="3">Stream 3</option>
-                    </select>
-                </div>
+        <div class="section-body" id="sessionCardBody" style="padding:12px 18px;">
+            <!-- Hidden inputs used by all action functions -->
+            <input type="hidden" id="selClass" value="">
+            <input type="hidden" id="selYear"  value="">
+            <input type="hidden" id="selStream" value="">
+            <div style="font-size:13px; color:var(--text-3); text-align:center;">
+                Detecting active stream…
             </div>
-            <button class="btn btn-primary btn-full" onclick="loadSession()">Load Session</button>
         </div>
     </div>
 
@@ -670,7 +653,7 @@
 
 <script>
 const SCRIPT_URL         = 'https://script.google.com/macros/s/AKfycbz5nLwhQOijtweajBY-Wyp91fCCaf4znGx54wU6m_PMBL4uTJjO5KGMSWNEGoJMpNfXiw/exec';
-const UNIFIED_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyiWNTYNyJfSzD5c2-3q7kev7vc1Mpv6StTOl5OVyCWzyYepPjzjD-YsRmtDSYUpJxw/exec'; // new unified script
+const UNIFIED_SCRIPT_URL = 'PASTE_YOUR_UNIFIED_APPS_SCRIPT_URL_HERE'; // new unified script
 const EXAM_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzbCjk8RA9peuu4nhAy48N5WYRwEmLws1RIQ_mO_wA7T3aPYoG3iR1Qw0x3Ff-1QefYiQ/exec';
 
 // ── State ─────────────────────────────────────────────────────
@@ -742,14 +725,11 @@ function showDashboard() {
     document.getElementById('loginOverlay').style.display = 'none';
     document.getElementById('mainContent').classList.add('show');
     document.getElementById('topbarAdmin').textContent = 'Logged in as ' + admin.name;
-
-    // --- ADD THIS LOGIC ---
     const testToggle = document.getElementById('testToggleWrap');
-    if (admin.role === 'Super Admin') {
-        testToggle.style.display = 'flex'; // Only show for Super Admins
-    } else {
-        testToggle.style.display = 'none'; // Hide for everyone else
-    }
+    if (admin.role === 'Super Admin') testToggle.style.display = 'flex';
+    else testToggle.style.display = 'none';
+    // Auto-load active session — no manual selection needed
+    autoLoadSession();
 }
 
 function handleLogout() {
@@ -769,26 +749,63 @@ function handleLogout() {
 
 // ── Tab switching now handled in new JS block above ──────────
 
-// ── Load session ──────────────────────────────────────────────
-async function loadSession() {
-    const cls    = document.getElementById('selClass').value;
-    const year   = document.getElementById('selYear').value;
-    const stream = document.getElementById('selStream').value;
-    showToast('Loading ' + cls + ' ' + year + ' Stream ' + stream + '…', 'warn');
+// ── Auto-load active session (called on login) ───────────────
+async function autoLoadSession() {
+    const pill = document.getElementById('sessionStatusPill');
+    const sub  = document.getElementById('sessionCardSub');
+    const body = document.getElementById('sessionCardBody');
+
     try {
-        const url  = SCRIPT_URL + '?action=get_status&class=' + cls + '&year=' + year + '&stream=' + stream;
-        const res  = await fetch(url);
+        const res  = await fetch(SCRIPT_URL + '?action=get_active_session&cb=' + Date.now());
         const data = await res.json();
-        if (data.status !== 'success') { showToast(data.message || 'Failed to load', 'err'); return; }
+
+        if (data.status !== 'success') {
+            sub.textContent  = data.message || 'No active session found';
+            pill.textContent = 'No Session';
+            pill.className   = 'pill pill-closed';
+            body.innerHTML   = '<div style="font-size:13px;color:var(--text-3);text-align:center;padding:4px 0;">'
+                + data.message || 'Set a stream to Active = TRUE in Master Config.' + '</div>'
+                + '<input type="hidden" id="selClass" value="">'
+                + '<input type="hidden" id="selYear" value="">'
+                + '<input type="hidden" id="selStream" value="">';
+            return;
+        }
+
+        // Populate hidden inputs for all downstream action functions
+        document.getElementById('selClass').value  = data.className;
+        document.getElementById('selYear').value   = data.year;
+        document.getElementById('selStream').value = data.stream;
+
+        // Update session card UI
+        sub.textContent  = data.className + ' · Year ' + data.year + ' · Stream ' + data.stream;
+        pill.textContent = 'Active';
+        pill.className   = 'pill pill-open';
+        body.innerHTML   = '<div style="display:flex;gap:16px;flex-wrap:wrap;">'
+            + '<div style="flex:1;min-width:120px;"><div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Class</div><div style="font-size:14px;font-weight:600;">' + data.className + '</div></div>'
+            + '<div style="flex:1;min-width:120px;"><div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Year</div><div style="font-size:14px;font-weight:600;">' + data.year + '</div></div>'
+            + '<div style="flex:1;min-width:120px;"><div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Stream</div><div style="font-size:14px;font-weight:600;">Stream ' + data.stream + '</div></div>'
+            + '</div>'
+            + '<input type="hidden" id="selClass"  value="' + data.className + '">'
+            + '<input type="hidden" id="selYear"   value="' + data.year + '">'
+            + '<input type="hidden" id="selStream" value="' + data.stream + '">';
+
         sessionData = data;
-        document.getElementById('topbarSession').textContent = cls + ' · ' + year + ' · S' + stream;
+        document.getElementById('topbarSession').textContent = data.className + ' · ' + data.year + ' · S' + data.stream;
         document.getElementById('tabsRow').classList.add('show');
         updateSundayUI(data);
         updateSaturdayUI(data);
         updateTestModeUI(data.testMode);
-        showToast('Session loaded — ' + cls + ' ' + year + ' Stream ' + stream, 'ok');
-    } catch(e) { showToast('Connection error', 'err'); }
+        checkExamStatus();
+
+    } catch(e) {
+        sub.textContent  = 'Connection error — could not load session';
+        pill.textContent = 'Error';
+        pill.className   = 'pill pill-closed';
+    }
 }
+
+// Keep loadSession as alias for manual refresh if ever needed
+async function loadSession() { await autoLoadSession(); }
 
 // ── Sunday UI ─────────────────────────────────────────────────
 function updateSundayUI(data) {
