@@ -439,7 +439,7 @@ document.addEventListener('DOMContentLoaded', function() {
     emailInput.addEventListener('input', function() {
         const val = emailInput.value.trim();
         if (val === '') { clearErr('emailErr'); return; }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+        if (!/^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,6}$/.test(val)) {
             showErr('emailErr', 'That doesn\'t look like a valid email address');
         } else {
             clearErr('emailErr');
@@ -512,7 +512,7 @@ function validateAll() {
 
     if (!surname)    { showErr('surnameErr',   'Please enter your surname');     valid = false; }
     if (!firstName)  { showErr('firstNameErr', 'Please enter your first name');  valid = false; }
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    if (!email || !/^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,6}$/.test(email))
                      { showErr('emailErr',     'Please enter a valid email address'); valid = false; }
     if (!phone || phone.replace(/\D/g,'').length < 10)
                      { showErr('phoneErr',     'Please enter a valid phone number'); valid = false; }
