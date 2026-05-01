@@ -1,703 +1,1347 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RFS Admin — Attendance Control</title>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <style>
-        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-        :root {
-            --bg:          #F2F4F0;
-            --card:        #FFFFFF;
-            --surface:     #F0F2ED;
-            --accent:      #2D6A2D;
-            --accent-dim:  rgba(45,106,45,0.10);
-            --success-bg:  #EAF5E4; --success-text: #1A5C1A;
-            --error-bg:    #FEF0F0; --error-text:   #C0392B;
-            --warning-bg:  #FEF9E7; --warning-text: #7D5A00;
-            --test-bg:     #FFF3CD; --test-text:    #856404;
-            --text:        #1A2010; --text-2:       #4A5540; --text-3: #8A9A80;
-            --border:      rgba(0,0,0,0.09);
-            --danger:      #C0392B;
-            --r-sm: 6px; --r-md: 10px; --r-lg: 16px;
-        }
-        body { font-family: 'DM Sans', sans-serif; background: var(--bg); min-height: 100vh; color: var(--text); }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RFS Admin · Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-        /* ── Login ── */
-        .login-overlay { position: fixed; inset: 0; background: rgba(15,25,15,0.93); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
-        .login-box { background: var(--card); border-radius: var(--r-lg); padding: 36px 32px; width: 100%; max-width: 380px; box-shadow: 0 24px 64px rgba(0,0,0,0.4); }
-        .login-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; }
-        .login-logo svg { flex-shrink: 0; }
-        .login-logo-text { font-size: 13px; font-weight: 700; color: #26361b; letter-spacing: 0.03em; line-height: 1.2; }
-        .login-logo-sub { font-size: 11px; color: #7ac042; font-weight: 600; letter-spacing: 0.04em; }
-        .login-title { font-size: 19px; font-weight: 600; margin-bottom: 4px; }
-        .login-sub { font-size: 13px; color: var(--text-3); margin-bottom: 24px; }
-        .f-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-        .f-group label { font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; }
-        .login-err { font-size: 12px; color: var(--danger); text-align: center; margin-top: 10px; display: none; }
+:root {
+    /* Surfaces */
+    --bg:           #F4F6F1;
+    --shell:        #FFFFFF;
+    --rail:         #FBFCF9;
+    --card:         #FFFFFF;
 
-        /* ── Topbar ── */
-        .topbar { background: #162416; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
-        .topbar-left { display: flex; align-items: center; gap: 12px; }
-        .topbar-logo svg { display: block; }
-        .topbar-info { display: flex; flex-direction: column; gap: 1px; }
-        .topbar-title { font-size: 13px; font-weight: 600; color: #fff; }
-        .topbar-admin { font-size: 11px; color: rgba(255,255,255,0.5); }
-        .topbar-right { display: flex; align-items: center; gap: 8px; }
-        .topbar-session { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 99px; background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.65); }
+    /* Topbar (deep forest) */
+    --top-bg:       #0E1A14;
+    --top-border:   rgba(255,255,255,0.06);
+    --top-text:     #FFFFFF;
+    --top-muted:    rgba(255,255,255,0.55);
+    --top-chip-bg:  rgba(255,255,255,0.05);
+    --top-chip-bd:  rgba(255,255,255,0.10);
 
-        /* Test mode toggle in topbar */
-        .test-toggle-wrap { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.07); padding: 6px 12px; border-radius: var(--r-sm); cursor: pointer; border: 1px solid rgba(255,255,255,0.1); transition: background 0.15s; }
-        .test-toggle-wrap:hover { background: rgba(255,255,255,0.12); }
-        .test-toggle-wrap.active { background: rgba(255,195,0,0.2); border-color: rgba(255,195,0,0.4); }
-        .test-toggle-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.65); white-space: nowrap; }
-        .test-toggle-wrap.active .test-toggle-label { color: #FFD700; }
-        .toggle-switch { width: 28px; height: 16px; background: rgba(255,255,255,0.2); border-radius: 99px; position: relative; transition: background 0.2s; flex-shrink: 0; }
-        .toggle-switch::after { content:''; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; transition: transform 0.2s; }
-        .test-toggle-wrap.active .toggle-switch { background: #FFD700; }
-        .test-toggle-wrap.active .toggle-switch::after { transform: translateX(12px); background: #162416; }
+    /* Brand greens */
+    --green:        #1F5A2E;
+    --green-deep:   #143E20;
+    --green-soft:   #E7F1E5;
+    --green-tint:   rgba(31,90,46,0.08);
+    --green-dot:    #2EBE60;
 
-        .logout-btn { font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: var(--r-sm); background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.65); border: 1px solid rgba(255,255,255,0.12); cursor: pointer; transition: background 0.15s; }
-        .logout-btn:hover { background: rgba(255,255,255,0.14); }
+    /* Status palette */
+    --amber:        #C58A1B;
+    --amber-soft:   #FFF4D9;
+    --amber-text:   #6E4900;
+    --rose:         #B5402F;
+    --rose-soft:    #FCE8E4;
+    --rose-text:    #6F1D14;
+    --info:         #2E5DA8;
+    --info-soft:    #E2EBF7;
 
-         /* ── Exam open/close button ── */
-        .exam-toggle {
-            display: flex; align-items: center; gap: 7px;
-            padding: 5px 12px; border-radius: var(--r-sm);
-            font-family: 'DM Sans', sans-serif;
-            font-size: 12px; font-weight: 600;
-            cursor: pointer; border: none;
-            transition: background 0.2s, opacity 0.15s;
-            white-space: nowrap;
-        }
-        .exam-toggle:disabled { opacity: 0.5; cursor: not-allowed; }
-        .exam-toggle.checking { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.12); }
-        .exam-toggle.closed   { background: rgba(45,106,45,0.25);   color: #7ac042; border: 1px solid rgba(122,192,66,0.3); }
-        .exam-toggle.open     { background: rgba(192,57,43,0.25);   color: #ff6b5b; border: 1px solid rgba(192,57,43,0.4); }
-        .exam-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-        .exam-toggle.closed .exam-dot { background: #7ac042; }
-        .exam-toggle.open   .exam-dot { background: #ff6b5b; animation: pulse-red 1.2s ease-in-out infinite; }
-        @keyframes pulse-red { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+    /* Text */
+    --ink:          #0E1A14;
+    --ink-2:        #455046;
+    --ink-3:        #7A847B;
+    --ink-4:        #B6BBB4;
 
-        
-        /* ── Main layout ── */
-        .main { max-width: 860px; margin: 0 auto; padding: 24px 16px; display: none; }
-        .main.show { display: block; }
+    /* Lines */
+    --line:         #E7E9E1;
+    --line-soft:    #EFF1EB;
 
-        /* ── Session selector ── */
-        .session-card { background: var(--card); border-radius: var(--r-md); border: 1px solid var(--border); margin-bottom: 20px; overflow: hidden; }
-        .section-head { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-        .section-head-title { font-size: 13px; font-weight: 600; }
-        .section-head-sub { font-size: 12px; color: var(--text-3); margin-top: 2px; }
-        .section-body { padding: 16px 18px; }
-        .sel-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-        .sel-field { display: flex; flex-direction: column; gap: 5px; }
-        .sel-field label { font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; }
+    /* Radii */
+    --r-xs: 4px; --r-sm: 6px; --r-md: 10px; --r-lg: 14px; --r-xl: 18px;
 
-        select, input[type="text"], input[type="password"] {
-            width: 100%; height: 40px; padding: 0 12px;
-            border: 1.5px solid var(--border); border-radius: var(--r-sm);
-            font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
-            color: var(--text); background: var(--surface); outline: none;
-            transition: border-color 0.15s, box-shadow 0.15s;
-        }
-        input[type="text"], input[type="password"] { font-family: 'DM Mono', monospace; font-size: 15px; background: #fff; }
-        select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
-
-        /* ── Tabs ── */
-        .tabs { display: flex; gap: 6px; background: var(--card); padding: 5px; border-radius: var(--r-md); border: 1px solid var(--border); margin-bottom: 16px; display: none; }
-        .tabs.show { display: flex; }
-        .tab-btn { flex: 1; padding: 9px 8px; border: none; border-radius: var(--r-sm); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-3); background: transparent; transition: all 0.15s; }
-        .tab-btn.active { background: var(--accent); color: #fff; }
-
-        /* ── Panel cards ── */
-        .panel { display: none; }
-        .panel.active { display: flex; flex-direction: column; gap: 14px; }
-        .card { background: var(--card); border-radius: var(--r-md); border: 1px solid var(--border); overflow: hidden; }
-
-        /* ── Status pill ── */
-        .pill { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px; white-space: nowrap; }
-        .pill-closed   { background: var(--surface); color: var(--text-3); }
-        .pill-open     { background: var(--success-bg); color: var(--success-text); }
-        .pill-checkout { background: #FFF3E0; color: #8A4000; }
-        .pill-test     { background: var(--test-bg); color: var(--test-text); }
-
-        /* ── Status display row ── */
-        .status-row { display: flex; align-items: center; justify-content: space-between; background: var(--surface); border-radius: var(--r-sm); padding: 10px 14px; margin-bottom: 14px; }
-        .status-row-label { font-size: 12px; color: var(--text-3); font-weight: 500; }
-        .status-row-value { font-size: 13px; font-weight: 600; }
-
-        /* ── Code inputs ── */
-        .code-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
-        .code-field { display: flex; flex-direction: column; gap: 5px; }
-        .code-field label { font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; }
-        .code-hint { font-size: 11px; color: var(--text-3); margin-top: 3px; }
-
-        /* ── Divider ── */
-        .divider { height: 1px; background: var(--border); margin: 16px 0; }
-
-        /* ── Buttons ── */
-        .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
-        .btn { flex: 1; min-width: 100px; height: 40px; border: none; border-radius: var(--r-sm); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: opacity 0.15s, transform 0.1s; }
-        .btn:hover { opacity: 0.87; }
-        .btn:active { transform: scale(0.98); }
-        .btn:disabled { opacity: 0.38; cursor: not-allowed; transform: none; }
-        .btn-primary  { background: var(--accent); color: #fff; }
-        .btn-amber    { background: #E67E22; color: #fff; }
-        .btn-danger   { background: var(--danger); color: #fff; }
-        .btn-outline  { background: transparent; color: var(--text-2); border: 1.5px solid var(--border); }
-        .btn-full     { width: 100%; flex: none; }
-
-        /* ── Attendance summary cards ── */
-        .att-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
-        .att-card { background: var(--surface); border-radius: var(--r-sm); padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
-        .att-card-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); }
-        .att-card-value { font-size: 28px; font-weight: 600; color: var(--text); line-height: 1; }
-        .att-card-sub { font-size: 11px; color: var(--text-3); }
-        .att-card.physical .att-card-value { color: #1A5C1A; }
-        .att-card.online   .att-card-value { color: #185FA5; }
-        .att-card.absent   .att-card-value { color: var(--danger); }
-
-        /* ── Search bar ── */
-        .att-search-wrap { position: relative; margin-bottom: 14px; }
-        .att-search-wrap input { padding-left: 36px; font-family: 'DM Sans', sans-serif; font-size: 13px; letter-spacing: 0; height: 38px; }
-        .att-search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
-
-        /* ── Filter pills ── */
-        .att-filters { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
-        .att-filter { font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 99px; border: 1.5px solid var(--border); background: transparent; color: var(--text-2); cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
-        .att-filter.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-
-        /* ── Student list ── */
-        .att-list { display: flex; flex-direction: column; gap: 0; }
-        .att-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
-        .att-row:last-child { border-bottom: none; }
-        .att-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--accent-dim); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--accent); flex-shrink: 0; }
-        .att-name { flex: 1; min-width: 0; }
-        .att-name-main { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .att-name-reg { font-size: 11px; color: var(--text-3); font-family: 'DM Mono', monospace; }
-        .att-status { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px; white-space: nowrap; flex-shrink: 0; }
-        .att-status.physical { background: var(--success-bg); color: var(--success-text); }
-        .att-status.online   { background: #E6F1FB; color: #185FA5; }
-        .att-status.absent   { background: var(--error-bg); color: var(--error-text); }
-        .att-empty { text-align: center; padding: 24px; color: var(--text-3); font-size: 13px; }
-
-        @media (max-width: 400px) { .att-summary { grid-template-columns: 1fr 1fr; } }
-
-        /* ── Score upload panel ── */
-        .upload-zone { border: 2px dashed var(--border); border-radius: var(--r-md); padding: 20px; text-align: center; cursor: pointer; transition: border-color 0.15s, background 0.15s; margin-bottom: 14px; }
-        .upload-zone:hover, .upload-zone.drag-over { border-color: var(--accent); background: var(--accent-dim); }
-        .upload-zone-icon { color: var(--text-3); margin-bottom: 8px; }
-        .upload-zone-title { font-size: 13px; font-weight: 600; color: var(--text-2); margin-bottom: 4px; }
-        .upload-zone-sub { font-size: 12px; color: var(--text-3); }
-        .upload-result { background: var(--surface); border-radius: var(--r-sm); padding: 12px 14px; font-size: 13px; color: var(--text-2); margin-top: 12px; display: none; }
-        .upload-result.show { display: block; }
-
-        /* ── Permissions panel ── */
-        .perm-list { display: flex; flex-direction: column; gap: 0; }
-        .perm-row { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
-        .perm-row:last-child { border-bottom: none; }
-        .perm-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warning-text); flex-shrink: 0; margin-top: 4px; }
-        .perm-body { flex: 1; min-width: 0; }
-        .perm-reg { font-size: 12px; font-weight: 600; font-family: 'DM Mono', monospace; color: var(--text); }
-        .perm-meta { font-size: 11px; color: var(--text-3); margin-top: 2px; }
-        .perm-empty { text-align: center; padding: 24px; color: var(--text-3); font-size: 13px; }
-
-        /* ── Report panel ── */
-        .report-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
-        .rpt-card { background: var(--surface); border-radius: var(--r-sm); padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
-        .rpt-card-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); }
-        .rpt-card-value { font-size: 28px; font-weight: 600; color: var(--text); line-height: 1; }
-        .rpt-card.eligible   .rpt-card-value { color: #1A5C1A; }
-        .rpt-card.passed     .rpt-card-value { color: #185FA5; }
-        .rpt-card.failed     .rpt-card-value { color: var(--danger); }
-        .rpt-table-wrap { overflow-x: auto; }
-        .rpt-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        .rpt-table th { background: var(--surface); padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-3); border-bottom: 1px solid var(--border); white-space: nowrap; }
-        .rpt-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-        .rpt-table tr:last-child td { border-bottom: none; }
-        .rpt-table tr:hover td { background: var(--surface); }
-        .rpt-badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 99px; white-space: nowrap; }
-        .rpt-badge.ELIGIBLE    { background: var(--success-bg); color: var(--success-text); }
-        .rpt-badge.ELIGIBLE-W  { background: #E6F1FB; color: #185FA5; }
-        .rpt-badge.MAKE-UP     { background: var(--warning-bg); color: var(--warning-text); }
-        .rpt-badge.NOT-ELIGIBLE { background: var(--error-bg); color: var(--error-text); }
-        .rpt-badge.PASSED      { background: var(--success-bg); color: var(--success-text); }
-        .rpt-badge.PASSED-W    { background: #E6F1FB; color: #185FA5; }
-        .rpt-badge.FAIL        { background: var(--error-bg); color: var(--error-text); }
-        .rpt-badge.DEFERRED    { background: var(--warning-bg); color: var(--warning-text); }
-        .rpt-badge.PENDING     { background: var(--surface); color: var(--text-3); }
-        @media (max-width: 400px) { .report-summary { grid-template-columns: 1fr 1fr; } }
-
-        /* ── Activity log ── */
-        .log-list { display: flex; flex-direction: column; gap: 0; }
-        .log-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
-        .log-item:last-child { border-bottom: none; }
-        .log-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; margin-top: 5px; }
-        .log-body { flex: 1; min-width: 0; }
-        .log-action { font-size: 13px; font-weight: 500; color: var(--text); }
-        .log-meta { font-size: 11px; color: var(--text-3); margin-top: 2px; }
-        .log-empty { text-align: center; padding: 24px; color: var(--text-3); font-size: 13px; }
-
-        /* ── Toast ── */
-        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px); background: #1A2D1A; color: #fff; font-size: 13px; font-weight: 500; padding: 11px 18px; border-radius: var(--r-md); box-shadow: 0 8px 32px rgba(0,0,0,0.3); transition: transform 0.3s cubic-bezier(.22,.68,0,1.2); z-index: 300; white-space: nowrap; max-width: 90vw; text-align: center; }
-        .toast.show { transform: translateX(-50%) translateY(0); }
-        .toast.err  { background: var(--danger); }
-        .toast.ok   { background: #1A5C1A; }
-        .toast.warn { background: #7D5A00; }
-
-        /* ── Test mode banner on page ── */
-        .test-banner { background: var(--test-bg); border-bottom: 1px solid rgba(133,100,4,0.2); padding: 8px 20px; text-align: center; font-size: 12px; font-weight: 600; color: var(--test-text); display: none; }
-        .test-banner.show { display: block; }
-
-        @media (max-width: 500px) {
-            .sel-grid { grid-template-columns: 1fr 1fr; }
-            .code-grid { grid-template-columns: 1fr; }
-            .btn-row { flex-direction: column; }
-            .topbar-session { display: none; }
-            .test-toggle-wrap { 
-    display: none; /* Hidden by default */
-    align-items: center; 
-    gap: 8px; 
-    /* existing rules stay, ADD these: */
-    
-    .topbar { padding: 10px 12px; }
-    
-    .topbar-info { display: none; } /* hide "RFS Admin / Logged in as" on mobile */
-    
-    .exam-toggle { padding: 5px 8px; }
-    #examToggleLabel { display: none; } /* hide "Open Exam" text, keep just the dot */
-    
-    .test-toggle-label { display: none; } /* hide "Test Mode" text, keep just the toggle switch */
-    .test-toggle-wrap { padding: 6px 8px; }
+    /* Shape constants */
+    --top-h:        58px;
+    --side-w:       248px;
+    --rail-w:       312px;
 }
-        }
-    </style>
+
+html, body { height: 100%; }
+body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow: hidden;
+}
+
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+input, select { font-family: inherit; color: inherit; }
+input:focus, select:focus { outline: none; }
+
+/* ──────────────────────────────────────────────────────────
+   LOGIN OVERLAY  — split-panel, matches dashboard aesthetic
+   ────────────────────────────────────────────────────────── */
+.login-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    display: grid; grid-template-columns: 1fr 1fr;
+    background: var(--bg);
+}
+.login-brand {
+    background:
+        radial-gradient(ellipse at 25% 20%, rgba(46,190,96,0.15), transparent 60%),
+        radial-gradient(ellipse at 80% 90%, rgba(20,62,32,0.4), transparent 60%),
+        var(--top-bg);
+    color: #fff;
+    padding: 56px 56px 40px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    position: relative; overflow: hidden;
+}
+.login-brand::after {
+    content:''; position: absolute; inset: 0;
+    background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.04) 1px, transparent 0);
+    background-size: 18px 18px; pointer-events: none;
+}
+.login-brand-top { display: flex; align-items: center; gap: 12px; position: relative; z-index: 1; }
+.login-brand-mark {
+    width: 38px; height: 38px; border-radius: 8px;
+    background: #fff; display: grid; place-items: center;
+    color: var(--green-deep); font-weight: 700; font-size: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+}
+.login-brand-name { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.login-brand-headline { position: relative; z-index: 1; }
+.login-brand-headline h1 {
+    font-size: 38px; font-weight: 600; line-height: 1.08;
+    letter-spacing: -0.02em; margin-bottom: 14px;
+    max-width: 12ch;
+}
+.login-brand-headline p {
+    font-size: 14px; color: var(--top-muted); line-height: 1.55;
+    max-width: 38ch;
+}
+.login-brand-foot {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px; color: rgba(255,255,255,0.35);
+    letter-spacing: 0.05em; position: relative; z-index: 1;
+}
+
+.login-form-side { display: flex; align-items: center; justify-content: center; padding: 40px; }
+.login-form { width: 100%; max-width: 360px; }
+.login-form-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--ink-3);
+    letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px;
+}
+.login-form-title { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 6px; }
+.login-form-sub   { font-size: 13.5px; color: var(--ink-3); margin-bottom: 32px; }
+
+.f-group { display: flex; flex-direction: column; gap: 7px; margin-bottom: 16px; }
+.f-group label {
+    font-size: 11px; font-weight: 600; color: var(--ink-2);
+    text-transform: uppercase; letter-spacing: 0.07em;
+}
+.input {
+    width: 100%; height: 44px; padding: 0 14px;
+    border: 1.5px solid var(--line); border-radius: var(--r-sm);
+    background: var(--card); font-size: 14px; transition: border-color .12s;
+}
+.input:focus { border-color: var(--green); }
+.input.mono { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+
+.btn {
+    height: 44px; padding: 0 18px; font-size: 13.5px; font-weight: 600;
+    border-radius: var(--r-sm); display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    transition: background .12s, opacity .12s, transform .04s;
+    white-space: nowrap;
+}
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+.btn-primary { background: var(--green-deep); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: #0E2C18; }
+.btn-outline { background: var(--card); color: var(--ink); border: 1.5px solid var(--line); }
+.btn-outline:hover:not(:disabled) { border-color: var(--ink-3); }
+.btn-amber { background: var(--amber); color: #fff; }
+.btn-amber:hover:not(:disabled) { background: #A37414; }
+.btn-danger { background: var(--rose); color: #fff; }
+.btn-danger:hover:not(:disabled) { background: #962C1E; }
+.btn-ghost { background: transparent; color: var(--ink-2); }
+.btn-ghost:hover { background: var(--line-soft); }
+.btn-full { width: 100%; }
+.btn-sm { height: 34px; padding: 0 13px; font-size: 12.5px; border-radius: var(--r-sm); }
+
+.login-err {
+    margin-top: 14px; padding: 10px 12px;
+    background: var(--rose-soft); color: var(--rose-text);
+    font-size: 12.5px; border-radius: var(--r-sm); display: none;
+}
+.login-err.show { display: block; }
+
+/* ──────────────────────────────────────────────────────────
+   APP SHELL  (hidden until login)
+   ────────────────────────────────────────────────────────── */
+.app { display: none; height: 100vh; flex-direction: column; }
+.app.show { display: flex; }
+
+/* TOPBAR */
+.topbar {
+    height: var(--top-h);
+    background: var(--top-bg);
+    border-bottom: 1px solid var(--top-border);
+    display: flex; align-items: center;
+    padding: 0 18px; gap: 16px;
+    flex-shrink: 0;
+}
+.tb-left { display: flex; align-items: center; gap: 10px; min-width: var(--side-w); }
+.tb-mark {
+    width: 30px; height: 30px; border-radius: 7px;
+    background: #fff; display: grid; place-items: center;
+    color: var(--green-deep);
+}
+.tb-mark svg { width: 18px; height: 18px; }
+.tb-name { color: #fff; font-weight: 700; font-size: 14.5px; letter-spacing: -0.005em; }
+
+.tb-context {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 6px 12px 6px 10px;
+    background: var(--top-chip-bg); border: 1px solid var(--top-chip-bd);
+    border-radius: 99px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--top-muted);
+}
+.tb-context-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green-dot); box-shadow: 0 0 0 3px rgba(46,190,96,0.18);
+}
+.tb-context-pill {
+    margin-left: 4px; padding: 2px 8px;
+    background: rgba(46,190,96,0.12); color: #6FE89A;
+    border-radius: 99px; font-size: 10.5px; font-weight: 500;
+    letter-spacing: 0;
+}
+
+.tb-spacer { flex: 1; }
+
+.tb-right { display: flex; align-items: center; gap: 8px; }
+
+.tb-toggle {
+    display: inline-flex; align-items: center; gap: 8px;
+    height: 32px; padding: 0 12px;
+    background: var(--top-chip-bg); border: 1px solid var(--top-chip-bd);
+    border-radius: 7px; color: var(--top-muted);
+    font-size: 12px; font-weight: 600;
+    transition: background .12s, color .12s, border-color .12s;
+}
+.tb-toggle:hover { background: rgba(255,255,255,0.10); }
+.tb-toggle.active.test {
+    background: rgba(197,138,27,0.20);
+    border-color: rgba(197,138,27,0.45);
+    color: #FFC766;
+}
+.tb-toggle.active.exam-open {
+    background: rgba(46,190,96,0.18);
+    border-color: rgba(46,190,96,0.40);
+    color: #6FE89A;
+}
+.tb-toggle.active.exam-closed {
+    background: rgba(197,138,27,0.20);
+    border-color: rgba(197,138,27,0.45);
+    color: #FFC766;
+}
+.tb-toggle.checking { opacity: 0.55; cursor: wait; }
+.tb-icon { width: 14px; height: 14px; flex-shrink: 0; }
+
+.tb-icon-btn {
+    width: 32px; height: 32px; border-radius: 7px;
+    display: grid; place-items: center;
+    color: var(--top-muted);
+    transition: background .12s, color .12s;
+}
+.tb-icon-btn:hover { background: var(--top-chip-bg); color: #fff; }
+.tb-icon-btn svg { width: 16px; height: 16px; }
+.tb-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--green); color: #fff;
+    display: grid; place-items: center;
+    font-size: 11.5px; font-weight: 700; letter-spacing: 0.02em;
+    border: 2px solid rgba(255,255,255,0.12);
+    cursor: pointer;
+}
+
+/* BODY GRID */
+.body-grid {
+    flex: 1; min-height: 0;
+    display: grid;
+    grid-template-columns: var(--side-w) 1fr var(--rail-w);
+    background: var(--bg);
+}
+
+/* SIDEBAR */
+.side {
+    background: var(--shell);
+    border-right: 1px solid var(--line);
+    display: flex; flex-direction: column;
+    padding: 22px 14px 14px;
+    min-height: 0;
+}
+.side-header {
+    padding: 0 8px 22px;
+    border-bottom: 1px solid var(--line-soft);
+    margin-bottom: 14px;
+}
+.side-header-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--ink-3);
+    letter-spacing: 0.10em; text-transform: uppercase;
+    margin-bottom: 6px;
+}
+.side-header-title {
+    font-size: 15px; font-weight: 700; letter-spacing: -0.005em; color: var(--ink);
+}
+.side-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; min-height: 0; overflow-y: auto; }
+.side-nav::-webkit-scrollbar { width: 0; }
+
+.nav-item {
+    position: relative;
+    display: flex; align-items: center; gap: 12px;
+    height: 42px; padding: 0 14px;
+    border-radius: var(--r-sm);
+    font-size: 12px; font-weight: 600; letter-spacing: 0.05em;
+    color: var(--ink-3); text-transform: uppercase;
+    width: 100%; text-align: left;
+    transition: background .12s, color .12s;
+}
+.nav-item svg { width: 17px; height: 17px; flex-shrink: 0; opacity: 0.85; }
+.nav-item:hover { background: var(--line-soft); color: var(--ink-2); }
+.nav-item.active {
+    background: var(--green-tint);
+    color: var(--green-deep);
+}
+.nav-item.active::before {
+    content: '';
+    position: absolute; right: -14px; top: 6px; bottom: 6px; width: 3px;
+    background: var(--green); border-radius: 3px 0 0 3px;
+}
+.nav-item.active svg { opacity: 1; }
+
+.side-foot { padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.side-logout {
+    display: flex; align-items: center; gap: 12px;
+    width: 100%; height: 42px; padding: 0 14px;
+    border-radius: var(--r-sm);
+    font-size: 12px; font-weight: 600; letter-spacing: 0.05em;
+    color: var(--ink-3); text-transform: uppercase;
+    transition: background .12s, color .12s;
+}
+.side-logout:hover { background: var(--line-soft); color: var(--rose); }
+.side-logout svg { width: 17px; height: 17px; flex-shrink: 0; }
+
+/* MAIN */
+.main {
+    overflow-y: auto; padding: 28px 32px 40px;
+    min-width: 0;
+}
+.main::-webkit-scrollbar { width: 8px; }
+.main::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+
+.page-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 20px; margin-bottom: 24px;
+}
+.page-head-text { flex: 1; min-width: 0; }
+.page-title {
+    font-size: 24px; font-weight: 600; letter-spacing: -0.02em;
+    color: var(--ink); line-height: 1.2;
+}
+.page-sub {
+    font-size: 13.5px; color: var(--ink-3); margin-top: 4px;
+}
+.page-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+.page { display: none; }
+.page.show { display: block; }
+
+/* DASHBOARD STAT CARDS */
+.stats {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 14px; margin-bottom: 24px;
+}
+.stat {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--r-md); padding: 18px 18px 20px;
+    display: flex; flex-direction: column; gap: 14px;
+}
+.stat-icon {
+    width: 38px; height: 38px; border-radius: 9px;
+    display: grid; place-items: center;
+}
+.stat-icon svg { width: 18px; height: 18px; }
+.stat.physical .stat-icon { background: var(--green-soft); color: var(--green-deep); }
+.stat.online   .stat-icon { background: var(--green-soft); color: var(--green-deep); }
+.stat.absent   .stat-icon { background: var(--rose-soft);  color: var(--rose-text); }
+
+.stat-label {
+    font-size: 11px; font-weight: 600; color: var(--ink-3);
+    letter-spacing: 0.08em; text-transform: uppercase;
+}
+.stat-value {
+    font-size: 30px; font-weight: 600; letter-spacing: -0.02em;
+    color: var(--ink); line-height: 1; margin-top: 2px;
+}
+.stat-foot { font-size: 11.5px; color: var(--ink-3); }
+
+.dash-empty {
+    background: var(--card); border: 1px dashed var(--line);
+    border-radius: var(--r-md); padding: 40px 20px;
+    text-align: center; color: var(--ink-3); font-size: 13.5px;
+}
+
+/* CARDS USED INSIDE PAGES */
+.card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--r-md); margin-bottom: 16px;
+    overflow: hidden;
+}
+.card-head {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--line-soft);
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.card-head-text { min-width: 0; }
+.card-title { font-size: 14px; font-weight: 600; letter-spacing: -0.005em; }
+.card-sub { font-size: 12.5px; color: var(--ink-3); margin-top: 2px; }
+.card-body { padding: 18px 20px; }
+
+/* PILL */
+.pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 99px;
+    font-size: 11px; font-weight: 600;
+}
+.pill-open    { background: var(--green-soft); color: var(--green-deep); }
+.pill-closed  { background: var(--line-soft);  color: var(--ink-3); }
+.pill-test    { background: var(--amber-soft); color: var(--amber-text); }
+.pill-checkout{ background: #E1ECFB; color: #1F3D75; }
+
+.status-row {
+    background: var(--line-soft); padding: 10px 14px;
+    border-radius: var(--r-sm); margin-bottom: 14px;
+    font-size: 13px; color: var(--ink-2);
+}
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Code field */
+.code-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.code-field label {
+    font-size: 11px; font-weight: 600; color: var(--ink-2);
+    text-transform: uppercase; letter-spacing: 0.07em;
+}
+.code-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* ATTENDANCE PAGE */
+.att-summary {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 10px; margin-bottom: 14px;
+}
+.att-card {
+    padding: 12px 14px; border-radius: var(--r-sm);
+    background: var(--line-soft);
+    display: flex; flex-direction: column; gap: 2px;
+}
+.att-card.physical { background: var(--green-soft); }
+.att-card.online   { background: #E1ECFB; }
+.att-card.absent   { background: var(--rose-soft); }
+.att-card-label {
+    font-size: 10.5px; font-weight: 600;
+    letter-spacing: 0.07em; text-transform: uppercase;
+    color: var(--ink-3);
+}
+.att-card.physical .att-card-label { color: var(--green-deep); }
+.att-card.online   .att-card-label { color: #1F3D75; }
+.att-card.absent   .att-card-label { color: var(--rose-text); }
+.att-card-value { font-size: 22px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; }
+.att-card-sub   { font-size: 11px; color: var(--ink-3); }
+
+.att-search-wrap { position: relative; margin-bottom: 12px; }
+.att-search-icon {
+    position: absolute; top: 50%; left: 12px; transform: translateY(-50%);
+    color: var(--ink-3); pointer-events: none;
+}
+.att-search-wrap .input { padding-left: 34px; height: 38px; }
+
+.att-filters { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.att-filter {
+    height: 28px; padding: 0 12px;
+    border-radius: 99px; font-size: 11.5px; font-weight: 500;
+    background: var(--line-soft); color: var(--ink-2);
+    border: 1px solid transparent;
+    transition: background .12s, color .12s, border-color .12s;
+}
+.att-filter:hover { background: #E5E8DD; }
+.att-filter.active { background: var(--ink); color: #fff; }
+
+.att-list { display: flex; flex-direction: column; gap: 4px; max-height: 480px; overflow-y: auto; padding-right: 4px; }
+.att-list::-webkit-scrollbar { width: 6px; }
+.att-list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+
+.att-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px; border-radius: var(--r-sm);
+    background: var(--line-soft);
+}
+.att-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--green); color: #fff;
+    display: grid; place-items: center;
+    font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+.att-name { flex: 1; min-width: 0; }
+.att-name-main { font-size: 13px; font-weight: 600; color: var(--ink); }
+.att-name-reg  { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-3); margin-top: 1px; }
+.att-status {
+    padding: 3px 9px; border-radius: 99px;
+    font-size: 10.5px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    flex-shrink: 0;
+}
+.att-status.physical { background: var(--green-soft); color: var(--green-deep); }
+.att-status.online   { background: #E1ECFB; color: #1F3D75; }
+.att-status.absent   { background: var(--rose-soft); color: var(--rose-text); }
+.att-empty {
+    padding: 28px 20px; text-align: center;
+    color: var(--ink-3); font-size: 13px;
+    background: var(--line-soft); border-radius: var(--r-sm);
+}
+
+/* SCORES */
+.sel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.sel-field { display: flex; flex-direction: column; gap: 6px; }
+.sel-field label {
+    font-size: 11px; font-weight: 600; color: var(--ink-2);
+    text-transform: uppercase; letter-spacing: 0.07em;
+}
+.upload-zone {
+    border: 2px dashed var(--line); border-radius: var(--r-md);
+    padding: 36px 20px; text-align: center;
+    cursor: pointer; transition: border-color .12s, background .12s;
+}
+.upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--green); background: var(--green-tint);
+}
+.upload-zone-icon { color: var(--ink-3); margin: 0 auto 10px; }
+.upload-zone-title { font-size: 13.5px; font-weight: 600; color: var(--ink-2); margin-bottom: 4px; }
+.upload-zone-sub   { font-size: 12px; color: var(--ink-3); }
+.upload-result {
+    margin-top: 12px; padding: 10px 12px;
+    background: var(--green-soft); color: var(--green-deep);
+    font-size: 12px; border-radius: var(--r-sm);
+    display: none; white-space: pre-wrap;
+}
+.upload-result.show { display: block; }
+
+/* PERMISSIONS */
+.perm-list { display: flex; flex-direction: column; gap: 6px; }
+.perm-row {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 10px 12px; border-radius: var(--r-sm);
+    background: var(--line-soft);
+}
+.perm-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green); margin-top: 6px; flex-shrink: 0;
+}
+.perm-body { flex: 1; min-width: 0; }
+.perm-reg { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; }
+.perm-meta { font-size: 11.5px; color: var(--ink-3); margin-top: 2px; }
+.perm-empty {
+    padding: 24px 20px; text-align: center;
+    color: var(--ink-3); font-size: 13px;
+}
+
+/* REPORT */
+.rpt-summary {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 10px; margin-bottom: 16px; display: none;
+}
+.rpt-summary.show { display: grid; }
+.rpt-card {
+    padding: 14px 16px; border-radius: var(--r-md);
+    display: flex; flex-direction: column; gap: 4px;
+}
+.rpt-card.eligible { background: var(--green-soft); }
+.rpt-card.passed   { background: #DDEEDD; }
+.rpt-card.failed   { background: var(--rose-soft); }
+.rpt-card-label {
+    font-size: 10.5px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-3);
+}
+.rpt-card-value { font-size: 26px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; }
+
+.rpt-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r-sm); }
+.rpt-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.rpt-table th {
+    background: var(--line-soft);
+    padding: 10px 12px; text-align: left;
+    font-weight: 600; color: var(--ink-2);
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+}
+.rpt-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line-soft);
+    color: var(--ink);
+}
+.rpt-table tr:last-child td { border-bottom: none; }
+.rpt-table tr:hover td { background: var(--line-soft); }
+.rpt-badge {
+    padding: 3px 8px; border-radius: 99px;
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+.rpt-badge.ELIGIBLE,
+.rpt-badge.PASSED { background: var(--green-soft); color: var(--green-deep); }
+.rpt-badge.ELIGIBLE-W,
+.rpt-badge.PASSED-W { background: #E1ECFB; color: #1F3D75; }
+.rpt-badge.MAKE-UP,
+.rpt-badge.DEFERRED,
+.rpt-badge.PENDING { background: var(--amber-soft); color: var(--amber-text); }
+.rpt-badge.NOT-ELIGIBLE,
+.rpt-badge.FAIL { background: var(--rose-soft); color: var(--rose-text); }
+
+/* RIGHT RAIL — Live Activity Log */
+.rail {
+    background: var(--rail);
+    border-left: 1px solid var(--line);
+    display: flex; flex-direction: column;
+    min-height: 0;
+}
+.rail-head {
+    padding: 22px 22px 18px;
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+    border-bottom: 1px solid var(--line-soft);
+}
+.rail-head-text { flex: 1; min-width: 0; }
+.rail-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: var(--ink); }
+.rail-status {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px; color: var(--green-deep);
+    letter-spacing: 0.07em; text-transform: uppercase;
+}
+.rail-status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green-dot); box-shadow: 0 0 0 3px rgba(46,190,96,0.18);
+    animation: pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+.rail-status.offline { color: var(--ink-3); }
+.rail-status.offline .rail-status-dot { background: var(--ink-3); box-shadow: none; animation: none; }
+
+.rail-icon-btn {
+    width: 30px; height: 30px; border-radius: 6px;
+    display: grid; place-items: center;
+    color: var(--ink-3); transition: background .12s, color .12s;
+}
+.rail-icon-btn:hover { background: var(--line-soft); color: var(--ink); }
+.rail-icon-btn svg { width: 15px; height: 15px; }
+
+.rail-list {
+    flex: 1; overflow-y: auto;
+    padding: 8px 18px 8px;
+}
+.rail-list::-webkit-scrollbar { width: 6px; }
+.rail-list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+
+.log-item {
+    position: relative;
+    padding: 14px 4px 14px 16px;
+    border-bottom: 1px solid var(--line-soft);
+}
+.log-item:last-child { border-bottom: none; }
+.log-item::before {
+    content:''; position: absolute;
+    left: 0; top: 19px; width: 4px; height: 4px;
+    background: var(--ink-3); border-radius: 50%;
+}
+.log-item.green::before  { background: var(--green-dot); box-shadow: 0 0 0 3px rgba(46,190,96,0.15); }
+.log-item.amber::before  { background: var(--amber); box-shadow: 0 0 0 3px rgba(197,138,27,0.18); }
+.log-item.rose::before   { background: var(--rose);  box-shadow: 0 0 0 3px rgba(181,64,47,0.18); }
+.log-item.info::before   { background: var(--info);  box-shadow: 0 0 0 3px rgba(46,93,168,0.18); }
+
+.log-row {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 10px; margin-bottom: 4px;
+}
+.log-action { font-size: 13px; font-weight: 600; color: var(--ink); line-height: 1.3; }
+.log-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px; color: var(--ink-3);
+    letter-spacing: 0.04em; flex-shrink: 0;
+}
+.log-detail { font-size: 12px; color: var(--ink-3); line-height: 1.45; }
+
+.rail-empty {
+    padding: 40px 20px; text-align: center;
+    color: var(--ink-3); font-size: 13px;
+}
+
+.rail-foot {
+    padding: 14px 18px;
+    border-top: 1px solid var(--line-soft);
+}
+.rail-foot button {
+    width: 100%; height: 38px; border-radius: var(--r-sm);
+    background: var(--line-soft); color: var(--ink-2);
+    font-size: 12.5px; font-weight: 600;
+    transition: background .12s;
+}
+.rail-foot button:hover { background: #E5E8DD; }
+
+/* TEST MODE BANNER */
+.test-banner {
+    background: var(--amber-soft);
+    color: var(--amber-text);
+    text-align: center; padding: 8px 20px;
+    font-size: 12.5px; font-weight: 500;
+    border-bottom: 1px solid rgba(197,138,27,0.20);
+    display: none;
+}
+.test-banner.show { display: block; }
+
+/* TOAST */
+.toast {
+    position: fixed; bottom: 22px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--ink); color: #fff;
+    padding: 11px 18px; border-radius: var(--r-sm);
+    font-size: 13px; font-weight: 500;
+    opacity: 0; transition: opacity .2s, transform .2s;
+    z-index: 300; pointer-events: none;
+    max-width: 90vw;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.ok   { background: var(--green-deep); }
+.toast.err  { background: var(--rose); }
+.toast.warn { background: var(--amber); color: #fff; }
+
+/* RESPONSIVE — stack rail under main on narrower screens */
+@media (max-width: 1280px) {
+    :root { --rail-w: 280px; --side-w: 220px; }
+}
+@media (max-width: 1100px) {
+    .body-grid { grid-template-columns: var(--side-w) 1fr; }
+    .rail { display: none; }
+}
+@media (max-width: 720px) {
+    .login-overlay { grid-template-columns: 1fr; }
+    .login-brand { padding: 32px 28px; }
+    .login-brand-headline h1 { font-size: 28px; }
+    .body-grid { grid-template-columns: 1fr; }
+    .side { display: none; }
+    .main { padding: 18px 16px 32px; }
+    .stats { grid-template-columns: 1fr; }
+    .att-summary { grid-template-columns: 1fr; }
+    .code-grid, .sel-grid { grid-template-columns: 1fr; }
+    .tb-context { display: none; }
+}
+</style>
 </head>
 <body>
 
-<!-- Login -->
+<!-- ────────── LOGIN OVERLAY ────────── -->
 <div class="login-overlay" id="loginOverlay">
-    <div class="login-box">
-        <div class="login-logo">
-            <svg viewBox="0 0 1535.61 720.7" width="52" height="24">
-                <path fill="#7ac042" d="M0,693.1l17.76-27.95,78.77-14.93,39.53-55.38c77.39-18.85,157.19-33.28,236.48-44.4,298.97-41.95,607.51-36.4,904.31,19.14,48.81,9.13,92.27,16.51,137.14,38.78,15.07,7.48,54.7,29.33,64.06,41.87,6.62,8.87,11.26,24.98,17.82,34.63,6.09,3.05,24.83,2.93,29.31,6.17,1.19.86,10.43,20.26,10.44,21.53-8.4,1.77-17.28-.18-25.46-.53-172.91-7.3-345.62-20.92-518.95-15.98-120.92,3.45-242.02,15.47-362.82,21.05-167.22,7.73-335,2.5-501.9-11.03-42.2-3.42-84.32-8.22-126.47-11.98v-1Z"/>
-                <path fill="#26361b" d="M905.76,112.87v160.78c24.25-7.17,48.56-17.58,74.47-15.96,28.01,1.75,53.53,16.33,75.81,32.13,50,35.45,119.73,106.25,181.15,113.65,13.1,1.58,26.08-1.17,36.47,9.51,5.34,5.49,12.01,21.51,12.01,28.95v22.47l-64.98,1v45.94c-35.89-4.17-71.67-10.41-107.6-14.86-242.16-30.01-485.68-27.78-727.54,4.01-19.03,2.5-37.9,6.26-57.05,7.91-2.5-13.93-2.65-28.83-1.58-43h-41.99v-31.46c0-3.13,1.55-12.2,2.48-15.5,2.27-8.01,6.95-12.37,15.27-13.7,101.98-.92,204.14,1.97,304.17-19.72,86.33-18.72,163.38-55.83,243.75-90.56.54-17.23-.14-34.53.17-51.77.1-5.48-.09-10.99,0-16.48,15.76-35.82,32.94-71.42,50.13-106.71.93-1.91,1.92-4.24,3-5.99.46-.74,1.51-2.57,1.85-.64Z"/>
-                <path fill="#f6eb19" d="M850.78,242.7c-75.13,29.86-146.12,67.66-224.73,88.6-38.12,10.16-77.21,16.63-116.54,20.16l-1.47-1.58c-9.55-57.54-3.35-116.46,19.35-170.07C583.95,46.3,728.79-28.69,870.99,10.3c109.33,29.97,193.87,126.56,210.72,238.39-1.54.38-2.17-.63-3.28-1.2-7.95-4.12-16.61-11.38-25.03-15.94-30.39-16.47-65.95-25.9-100.59-19.82l-47.04-98.85c-.35-1.93-1.4-.09-1.85.64-1.08,1.75-2.07,4.08-3,5.99-17.19,35.29-34.37,70.89-50.13,106.71-.09,5.49.1,11,0,16.48Z"/>
-            </svg>
-            <div>
-                <div class="login-logo-text">House on the Rock Lagos</div>
-                <div class="login-logo-sub">Rock Foundation School</div>
+    <aside class="login-brand">
+        <div class="login-brand-top">
+            <div class="login-brand-mark">R</div>
+            <div class="login-brand-name">Rock Foundation School</div>
+        </div>
+        <div class="login-brand-headline">
+            <h1>Command center for stream operations.</h1>
+            <p>Manage attendance, scores, permissions, and exam access from a single console.</p>
+        </div>
+        <div class="login-brand-foot">RFS · ADMIN v1.0 · HOTR LAGOS</div>
+    </aside>
+    <div class="login-form-side">
+        <div class="login-form">
+            <div class="login-form-eyebrow">Restricted Access</div>
+            <div class="login-form-title">Welcome back.</div>
+            <div class="login-form-sub">Sign in with your admin credentials to continue.</div>
+            <div class="f-group">
+                <label for="loginName">Name</label>
+                <input type="text" id="loginName" class="input" autocomplete="username" placeholder="e.g. Tunde A.">
             </div>
+            <div class="f-group">
+                <label for="loginPassword">Password</label>
+                <input type="password" id="loginPassword" class="input" autocomplete="current-password" placeholder="••••••••">
+            </div>
+            <button class="btn btn-primary btn-full" id="loginBtn" onclick="handleLogin()" style="margin-top:6px;">Sign in</button>
+            <div class="login-err" id="loginErr"></div>
         </div>
-        <div class="login-title">Admin Login</div>
-        <div class="login-sub">Attendance Control Panel</div>
-        <div class="f-group">
-            <label>Your Name</label>
-            <input type="text" id="loginName" placeholder="Firstname Lastname" autocomplete="off" style="font-family:'DM Sans',sans-serif; font-size:14px; letter-spacing:0;">
-        </div>
-        <div class="f-group">
-            <label>Password</label>
-            <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="off">
-        </div>
-        <button class="btn btn-primary btn-full" style="margin-top:8px; height:44px;" onclick="handleLogin()">Login</button>
-        <div class="login-err" id="loginErr"></div>
     </div>
 </div>
 
-<!-- Test mode banner -->
-<div class="test-banner" id="testBanner">Test Mode Active — Entries will be marked as TEST in the attendance sheet</div>
+<!-- ────────── APP SHELL ────────── -->
+<div class="app" id="app">
 
-<!-- Topbar -->
-<div class="topbar">
-    <div class="topbar-left">
-        <div class="topbar-logo">
-            <svg viewBox="0 0 1535.61 720.7" width="44" height="20">
-                <path fill="#7ac042" d="M0,693.1l17.76-27.95,78.77-14.93,39.53-55.38c77.39-18.85,157.19-33.28,236.48-44.4,298.97-41.95,607.51-36.4,904.31,19.14,48.81,9.13,92.27,16.51,137.14,38.78,15.07,7.48,54.7,29.33,64.06,41.87,6.62,8.87,11.26,24.98,17.82,34.63,6.09,3.05,24.83,2.93,29.31,6.17,1.19.86,10.43,20.26,10.44,21.53-8.4,1.77-17.28-.18-25.46-.53-172.91-7.3-345.62-20.92-518.95-15.98-120.92,3.45-242.02,15.47-362.82,21.05-167.22,7.73-335,2.5-501.9-11.03-42.2-3.42-84.32-8.22-126.47-11.98v-1Z"/>
-                <path fill="#4a7a2a" d="M905.76,112.87v160.78c24.25-7.17,48.56-17.58,74.47-15.96,28.01,1.75,53.53,16.33,75.81,32.13,50,35.45,119.73,106.25,181.15,113.65,13.1,1.58,26.08-1.17,36.47,9.51,5.34,5.49,12.01,21.51,12.01,28.95v22.47l-64.98,1v45.94c-35.89-4.17-71.67-10.41-107.6-14.86-242.16-30.01-485.68-27.78-727.54,4.01-19.03,2.5-37.9,6.26-57.05,7.91-2.5-13.93-2.65-28.83-1.58-43h-41.99v-31.46c0-3.13,1.55-12.2,2.48-15.5,2.27-8.01,6.95-12.37,15.27-13.7,101.98-.92,204.14,1.97,304.17-19.72,86.33-18.72,163.38-55.83,243.75-90.56.54-17.23-.14-34.53.17-51.77.1-5.48-.09-10.99,0-16.48,15.76-35.82,32.94-71.42,50.13-106.71.93-1.91,1.92-4.24,3-5.99.46-.74,1.51-2.57,1.85-.64Z"/>
-                <path fill="#f6eb19" d="M850.78,242.7c-75.13,29.86-146.12,67.66-224.73,88.6-38.12,10.16-77.21,16.63-116.54,20.16l-1.47-1.58c-9.55-57.54-3.35-116.46,19.35-170.07C583.95,46.3,728.79-28.69,870.99,10.3c109.33,29.97,193.87,126.56,210.72,238.39-1.54.38-2.17-.63-3.28-1.2-7.95-4.12-16.61-11.38-25.03-15.94-30.39-16.47-65.95-25.9-100.59-19.82l-47.04-98.85c-.35-1.93-1.4-.09-1.85.64-1.08,1.75-2.07,4.08-3,5.99-17.19,35.29-34.37,70.89-50.13,106.71-.09,5.49.1,11,0,16.48Z"/>
-            </svg>
+    <!-- TOPBAR -->
+    <header class="topbar">
+        <div class="tb-left">
+            <div class="tb-mark">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 11.5L12 4l9 7.5"/><path d="M5 10v9.5h14V10"/><path d="M10 19.5v-5h4v5"/>
+                </svg>
+            </div>
+            <div class="tb-name">Rock Foundation School</div>
         </div>
-        <div class="topbar-info">
-            <div class="topbar-title">RFS Admin</div>
-            <div class="topbar-admin" id="topbarAdmin">Not logged in</div>
+
+        <div class="tb-context" id="tbContext">
+            <span class="tb-context-dot"></span>
+            <span id="tbContextText">Loading session…</span>
+            <span class="tb-context-pill" id="tbContextPill" style="display:none;">Active Session</span>
         </div>
+
+        <div class="tb-spacer"></div>
+
+        <div class="tb-right">
+            <button class="tb-toggle" id="testToggle" onclick="toggleTestMode()" title="Toggle test mode (Super Admin only)" style="display:none;">
+                <svg class="tb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 3v6a6 6 0 0 0 12 0V3"/><path d="M5 21h14"/><path d="M9 21l1-6"/><path d="M15 21l-1-6"/>
+                </svg>
+                <span id="testToggleLabel">Test Mode</span>
+            </button>
+            <button class="tb-toggle checking" id="examToggle" onclick="toggleExamOpen()" title="Open or close the exam portal">
+                <svg class="tb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/>
+                </svg>
+                <span id="examToggleLabel">Exams</span>
+            </button>
+            <button class="tb-icon-btn" title="Notifications">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 21a2 2 0 0 0 4 0"/>
+                </svg>
+            </button>
+            <button class="tb-icon-btn" title="Settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+                </svg>
+            </button>
+            <div class="tb-avatar" id="tbAvatar" title="Account">RF</div>
+        </div>
+    </header>
+
+    <div class="test-banner" id="testBanner">Test Mode Active — entries will be marked as TEST in the attendance sheet</div>
+
+    <!-- BODY GRID: Sidebar / Main / Rail -->
+    <div class="body-grid">
+
+        <!-- SIDEBAR -->
+        <nav class="side">
+            <div class="side-header">
+                <div class="side-header-eyebrow">Command Center</div>
+                <div class="side-header-title">Admin v1.0</div>
+            </div>
+
+            <div class="side-nav">
+                <button class="nav-item active" data-page="dashboard" onclick="switchPage('dashboard', this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+                    Dashboard
+                </button>
+                <button class="nav-item" data-page="sunday" onclick="switchPage('sunday', this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    Sunday
+                </button>
+                <button class="nav-item" data-page="saturday" onclick="switchPage('saturday', this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
+                    Saturday
+                </button>
+                <button class="nav-item" data-page="attendance" onclick="switchPage('attendance', this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11l-3 3-1.5-1.5"/></svg>
+                    Attendance
+                </button>
+                <button class="nav-item" data-page="scores" onclick="switchPage('scores', this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9 12 2"/></svg>
+                    Scores
+                </button>
+                <button class="nav-item" data-page="permissions" onclick="switchPage('permissions', this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0"/></svg>
+                    Permissions
+                </button>
+                <button class="nav-item" data-page="report" onclick="switchPage('report', this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 5-7"/></svg>
+                    Report
+                </button>
+            </div>
+
+            <div class="side-foot">
+                <button class="side-logout" onclick="handleLogout()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+                    Logout
+                </button>
+            </div>
+        </nav>
+
+        <!-- MAIN -->
+        <main class="main">
+
+            <!-- ─── DASHBOARD PAGE ─── -->
+            <section class="page show" id="pageDashboard">
+                <div class="page-head">
+                    <div class="page-head-text">
+                        <h1 class="page-title">Operational Dashboard</h1>
+                        <p class="page-sub">Overview of current session engagement and attendance.</p>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-outline btn-sm" onclick="exportDailyReport()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Export Daily Report
+                        </button>
+                        <button class="btn btn-primary btn-sm" onclick="switchPage('attendance', document.querySelector('.nav-item[data-page=attendance]'))">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            View Attendance
+                        </button>
+                    </div>
+                </div>
+
+                <div class="stats">
+                    <div class="stat physical">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        </div>
+                        <div>
+                            <div class="stat-label">Physical Attendance</div>
+                            <div class="stat-value" id="dashPhysical">—</div>
+                            <div class="stat-foot" id="dashPhysicalSub">In person today</div>
+                        </div>
+                    </div>
+                    <div class="stat online">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+                        </div>
+                        <div>
+                            <div class="stat-label">Online Stream</div>
+                            <div class="stat-value" id="dashOnline">—</div>
+                            <div class="stat-foot" id="dashOnlineSub">Joined remotely</div>
+                        </div>
+                    </div>
+                    <div class="stat absent">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="22" y1="11" x2="16" y2="17"/><line x1="16" y1="11" x2="22" y2="17"/></svg>
+                        </div>
+                        <div>
+                            <div class="stat-label">Absentee Count</div>
+                            <div class="stat-value" id="dashAbsent">—</div>
+                            <div class="stat-foot" id="dashAbsentSub">Not yet checked in</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" id="dashSessionCard">
+                    <div class="card-head">
+                        <div class="card-head-text">
+                            <div class="card-title">Active Session</div>
+                            <div class="card-sub" id="dashSessionSub">Loading…</div>
+                        </div>
+                        <span class="pill pill-closed" id="dashSessionPill">Loading</span>
+                    </div>
+                    <div class="card-body" id="dashSessionBody" style="font-size:13px; color:var(--ink-3);">
+                        Looking up the active stream from configuration…
+                    </div>
+                </div>
+            </section>
+
+            <!-- ─── SUNDAY PAGE ─── -->
+            <section class="page" id="pageSunday">
+                <div class="page-head">
+                    <div class="page-head-text">
+                        <h1 class="page-title">Sunday Service</h1>
+                        <p class="page-sub">Manage the Sunday attendance window and online code.</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head">
+                        <div class="card-head-text">
+                            <div class="card-title">Attendance Window</div>
+                            <div class="card-sub">Standard hours: 7:30 AM – 8:10 AM</div>
+                        </div>
+                        <span class="pill pill-closed" id="sunPill">Not loaded</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="status-row" id="sunStatus">Load a session to see Sunday status</div>
+                        <div class="btn-row">
+                            <button class="btn btn-primary btn-sm" id="btnSunOpen" onclick="sunOpen()" disabled>Open Window</button>
+                            <button class="btn btn-danger btn-sm" id="btnSunClose" onclick="sunClose()" disabled>Close Window</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head">
+                        <div class="card-head-text">
+                            <div class="card-title">Online Attendance Code</div>
+                            <div class="card-sub">Set and share with online students before class</div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="code-field">
+                            <label for="sunCodeInput">Today's Code</label>
+                            <input type="text" id="sunCodeInput" class="input mono" placeholder="e.g. RFS2026A" style="text-transform:uppercase;">
+                        </div>
+                        <button class="btn btn-primary btn-sm btn-full" id="btnSunSaveCode" onclick="saveSunCode()" disabled>Save Code</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ─── SATURDAY PAGE ─── -->
+            <section class="page" id="pageSaturday">
+                <div class="page-head">
+                    <div class="page-head-text">
+                        <h1 class="page-title">Saturday Class</h1>
+                        <p class="page-sub">Manually open and close check-in / check-out windows.</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head">
+                        <div class="card-head-text">
+                            <div class="card-title">Saturday Window Control</div>
+                            <div class="card-sub">Toggle states for today's class</div>
+                        </div>
+                        <span class="pill pill-closed" id="satPill">Not loaded</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="status-row" id="satStatus">Load a session to see Saturday status</div>
+                        <div class="btn-row">
+                            <button class="btn btn-primary btn-sm" id="btnSatCI" onclick="setSatMode('CHECKIN-OPEN')" disabled>Open Check-In</button>
+                            <button class="btn btn-amber btn-sm" id="btnSatCO" onclick="setSatMode('CHECKOUT-OPEN')" disabled>Open Check-Out</button>
+                            <button class="btn btn-danger btn-sm" id="btnSatClose" onclick="setSatMode('CLOSED')" disabled>Close</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head">
+                        <div class="card-head-text">
+                            <div class="card-title">Online Codes for Saturday</div>
+                            <div class="card-sub">Set both codes before class starts</div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="code-grid" style="margin-bottom:14px;">
+                            <div class="code-field" style="margin-bottom:0;">
+                                <label for="satCICode">Check-in Code</label>
+                                <input type="text" id="satCICode" class="input mono" placeholder="e.g. SAT-IN-2026" style="text-transform:uppercase;">
+                            </div>
+                            <div class="code-field" style="margin-bottom:0;">
+                                <label for="satCOCode">Check-out Code</label>
+                                <input type="text" id="satCOCode" class="input mono" placeholder="e.g. SAT-OUT-2026" style="text-transform:uppercase;">
+                            </div>
+                        </div>
+                        <button class="btn btn-outline btn-sm btn-full" id="btnSatSave" onclick="saveSatCodes()" disabled>Save Codes</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ─── ATTENDANCE PAGE ─── -->
+            <section class="page" id="pageAttendance">
+                <div class="page-head">
+                    <div class="page-head-text">
+                        <h1 class="page-title">Today's Attendance</h1>
+                        <p class="page-sub" id="attDateSub">Load a session to view attendance</p>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-outline btn-sm" onclick="loadAttendance()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.65 4.36A9 9 0 0 0 20.5 15"/></svg>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="att-summary">
+                            <div class="att-card physical">
+                                <span class="att-card-label">Physical</span>
+                                <span class="att-card-value" id="attPhysical">—</span>
+                                <span class="att-card-sub">In person</span>
+                            </div>
+                            <div class="att-card online">
+                                <span class="att-card-label">Online</span>
+                                <span class="att-card-value" id="attOnline">—</span>
+                                <span class="att-card-sub">Remote</span>
+                            </div>
+                            <div class="att-card absent">
+                                <span class="att-card-label">Absent</span>
+                                <span class="att-card-value" id="attAbsent">—</span>
+                                <span class="att-card-sub">Not checked in</span>
+                            </div>
+                        </div>
+
+                        <div class="att-search-wrap">
+                            <svg class="att-search-icon" width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                <circle cx="8.5" cy="8.5" r="5.5"/><path d="M15 15l-3-3"/>
+                            </svg>
+                            <input type="text" id="attSearch" class="input" placeholder="Search by name or reg number…" oninput="filterAttendance()">
+                        </div>
+
+                        <div class="att-filters">
+                            <button class="att-filter active" data-filter="all" onclick="setAttFilter('all', this)">All</button>
+                            <button class="att-filter" data-filter="physical" onclick="setAttFilter('physical', this)">Physical</button>
+                            <button class="att-filter" data-filter="online" onclick="setAttFilter('online', this)">Online</button>
+                            <button class="att-filter" data-filter="absent" onclick="setAttFilter('absent', this)">Absent</button>
+                        </div>
+
+                        <div class="att-list" id="attList">
+                            <div class="att-empty">Open this page after a session is loaded to view attendance.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ─── SCORES PAGE ─── -->
+            <section class="page" id="pageScores">
+                <div class="page-head">
+                    <div class="page-head-text">
+                        <h1 class="page-title">Score Upload</h1>
+                        <p class="page-sub">Export Google Form responses as CSV and upload here.</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="sel-grid">
+                            <div class="sel-field">
+                                <label>Assessment Type</label>
+                                <select id="scoreType" class="input" onchange="updateTopicList()">
+                                    <option value="TEST">Test</option>
+                                    <option value="ASSIGNMENT">Assignment</option>
+                                    <option value="EXAM">Exam</option>
+                                </select>
+                            </div>
+                            <div class="sel-field">
+                                <label>Topic</label>
+                                <select id="scoreTopic" class="input"></select>
+                            </div>
+                        </div>
+
+                        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('csvFileInput').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+                            <svg class="upload-zone-icon" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            <div class="upload-zone-title">Click to upload CSV or drag and drop</div>
+                            <div class="upload-zone-sub">Format: Timestamp · Score · Reg Number · Surname · First Name</div>
+                        </div>
+                        <input type="file" id="csvFileInput" accept=".csv" style="display:none;" onchange="handleFileSelect(this)">
+                        <div class="upload-result" id="uploadResult"></div>
+                        <button class="btn btn-primary btn-sm btn-full" id="btnUploadScores" onclick="uploadScores()" disabled style="margin-top:14px;">Upload Scores</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ─── PERMISSIONS PAGE ─── -->
+            <section class="page" id="pagePermissions">
+                <div class="page-head">
+                    <div class="page-head-text">
+                        <h1 class="page-title">Permissions & Excuses</h1>
+                        <p class="page-sub">Record excused absences when students email in advance.</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head">
+                        <div class="card-head-text">
+                            <div class="card-title">Grant Excused Absence</div>
+                            <div class="card-sub">Will count toward the student's effective attendance</div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="code-grid" style="margin-bottom:14px;">
+                            <div class="code-field" style="margin-bottom:0;">
+                                <label for="excuseReg">Registration Number</label>
+                                <input type="text" id="excuseReg" class="input mono" placeholder="RFS/2601/053" style="text-transform:uppercase;">
+                            </div>
+                            <div class="code-field" style="margin-bottom:0;">
+                                <label for="excuseDate">Date to Excuse</label>
+                                <input type="date" id="excuseDate" class="input">
+                            </div>
+                        </div>
+                        <div class="code-field">
+                            <label for="excuseReason">Reason</label>
+                            <input type="text" id="excuseReason" class="input" placeholder="e.g. Medical appointment, travel, etc.">
+                        </div>
+                        <button class="btn btn-primary btn-sm btn-full" id="btnGrantExcuse" onclick="grantExcuse()" disabled>Grant Excuse</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head">
+                        <div class="card-head-text">
+                            <div class="card-title">Excused Absences</div>
+                            <div class="card-sub">All granted excuses for this stream</div>
+                        </div>
+                        <button class="btn btn-outline btn-sm" onclick="loadExcuses()">Refresh</button>
+                    </div>
+                    <div class="card-body" style="padding-top:8px; padding-bottom:8px;">
+                        <div class="perm-list" id="excuseList">
+                            <div class="perm-empty">Load a session to view excuses</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ─── REPORT PAGE ─── -->
+            <section class="page" id="pageReport">
+                <div class="page-head">
+                    <div class="page-head-text">
+                        <h1 class="page-title">Stream Report</h1>
+                        <p class="page-sub">Computed fresh from all records — attendance, scores, eligibility, final status.</p>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-primary btn-sm" onclick="generateReport()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Generate
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="rpt-summary" id="reportSummary">
+                            <div class="rpt-card eligible">
+                                <span class="rpt-card-label">Eligible</span>
+                                <span class="rpt-card-value" id="rptEligible">—</span>
+                                <span style="font-size:11px; color:var(--ink-3);">Sit for exam</span>
+                            </div>
+                            <div class="rpt-card passed">
+                                <span class="rpt-card-label">Passed</span>
+                                <span class="rpt-card-value" id="rptPassed">—</span>
+                                <span style="font-size:11px; color:var(--ink-3);">Final result</span>
+                            </div>
+                            <div class="rpt-card failed">
+                                <span class="rpt-card-label">Failed</span>
+                                <span class="rpt-card-value" id="rptFailed">—</span>
+                                <span style="font-size:11px; color:var(--ink-3);">Did not pass</span>
+                            </div>
+                        </div>
+                        <div id="reportTableWrap">
+                            <div class="att-empty">Click <strong>Generate</strong> to compute the stream report.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- RIGHT RAIL — LIVE ACTIVITY LOG -->
+        <aside class="rail">
+            <div class="rail-head">
+                <div class="rail-head-text">
+                    <div class="rail-title">Live Activity Log</div>
+                    <div class="rail-status" id="railStatus">
+                        <span class="rail-status-dot"></span>
+                        <span id="railStatusText">Live updates</span>
+                    </div>
+                </div>
+                <button class="rail-icon-btn" onclick="loadLog()" title="Refresh now">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.65 4.36A9 9 0 0 0 20.5 15"/></svg>
+                </button>
+            </div>
+            <div class="rail-list" id="railList">
+                <div class="rail-empty">Activity log will appear here once admin actions are recorded.</div>
+            </div>
+            <div class="rail-foot">
+                <button onclick="alert('History view coming soon.')">View All History</button>
+            </div>
+        </aside>
+
     </div>
-    <div class="topbar-right">
-        <div class="topbar-session" id="topbarSession">—</div>
-        <div class="test-toggle-wrap" id="testToggleWrap" onclick="toggleTestMode()" title="Toggle test mode">
-            <div class="toggle-switch" id="toggleSwitch"></div>
-            <span class="test-toggle-label">Test Mode</span>
-        </div>
-        <button class="exam-toggle checking" id="examToggleBtn" onclick="toggleExamOpen()" title="Open or close the exam portal">
-            <span class="exam-dot"></span>
-            <span id="examToggleLabel">Exam</span>
-        </button>
-        <button class="logout-btn" onclick="handleLogout()">Logout</button>
-    </div>
-</div>
 
-
-<!-- Main -->
-<div class="main" id="mainContent">
-
-    <!-- Active session display (auto-loaded, no manual selection needed) -->
-    <div class="session-card" id="sessionCard">
-        <div class="section-head">
-            <div>
-                <div class="section-head-title">Active Session</div>
-                <div class="section-head-sub" id="sessionCardSub">Loading active session…</div>
-            </div>
-            <div id="sessionStatusPill" class="pill pill-closed">Loading</div>
-        </div>
-        <div class="section-body" id="sessionCardBody" style="padding:12px 18px;">
-            <!-- Hidden inputs used by all action functions -->
-            <input type="hidden" id="selClass" value="">
-            <input type="hidden" id="selYear"  value="">
-            <input type="hidden" id="selStream" value="">
-            <div style="font-size:13px; color:var(--text-3); text-align:center;">
-                Detecting active stream…
-            </div>
-        </div>
-    </div>
-
-    <!-- Tabs -->
-    <div class="tabs" id="tabsRow">
-        <button class="tab-btn active" onclick="switchTab('sunday', this)">Sunday</button>
-        <button class="tab-btn" onclick="switchTab('saturday', this)">Saturday</button>
-        <button class="tab-btn" onclick="switchTab('attendance', this)">Attendance</button>
-        <button class="tab-btn" onclick="switchTab('scores', this)">Scores</button>
-        <button class="tab-btn" onclick="switchTab('permissions', this)">Permissions</button>
-        <button class="tab-btn" onclick="switchTab('report', this)">Report</button>
-        <button class="tab-btn" onclick="switchTab('log', this)">Activity Log</button>
-    </div>
-
-    <!-- Sunday Panel -->
-    <div class="panel active" id="panelSunday">
-        <div class="card">
-            <div class="section-head">
-                <div>
-                    <div class="section-head-title">Attendance Window</div>
-                    <div class="section-head-sub">Standard hours: 7:30 AM – 8:10 AM</div>
-                </div>
-                <div class="pill pill-closed" id="sunPill">Not loaded</div>
-            </div>
-            <div class="section-body">
-                <div class="status-row">
-                    <span class="status-row-label">Current status</span>
-                    <span class="status-row-value" id="sunStatus">—</span>
-                </div>
-                <div class="btn-row">
-                    <button class="btn btn-primary" id="btnSunOpen" onclick="sunOpen()" disabled>Open Window</button>
-                    <button class="btn btn-danger"  id="btnSunClose" onclick="sunClose()" disabled>Close Window</button>
-                </div>
-            </div>
-        </div>
-        <div class="card">
-            <div class="section-head">
-                <div>
-                    <div class="section-head-title">Online Attendance Code</div>
-                    <div class="section-head-sub">Set and share with online students before class</div>
-                </div>
-            </div>
-            <div class="section-body">
-                <div class="code-field" style="margin-bottom:12px;">
-                    <label>Today's Code</label>
-                    <input type="text" id="sunCodeInput" placeholder="e.g. 4829" maxlength="6" inputmode="numeric">
-                    <span class="code-hint">Only share this with online students. Valid today only.</span>
-                </div>
-                <button class="btn btn-primary btn-full" id="btnSunSaveCode" onclick="saveSunCode()" disabled>Save Code</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Saturday Panel -->
-    <div class="panel" id="panelSaturday">
-        <div class="card">
-            <div class="section-head">
-                <div>
-                    <div class="section-head-title">Saturday Window Control</div>
-                    <div class="section-head-sub">Manually open and close check-in / check-out</div>
-                </div>
-                <div class="pill pill-closed" id="satPill">Not loaded</div>
-            </div>
-            <div class="section-body">
-                <div class="status-row">
-                    <span class="status-row-label">Current window</span>
-                    <span class="status-row-value" id="satStatus">—</span>
-                </div>
-                <div class="btn-row">
-                    <button class="btn btn-primary"  id="btnSatCI"    onclick="setSatMode('CHECKIN-OPEN')"  disabled>Open Check-In</button>
-                    <button class="btn btn-amber"    id="btnSatCO"    onclick="setSatMode('CHECKOUT-OPEN')" disabled>Open Check-Out</button>
-                    <button class="btn btn-danger"   id="btnSatClose" onclick="setSatMode('CLOSED')"        disabled>Close</button>
-                </div>
-            </div>
-        </div>
-        <div class="card">
-            <div class="section-head">
-                <div>
-                    <div class="section-head-title">Online Codes for Saturday</div>
-                    <div class="section-head-sub">Set both codes before class starts</div>
-                </div>
-            </div>
-            <div class="section-body">
-                <div class="code-grid">
-                    <div class="code-field">
-                        <label>Check-In Code</label>
-                        <input type="text" id="satCICode" placeholder="e.g. 8821" maxlength="6" inputmode="numeric">
-                        <span class="code-hint">Share at the start of class</span>
-                    </div>
-                    <div class="code-field">
-                        <label>Check-Out Code</label>
-                        <input type="text" id="satCOCode" placeholder="e.g. 4457" maxlength="6" inputmode="numeric">
-                        <span class="code-hint">Share only when wrapping up</span>
-                    </div>
-                </div>
-                <button class="btn btn-outline btn-full" id="btnSatSave" onclick="saveSatCodes()" disabled>Save Codes</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Attendance Panel -->
-    <div class="panel" id="panelAttendance">
-        <div class="card">
-            <div class="section-head">
-                <div>
-                    <div class="section-head-title">Today's Attendance</div>
-                    <div class="section-head-sub" id="attDateSub">Load a session to view attendance</div>
-                </div>
-                <button class="btn btn-outline" style="flex:none; height:32px; font-size:12px; padding:0 12px;" onclick="loadAttendance()">Refresh</button>
-            </div>
-            <div class="section-body">
-                <!-- Summary cards -->
-                <div class="att-summary">
-                    <div class="att-card physical">
-                        <span class="att-card-label">Physical</span>
-                        <span class="att-card-value" id="attPhysical">—</span>
-                        <span class="att-card-sub">In person</span>
-                    </div>
-                    <div class="att-card online">
-                        <span class="att-card-label">Online</span>
-                        <span class="att-card-value" id="attOnline">—</span>
-                        <span class="att-card-sub">Remote</span>
-                    </div>
-                    <div class="att-card absent">
-                        <span class="att-card-label">Absent</span>
-                        <span class="att-card-value" id="attAbsent">—</span>
-                        <span class="att-card-sub">Not checked in</span>
-                    </div>
-                </div>
-
-                <!-- Search -->
-                <div class="att-search-wrap">
-                    <svg class="att-search-icon" width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                        <circle cx="8.5" cy="8.5" r="5.5"/><path d="M15 15l-3-3"/>
-                    </svg>
-                    <input type="text" id="attSearch" placeholder="Search by name or reg number…" oninput="filterAttendance()" style="width:100%;">
-                </div>
-
-                <!-- Filter pills -->
-                <div class="att-filters">
-                    <button class="att-filter active" data-filter="all"      onclick="setAttFilter('all', this)">All</button>
-                    <button class="att-filter"        data-filter="physical" onclick="setAttFilter('physical', this)">Physical</button>
-                    <button class="att-filter"        data-filter="online"   onclick="setAttFilter('online', this)">Online</button>
-                    <button class="att-filter"        data-filter="absent"   onclick="setAttFilter('absent', this)">Absent</button>
-                </div>
-
-                <!-- Student list -->
-                <div class="att-list" id="attList">
-                    <div class="att-empty">Load a session then open this tab to view attendance</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Scores Panel -->
-    <div class="panel" id="panelScores">
-        <div class="card">
-            <div class="section-head">
-                <div>
-                    <div class="section-head-title">Upload Test / Assignment / Exam Scores</div>
-                    <div class="section-head-sub">Export Google Form responses as CSV and upload here</div>
-                </div>
-            </div>
-            <div class="section-body">
-                <div class="sel-grid" style="margin-bottom:14px;">
-                    <div class="sel-field">
-                        <label>Assessment Type</label>
-                        <select id="scoreType" onchange="updateTopicList()">
-                            <option value="TEST">Test</option>
-                            <option value="ASSIGNMENT">Assignment</option>
-                            <option value="EXAM">Exam</option>
-                        </select>
-                    </div>
-                    <div class="sel-field">
-                        <label>Topic</label>
-                        <select id="scoreTopic"></select>
-                    </div>
-                </div>
-                <div class="upload-zone" id="uploadZone" onclick="document.getElementById('csvFileInput').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
-                    <div class="upload-zone-icon">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                    </div>
-                    <div class="upload-zone-title">Click to upload CSV or drag and drop</div>
-                    <div class="upload-zone-sub">Google Form response sheet exported as CSV<br>Expected columns: Timestamp, Score, Reg Number, Surname, First Name</div>
-                </div>
-                <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleFileSelect(this)">
-                <div class="upload-result" id="uploadResult"></div>
-                <button class="btn btn-primary btn-full" id="btnUploadScores" onclick="uploadScores()" disabled style="margin-top:12px;">Upload Scores</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Permissions Panel -->
-    <div class="panel" id="panelPermissions">
-        <div class="card">
-            <div class="section-head">
-                <div>
-                    <div class="section-head-title">Grant Excused Absence</div>
-                    <div class="section-head-sub">Student sent an email — record their excuse here</div>
-                </div>
-            </div>
-            <div class="section-body">
-                <div class="code-grid" style="margin-bottom:14px;">
-                    <div class="code-field">
-                        <label>Registration Number</label>
-                        <input type="text" id="excuseReg" placeholder="RFS/2601/053" style="font-family:'DM Mono',monospace; text-transform:uppercase;">
-                    </div>
-                    <div class="code-field">
-                        <label>Date to Excuse</label>
-                        <input type="date" id="excuseDate">
-                    </div>
-                </div>
-                <div class="code-field" style="margin-bottom:14px;">
-                    <label>Reason</label>
-                    <input type="text" id="excuseReason" placeholder="e.g. Medical appointment, travel, etc.">
-                </div>
-                <button class="btn btn-primary btn-full" id="btnGrantExcuse" onclick="grantExcuse()" disabled>Grant Excuse</button>
-            </div>
-        </div>
-        <div class="card">
-            <div class="section-head">
-                <div>
-                    <div class="section-head-title">Excused Absences</div>
-                    <div class="section-head-sub">All granted excuses for this stream</div>
-                </div>
-                <button class="btn btn-outline" style="flex:none; height:32px; font-size:12px; padding:0 12px;" onclick="loadExcuses()">Refresh</button>
-            </div>
-            <div class="section-body" style="padding-top:8px; padding-bottom:8px;">
-                <div class="perm-list" id="excuseList">
-                    <div class="perm-empty">Load a session to view excuses</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Report Panel -->
-    <div class="panel" id="panelReport">
-        <div class="card">
-            <div class="section-head">
-                <div>
-                    <div class="section-head-title">Stream Report</div>
-                    <div class="section-head-sub">Computed fresh from all records — attendance, scores, eligibility, final status</div>
-                </div>
-                <button class="btn btn-primary" style="flex:none; height:32px; font-size:12px; padding:0 14px;" onclick="generateReport()">Generate</button>
-            </div>
-            <div class="section-body">
-                <div class="report-summary" id="reportSummary" style="display:none;">
-                    <div class="rpt-card eligible">
-                        <span class="rpt-card-label">Eligible</span>
-                        <span class="rpt-card-value" id="rptEligible">—</span>
-                        <span style="font-size:11px; color:var(--text-3);">Sit for exam</span>
-                    </div>
-                    <div class="rpt-card passed">
-                        <span class="rpt-card-label">Passed</span>
-                        <span class="rpt-card-value" id="rptPassed">—</span>
-                        <span style="font-size:11px; color:var(--text-3);">Final result</span>
-                    </div>
-                    <div class="rpt-card failed">
-                        <span class="rpt-card-label">Failed</span>
-                        <span class="rpt-card-value" id="rptFailed">—</span>
-                        <span style="font-size:11px; color:var(--text-3);">Did not pass</span>
-                    </div>
-                </div>
-                <div id="reportTableWrap">
-                    <div class="att-empty">Click Generate to compute the stream report</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Activity Log Panel -->
-    <div class="panel" id="panelLog">
-        <div class="card">
-            <div class="section-head">
-                <div>
-                    <div class="section-head-title">Activity Log</div>
-                    <div class="section-head-sub">Last 30 admin actions across all sessions</div>
-                </div>
-                <button class="btn btn-outline" style="flex:none; height:32px; font-size:12px; padding:0 12px;" onclick="loadLog()">Refresh</button>
-            </div>
-            <div class="section-body" style="padding-top:8px; padding-bottom:8px;">
-                <div class="log-list" id="logList">
-                    <div class="log-empty">Load a session to view activity log</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
+    <!-- Hidden inputs preserved for backend calls -->
+    <input type="hidden" id="selClass" value="">
+    <input type="hidden" id="selYear" value="">
+    <input type="hidden" id="selStream" value="">
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
+// ============================================================
+//  ENDPOINTS — keep these in sync with your deployments
+// ============================================================
 const SCRIPT_URL         = 'https://script.google.com/macros/s/AKfycbz5nLwhQOijtweajBY-Wyp91fCCaf4znGx54wU6m_PMBL4uTJjO5KGMSWNEGoJMpNfXiw/exec';
-const UNIFIED_SCRIPT_URL = 'PASTE_YOUR_UNIFIED_APPS_SCRIPT_URL_HERE'; // new unified script
-const EXAM_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzbCjk8RA9peuu4nhAy48N5WYRwEmLws1RIQ_mO_wA7T3aPYoG3iR1Qw0x3Ff-1QefYiQ/exec';
+const UNIFIED_SCRIPT_URL = 'PASTE_YOUR_UNIFIED_APPS_SCRIPT_URL_HERE';
+const EXAM_SCRIPT_URL    = 'https://script.google.com/macros/s/AKfycbzbCjk8RA9peuu4nhAy48N5WYRwEmLws1RIQ_mO_wA7T3aPYoG3iR1Qw0x3Ff-1QefYiQ/exec';
 
-// ── State ─────────────────────────────────────────────────────
-let admin       = null;   // { name, role }
-let sessionData = null;   // current loaded session status
+// Live Activity Log poll interval (ms)
+const LOG_POLL_MS = 30000;
+
+// ============================================================
+//  STATE
+// ============================================================
+let admin       = null;        // { name, role }
+let sessionData = null;        // { className, year, stream, sunOpen, satMode, testMode, ... }
 let testModeOn  = false;
-let examIsOpen  = null;   // null=unknown, true=open, false=closed
+let examIsOpen  = null;        // null=unknown, true=open, false=closed
+let logPollTimer = null;
+let lastLogSignature = '';     // change-detect to avoid pointless re-renders
 
-// ── Session persistence (survives refresh, clears on tab close) ─
-function saveSession() {
+// ============================================================
+//  SESSION PERSISTENCE
+// ============================================================
+function saveAdmin() {
     if (admin) sessionStorage.setItem('rfs_admin', JSON.stringify(admin));
 }
-function loadSavedSession() {
+function loadAdmin() {
     try {
         const saved = sessionStorage.getItem('rfs_admin');
         if (saved) { admin = JSON.parse(saved); return true; }
     } catch(e) {}
     return false;
 }
-function clearSession() {
+function clearAdmin() {
     sessionStorage.removeItem('rfs_admin');
+    sessionStorage.removeItem('rfs_pass');
     admin = null;
 }
+function getStoredPass() {
+    return sessionStorage.getItem('rfs_pass') || document.getElementById('loginPassword').value || '';
+}
 
-// ── Boot ──────────────────────────────────────────────────────
+// ============================================================
+//  BOOT
+// ============================================================
 window.addEventListener('DOMContentLoaded', function() {
-    if (loadSavedSession()) {
-        showDashboard();
+    if (loadAdmin()) {
+        showApp();
     }
     updateTopicList();
-    document.getElementById('loginName').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('loginPassword').focus(); });
-    document.getElementById('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+
+    document.getElementById('loginName').addEventListener('keydown', e => {
+        if (e.key === 'Enter') document.getElementById('loginPassword').focus();
+    });
+    document.getElementById('loginPassword').addEventListener('keydown', e => {
+        if (e.key === 'Enter') handleLogin();
+    });
+    document.getElementById('loginPassword').addEventListener('input', function() {
+        if (this.value) sessionStorage.setItem('rfs_pass', this.value);
+    });
 });
 
-// ── Login ─────────────────────────────────────────────────────
+// ============================================================
+//  LOGIN / LOGOUT
+// ============================================================
 async function handleLogin() {
     const name = document.getElementById('loginName').value.trim();
     const pass = document.getElementById('loginPassword').value.trim();
     const errEl = document.getElementById('loginErr');
-    errEl.style.display = 'none';
+    errEl.classList.remove('show');
+
     if (!name || !pass) { showLoginErr('Please enter your name and password.'); return; }
 
-    const loginBtn = document.querySelector('.login-box .btn-primary');
-    loginBtn.textContent = 'Logging in…'; loginBtn.disabled = true;
+    const btn = document.getElementById('loginBtn');
+    btn.textContent = 'Signing in…'; btn.disabled = true;
 
     try {
         const url = SCRIPT_URL + '?action=admin_login&name=' + encodeURIComponent(name) + '&password=' + encodeURIComponent(pass);
@@ -705,130 +1349,253 @@ async function handleLogin() {
         const data = await res.json();
         if (data.status === 'success') {
             admin = { name: data.name, role: data.role };
-            saveSession();
-            showDashboard();
+            saveAdmin();
+            showApp();
         } else {
             showLoginErr(data.message || 'Login failed.');
         }
     } catch(e) {
         showLoginErr('Connection error. Please try again.');
     }
-    loginBtn.textContent = 'Login'; loginBtn.disabled = false;
+    btn.textContent = 'Sign in'; btn.disabled = false;
 }
 
 function showLoginErr(msg) {
     const el = document.getElementById('loginErr');
-    el.textContent = msg; el.style.display = 'block';
+    el.textContent = msg; el.classList.add('show');
 }
 
-function showDashboard() {
+function showApp() {
     document.getElementById('loginOverlay').style.display = 'none';
-    document.getElementById('mainContent').classList.add('show');
-    document.getElementById('topbarAdmin').textContent = 'Logged in as ' + admin.name;
-    const testToggle = document.getElementById('testToggleWrap');
-    if (admin.role === 'Super Admin') testToggle.style.display = 'flex';
-    else testToggle.style.display = 'none';
-    // Auto-load active session — no manual selection needed
+    document.getElementById('app').classList.add('show');
+
+    // Avatar initials
+    const initials = (admin.name || '').trim().split(/\s+/).map(p => p[0]).slice(0,2).join('').toUpperCase() || 'A';
+    document.getElementById('tbAvatar').textContent = initials;
+    document.getElementById('tbAvatar').title = admin.name + ' · ' + (admin.role || 'Admin');
+
+    // Test toggle visibility (Super Admin only)
+    document.getElementById('testToggle').style.display = (admin.role === 'Super Admin') ? 'inline-flex' : 'none';
+
+    // Initial loads
     autoLoadSession();
+    checkExamStatus();
+    startLogPolling();
 }
 
 function handleLogout() {
-    clearSession();
+    stopLogPolling();
+    clearAdmin();
     sessionData = null;
     testModeOn  = false;
-    document.getElementById('loginOverlay').style.display = 'flex';
-    document.getElementById('mainContent').classList.remove('show');
+    document.getElementById('app').classList.remove('show');
+    document.getElementById('loginOverlay').style.display = 'grid';
     document.getElementById('loginName').value = '';
     document.getElementById('loginPassword').value = '';
-    document.getElementById('loginErr').style.display = 'none';
-    document.getElementById('tabsRow').classList.remove('show');
-    document.getElementById('topbarSession').textContent = '—';
-    document.getElementById('testToggleWrap').classList.remove('active');
-    document.getElementById('testBanner').classList.remove('show');
+    document.getElementById('loginErr').classList.remove('show');
 }
 
-// ── Tab switching now handled in new JS block above ──────────
+// ============================================================
+//  PAGE SWITCH
+// ============================================================
+function switchPage(name, btn) {
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('show'));
+    if (btn) btn.classList.add('active');
+    const cap = name.charAt(0).toUpperCase() + name.slice(1);
+    const pg  = document.getElementById('page' + cap);
+    if (pg) pg.classList.add('show');
 
-// ── Auto-load active session (called on login) ───────────────
+    // Lazy-load page data
+    if (name === 'dashboard')   loadDashboard();
+    if (name === 'attendance')  loadAttendance();
+    if (name === 'scores')      updateTopicList();
+    if (name === 'permissions') { updateExcuseForm(); loadExcuses(); }
+}
+
+// ============================================================
+//  ACTIVE SESSION — combines get_active_stream + get_status
+// ============================================================
 async function autoLoadSession() {
-    const pill = document.getElementById('sessionStatusPill');
-    const sub  = document.getElementById('sessionCardSub');
-    const body = document.getElementById('sessionCardBody');
+    setSessionDisplay({ loading: true });
 
+    // Step 1: get the active stream from the unified script.
+    // Falls back to legacy get_active_session if the new endpoint is missing.
+    let streamInfo = null;
     try {
-        const res  = await fetch(SCRIPT_URL + '?action=get_active_session&cb=' + Date.now());
-        const data = await res.json();
-
-        if (data.status !== 'success') {
-            sub.textContent  = data.message || 'No active session found';
-            pill.textContent = 'No Session';
-            pill.className   = 'pill pill-closed';
-            body.innerHTML   = '<div style="font-size:13px;color:var(--text-3);text-align:center;padding:4px 0;">'
-                + data.message || 'Set a stream to Active = TRUE in Master Config.' + '</div>'
-                + '<input type="hidden" id="selClass" value="">'
-                + '<input type="hidden" id="selYear" value="">'
-                + '<input type="hidden" id="selStream" value="">';
+        // Try new unified endpoint first
+        let res  = await fetch(SCRIPT_URL + '?action=get_active_stream&cb=' + Date.now());
+        let data = await res.json();
+        if (data.status === 'success') {
+            streamInfo = { className: data.class || data.className, year: data.year, stream: data.stream };
+        } else {
+            // Fallback: legacy bundled endpoint
+            res  = await fetch(SCRIPT_URL + '?action=get_active_session&cb=' + Date.now());
+            data = await res.json();
+            if (data.status === 'success') {
+                streamInfo = { className: data.className, year: data.year, stream: data.stream };
+                // legacy returns everything in one shot, so we keep it
+                applySessionData(Object.assign({}, data));
+                return;
+            }
+            setSessionDisplay({ error: data.message || 'No active session found.' });
             return;
         }
-
-        // Populate hidden inputs for all downstream action functions
-        document.getElementById('selClass').value  = data.className;
-        document.getElementById('selYear').value   = data.year;
-        document.getElementById('selStream').value = data.stream;
-
-        // Update session card UI
-        sub.textContent  = data.className + ' · Year ' + data.year + ' · Stream ' + data.stream;
-        pill.textContent = 'Active';
-        pill.className   = 'pill pill-open';
-        body.innerHTML   = '<div style="display:flex;gap:16px;flex-wrap:wrap;">'
-            + '<div style="flex:1;min-width:120px;"><div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Class</div><div style="font-size:14px;font-weight:600;">' + data.className + '</div></div>'
-            + '<div style="flex:1;min-width:120px;"><div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Year</div><div style="font-size:14px;font-weight:600;">' + data.year + '</div></div>'
-            + '<div style="flex:1;min-width:120px;"><div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Stream</div><div style="font-size:14px;font-weight:600;">Stream ' + data.stream + '</div></div>'
-            + '</div>'
-            + '<input type="hidden" id="selClass"  value="' + data.className + '">'
-            + '<input type="hidden" id="selYear"   value="' + data.year + '">'
-            + '<input type="hidden" id="selStream" value="' + data.stream + '">';
-
-        sessionData = data;
-        document.getElementById('topbarSession').textContent = data.className + ' · ' + data.year + ' · S' + data.stream;
-        document.getElementById('tabsRow').classList.add('show');
-        updateSundayUI(data);
-        updateSaturdayUI(data);
-        updateTestModeUI(data.testMode);
-        checkExamStatus();
-
     } catch(e) {
-        sub.textContent  = 'Connection error — could not load session';
-        pill.textContent = 'Error';
-        pill.className   = 'pill pill-closed';
+        setSessionDisplay({ error: 'Connection error — could not load session.' });
+        return;
+    }
+
+    // Step 2: enrich with window/saturday status via get_status
+    let statusData = {};
+    try {
+        const url = SCRIPT_URL + '?action=get_status'
+            + '&class='  + encodeURIComponent(streamInfo.className)
+            + '&year='   + encodeURIComponent(streamInfo.year)
+            + '&stream=' + encodeURIComponent(streamInfo.stream)
+            + '&cb='     + Date.now();
+        const res  = await fetch(url);
+        statusData = await res.json();
+    } catch(e) { /* tolerate */ }
+
+    applySessionData(Object.assign({ status: 'success' }, streamInfo, statusData));
+}
+
+function applySessionData(data) {
+    sessionData = data;
+    document.getElementById('selClass').value  = data.className || '';
+    document.getElementById('selYear').value   = data.year || '';
+    document.getElementById('selStream').value = data.stream || '';
+    setSessionDisplay({ data: data });
+    updateSundayUI(data);
+    updateSaturdayUI(data);
+    updateTestModeUI(data.testMode);
+    loadDashboard(); // refresh stats
+}
+
+function setSessionDisplay(opts) {
+    const ctxText = document.getElementById('tbContextText');
+    const ctxPill = document.getElementById('tbContextPill');
+    const dashSub = document.getElementById('dashSessionSub');
+    const dashPill= document.getElementById('dashSessionPill');
+    const dashBody= document.getElementById('dashSessionBody');
+
+    if (opts.loading) {
+        ctxText.textContent = 'Loading session…';
+        ctxPill.style.display = 'none';
+        dashSub.textContent = 'Looking up active stream…';
+        dashPill.textContent = 'Loading';
+        dashPill.className = 'pill pill-closed';
+        return;
+    }
+    if (opts.error) {
+        ctxText.textContent = 'No active session';
+        ctxPill.style.display = 'none';
+        dashSub.textContent = opts.error;
+        dashPill.textContent = 'No Session';
+        dashPill.className = 'pill pill-closed';
+        dashBody.innerHTML = '<div style="font-size:13px; color:var(--ink-3);">Set a stream to <strong>Active = TRUE</strong> in Master Config to enable controls.</div>';
+        return;
+    }
+    if (opts.data) {
+        const d = opts.data;
+        // Show: "{className} · {year} · Stream {stream}" — year shown verbatim
+        ctxText.textContent = (d.className || '') + ' · ' + (d.year || '') + ' · Stream ' + d.stream;
+        ctxPill.style.display = 'inline-block';
+        ctxPill.textContent = d.testMode ? 'Test Mode' : 'Active Session';
+        dashSub.textContent = (d.className || '') + ' · ' + (d.year || '') + ' · Stream ' + d.stream;
+        dashPill.textContent = d.testMode ? 'Test Mode' : 'Active';
+        dashPill.className   = 'pill ' + (d.testMode ? 'pill-test' : 'pill-open');
+        dashBody.innerHTML =
+            '<div style="display:flex; gap:24px; flex-wrap:wrap;">'
+          + ' <div><div style="font-size:11px; font-weight:600; color:var(--ink-3); text-transform:uppercase; letter-spacing:.07em; margin-bottom:4px;">Class</div><div style="font-size:14px; font-weight:600;">' + escHtml(d.className||'') + '</div></div>'
+          + ' <div><div style="font-size:11px; font-weight:600; color:var(--ink-3); text-transform:uppercase; letter-spacing:.07em; margin-bottom:4px;">Year</div><div style="font-size:14px; font-weight:600;">' + escHtml(d.year||'') + '</div></div>'
+          + ' <div><div style="font-size:11px; font-weight:600; color:var(--ink-3); text-transform:uppercase; letter-spacing:.07em; margin-bottom:4px;">Stream</div><div style="font-size:14px; font-weight:600;">Stream ' + escHtml(d.stream||'') + '</div></div>'
+          + '</div>';
     }
 }
 
-// Keep loadSession as alias for manual refresh if ever needed
-async function loadSession() { await autoLoadSession(); }
+// ============================================================
+//  DASHBOARD STATS — pulls real numbers from admin_get_attendance
+// ============================================================
+async function loadDashboard() {
+    const cls = document.getElementById('selClass').value;
+    const yr  = document.getElementById('selYear').value;
+    const st  = document.getElementById('selStream').value;
+    if (!cls || !yr || !st || !admin) return;
 
-// ── Sunday UI ─────────────────────────────────────────────────
+    try {
+        const url = SCRIPT_URL + '?action=admin_get_attendance'
+            + '&adminName=' + encodeURIComponent(admin.name)
+            + '&password='  + encodeURIComponent(getStoredPass())
+            + '&class='     + encodeURIComponent(cls)
+            + '&year='      + encodeURIComponent(yr)
+            + '&stream='    + encodeURIComponent(st)
+            + '&cb='        + Date.now();
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (data.status !== 'success') return;
+
+        // Backend may return either {students,physical,online,absent,total} (unified)
+        // or {students,records} (legacy). Compute from whichever is present.
+        let physical = 0, online = 0, absent = 0;
+        if (typeof data.physical === 'number') {
+            physical = data.physical; online = data.online; absent = data.absent;
+        } else if (data.students && data.records) {
+            const ci = {};
+            (data.records || []).forEach(function(r) {
+                const ev = (r.event || '').toUpperCase();
+                if (ev.indexOf('TEST') !== -1) return;
+                if (ev === 'SUN' || ev === 'SAT-IN') ci[r.reg] = (r.mode || 'PHYSICAL').toUpperCase();
+            });
+            (data.students || []).forEach(function(s) {
+                const m = ci[s.reg];
+                if (m === 'PHYSICAL') physical++;
+                else if (m === 'ONLINE') online++;
+                else absent++;
+            });
+        }
+
+        const total = (data.total != null) ? data.total : (physical + online + absent);
+        document.getElementById('dashPhysical').textContent = physical.toLocaleString();
+        document.getElementById('dashOnline').textContent   = online.toLocaleString();
+        document.getElementById('dashAbsent').textContent   = absent.toLocaleString();
+        document.getElementById('dashPhysicalSub').textContent = total ? Math.round((physical/total)*100) + '% of roster' : 'No active roster';
+        document.getElementById('dashOnlineSub').textContent   = total ? Math.round((online/total)*100)   + '% of roster' : '';
+        document.getElementById('dashAbsentSub').textContent   = total ? Math.round((absent/total)*100)   + '% of roster' : '';
+    } catch(e) { /* silent — dashboard is best-effort */ }
+}
+
+function exportDailyReport() {
+    showToast('Export uses the Report tab — generate, then download CSV.', 'warn');
+    switchPage('report', document.querySelector('.nav-item[data-page=report]'));
+}
+
+// ============================================================
+//  SUNDAY
+// ============================================================
 function updateSundayUI(data) {
     const pill   = document.getElementById('sunPill');
     const status = document.getElementById('sunStatus');
     const btnO   = document.getElementById('btnSunOpen');
     const btnC   = document.getElementById('btnSunClose');
     document.getElementById('btnSunSaveCode').disabled = false;
+
     if (data.testMode) {
         pill.textContent = 'Test Mode'; pill.className = 'pill pill-test';
-        status.textContent = 'Test mode active — window always open';
+        status.textContent = 'Test mode active — window always open.';
         btnO.disabled = true; btnC.disabled = false;
     } else if (data.sunForceOpen) {
         pill.textContent = 'Open'; pill.className = 'pill pill-open';
-        status.textContent = 'Window force-opened by admin';
+        status.textContent = 'Window force-opened by admin.';
         btnO.disabled = true; btnC.disabled = false;
     } else if (data.sunOpen) {
         pill.textContent = 'Open'; pill.className = 'pill pill-open';
-        status.textContent = 'Standard window is active (7:30 – 8:10 AM)';
+        status.textContent = 'Standard window is active (7:30 – 8:10 AM).';
         btnO.disabled = true; btnC.disabled = false;
     } else {
         pill.textContent = 'Closed'; pill.className = 'pill pill-closed';
-        status.textContent = 'Window is closed';
+        status.textContent = 'Window is closed.';
         btnO.disabled = false; btnC.disabled = true;
     }
 }
@@ -840,7 +1607,6 @@ async function saveSunCode() {
     if (!code) { showToast('Please enter a code first', 'err'); return; }
     await adminSunday('', code, 'Saving online code…', 'Online code saved — share with online students');
 }
-
 async function adminSunday(mode, code, loadingMsg, successMsg) {
     const cls = document.getElementById('selClass').value;
     const yr  = document.getElementById('selYear').value;
@@ -848,17 +1614,19 @@ async function adminSunday(mode, code, loadingMsg, successMsg) {
     showToast(loadingMsg || 'Updating…', 'warn');
     try {
         let url = SCRIPT_URL + '?action=admin_sunday&adminName=' + encodeURIComponent(admin.name)
-            + '&password=' + encodeURIComponent(document.getElementById('loginPassword').value || getStoredPass())
+            + '&password=' + encodeURIComponent(getStoredPass())
             + '&class=' + cls + '&year=' + yr + '&stream=' + st;
         if (mode) url += '&mode=' + encodeURIComponent(mode);
         if (code) url += '&onlineCode=' + encodeURIComponent(code);
-        const res  = await fetch(url); const data = await res.json();
-        if (data.status === 'success') { showToast(successMsg || data.message, 'ok'); await loadSession(); }
+        const res = await fetch(url); const data = await res.json();
+        if (data.status === 'success') { showToast(successMsg || data.message, 'ok'); await autoLoadSession(); }
         else showToast(data.message || 'Failed', 'err');
     } catch(e) { showToast('Connection error', 'err'); }
 }
 
-// ── Saturday UI ───────────────────────────────────────────────
+// ============================================================
+//  SATURDAY
+// ============================================================
 function updateSaturdayUI(data) {
     const pill   = document.getElementById('satPill');
     const status = document.getElementById('satStatus');
@@ -867,16 +1635,17 @@ function updateSaturdayUI(data) {
     const btnCL  = document.getElementById('btnSatClose');
     const btnSv  = document.getElementById('btnSatSave');
     btnCI.disabled = btnCO.disabled = btnCL.disabled = btnSv.disabled = false;
+
     switch(data.satMode) {
         case 'CHECKIN-OPEN':
             pill.textContent = 'Check-In Open'; pill.className = 'pill pill-open';
-            status.textContent = 'Students can check in now'; btnCI.disabled = true; break;
+            status.textContent = 'Students can check in now.'; btnCI.disabled = true; break;
         case 'CHECKOUT-OPEN':
             pill.textContent = 'Check-Out Open'; pill.className = 'pill pill-checkout';
-            status.textContent = 'Students can check out now'; btnCO.disabled = true; break;
+            status.textContent = 'Students can check out now.'; btnCO.disabled = true; break;
         default:
             pill.textContent = 'Closed'; pill.className = 'pill pill-closed';
-            status.textContent = 'Window is closed'; btnCL.disabled = true;
+            status.textContent = 'Window is closed.'; btnCL.disabled = true;
     }
 }
 
@@ -909,18 +1678,20 @@ async function adminSat(mode, ci, co, loadingMsg, successMsg) {
         if (ci) url += '&checkInCode='  + encodeURIComponent(ci);
         if (co) url += '&checkOutCode=' + encodeURIComponent(co);
         const res = await fetch(url); const data = await res.json();
-        if (data.status === 'success') { showToast(successMsg || data.message, 'ok'); await loadSession(); }
+        if (data.status === 'success') { showToast(successMsg || data.message, 'ok'); await autoLoadSession(); }
         else showToast(data.message || 'Failed', 'err');
     } catch(e) { showToast('Connection error', 'err'); }
 }
 
-// ── Test Mode ─────────────────────────────────────────────────
+// ============================================================
+//  TEST MODE
+// ============================================================
 function updateTestModeUI(isActive) {
     testModeOn = !!isActive;
-    const wrap = document.getElementById('testToggleWrap');
+    const tog = document.getElementById('testToggle');
     const banner = document.getElementById('testBanner');
-    if (testModeOn) { wrap.classList.add('active'); banner.classList.add('show'); }
-    else            { wrap.classList.remove('active'); banner.classList.remove('show'); }
+    if (testModeOn) { tog.classList.add('active','test'); banner.classList.add('show'); }
+    else            { tog.classList.remove('active','test'); banner.classList.remove('show'); }
 }
 
 async function toggleTestMode() {
@@ -935,19 +1706,86 @@ async function toggleTestMode() {
             + '&password=' + encodeURIComponent(getStoredPass())
             + '&class=' + cls + '&year=' + yr + '&stream=' + st
             + '&testMode=' + (newVal ? 'TRUE' : 'FALSE');
-        const res  = await fetch(url); const data = await res.json();
+        const res = await fetch(url); const data = await res.json();
         if (data.status === 'success') {
             updateTestModeUI(newVal);
             showToast(newVal ? 'Test mode enabled' : 'Test mode disabled', 'ok');
-            await loadSession();
+            await autoLoadSession();
         } else showToast(data.message || 'Failed', 'err');
     } catch(e) { showToast('Connection error', 'err'); }
 }
 
-// ── Attendance ────────────────────────────────────────────────
-let attAllStudents   = [];   // full roster from student DB for this stream
-let attTodayRecords  = [];   // today's check-in rows from attendance sheet
-let attFilterMode    = 'all';
+// ============================================================
+//  EXAM OPEN / CLOSE
+// ============================================================
+async function checkExamStatus() {
+    const btn   = document.getElementById('examToggle');
+    const label = document.getElementById('examToggleLabel');
+    btn.className = 'tb-toggle checking';
+    btn.disabled  = true;
+    label.textContent = 'Exams';
+    try {
+        const res  = await fetch(EXAM_SCRIPT_URL + '?action=check_exam_open&cb=' + Date.now());
+        const data = await res.json();
+        if (data.status === 'success') {
+            examIsOpen = data.open;
+            updateExamBtn();
+        } else {
+            label.textContent = 'Exams ?';
+            btn.disabled = false;
+        }
+    } catch(e) {
+        label.textContent = 'Exams ?';
+        btn.disabled = false;
+    }
+}
+
+function updateExamBtn() {
+    const btn   = document.getElementById('examToggle');
+    const label = document.getElementById('examToggleLabel');
+    btn.disabled = false;
+    btn.classList.remove('checking');
+    if (examIsOpen) {
+        btn.className = 'tb-toggle active exam-open';
+        label.textContent = 'Exams: Open';
+    } else {
+        btn.className = 'tb-toggle active exam-closed';
+        label.textContent = 'Exams: Closed';
+    }
+}
+
+async function toggleExamOpen() {
+    if (examIsOpen === null) { await checkExamStatus(); return; }
+    const btn   = document.getElementById('examToggle');
+    const label = document.getElementById('examToggleLabel');
+    const newState = !examIsOpen;
+    btn.disabled = true;
+    label.textContent = newState ? 'Opening…' : 'Closing…';
+    showToast(newState ? 'Opening exam…' : 'Closing exam…', 'warn');
+    try {
+        const url  = EXAM_SCRIPT_URL + '?action=set_exam_open&value=' + (newState ? 'TRUE' : 'FALSE') + '&cb=' + Date.now();
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (data.status === 'success') {
+            examIsOpen = newState;
+            updateExamBtn();
+            showToast(newState ? 'Exam is now OPEN — students can access the portal' : 'Exam is now CLOSED', newState ? 'ok' : 'warn');
+        } else {
+            showToast(data.message || 'Failed to update exam status', 'err');
+            btn.disabled = false; updateExamBtn();
+        }
+    } catch(e) {
+        showToast('Connection error', 'err');
+        btn.disabled = false; updateExamBtn();
+    }
+}
+
+// ============================================================
+//  ATTENDANCE PAGE
+// ============================================================
+let attAllStudents  = [];
+let attTodayRecords = [];
+let attFilterMode   = 'all';
 
 async function loadAttendance() {
     const cls = document.getElementById('selClass').value;
@@ -966,8 +1804,8 @@ async function loadAttendance() {
             + '&password='  + encodeURIComponent(getStoredPass())
             + '&class='     + encodeURIComponent(cls)
             + '&year='      + encodeURIComponent(yr)
-            + '&stream='    + encodeURIComponent(st);
-
+            + '&stream='    + encodeURIComponent(st)
+            + '&cb='        + Date.now();
         const res  = await fetch(url);
         const data = await res.json();
 
@@ -976,38 +1814,50 @@ async function loadAttendance() {
             return;
         }
 
-        attAllStudents  = data.students  || [];
-        attTodayRecords = data.records   || [];
+        attAllStudents  = data.students || [];
+        attTodayRecords = data.records  || [];
 
-        // Update date sub
         const today = new Date();
-        document.getElementById('attDateSub').textContent =
-            today.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+        document.getElementById('attDateSub').textContent = today.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 
-        renderAttendance();
-
+        // If unified backend already classified (status field present), use it directly
+        if (attAllStudents.length && attAllStudents[0].status) {
+            renderAttendanceFromUnified(data);
+        } else {
+            renderAttendance();
+        }
     } catch(e) {
         document.getElementById('attList').innerHTML = '<div class="att-empty">Connection error. Please try again.</div>';
     }
 }
 
+function renderAttendanceFromUnified(data) {
+    document.getElementById('attPhysical').textContent = data.physical || 0;
+    document.getElementById('attOnline').textContent   = data.online   || 0;
+    document.getElementById('attAbsent').textContent   = data.absent   || 0;
+
+    const search = (document.getElementById('attSearch').value || '').toLowerCase();
+    const filtered = (data.students || []).filter(function(r) {
+        const matchFilter = attFilterMode === 'all' || r.status === attFilterMode;
+        const matchSearch = !search ||
+            r.name.toLowerCase().includes(search) ||
+            r.reg.toLowerCase().includes(search);
+        return matchFilter && matchSearch;
+    });
+    paintAttList(filtered);
+}
+
 function renderAttendance() {
-    // Build a map of who checked in today: regNumber → mode (PHYSICAL / ONLINE)
-    // Exclude TEST entries per spec
     const checkedIn = {};
     attTodayRecords.forEach(function(r) {
         const event = (r.event || '').toUpperCase();
-        if (event.indexOf('TEST') !== -1) return; // skip test entries
-        // For Sunday we just need one entry. For Saturday we count SAT-IN as present.
-        if (event === 'SUN' || event === 'SAT-IN') {
-            checkedIn[r.reg] = (r.mode || 'PHYSICAL').toUpperCase();
-        }
+        if (event.indexOf('TEST') !== -1) return;
+        if (event === 'SUN' || event === 'SAT-IN') checkedIn[r.reg] = (r.mode || 'PHYSICAL').toUpperCase();
     });
 
     let physical = 0, online = 0, absent = 0;
-    const search  = (document.getElementById('attSearch').value || '').toLowerCase();
+    const search = (document.getElementById('attSearch').value || '').toLowerCase();
 
-    // Build per-student status list
     const rows = attAllStudents.map(function(s) {
         const mode   = checkedIn[s.reg] || null;
         const status = mode === 'PHYSICAL' ? 'physical' : mode === 'ONLINE' ? 'online' : 'absent';
@@ -1017,12 +1867,10 @@ function renderAttendance() {
         return { name: s.name, reg: s.reg, status: status };
     });
 
-    // Update summary
     document.getElementById('attPhysical').textContent = physical;
     document.getElementById('attOnline').textContent   = online;
     document.getElementById('attAbsent').textContent   = absent;
 
-    // Filter
     const filtered = rows.filter(function(r) {
         const matchFilter = attFilterMode === 'all' || r.status === attFilterMode;
         const matchSearch = !search ||
@@ -1030,17 +1878,19 @@ function renderAttendance() {
             r.reg.toLowerCase().includes(search);
         return matchFilter && matchSearch;
     });
+    paintAttList(filtered);
+}
 
-    if (filtered.length === 0) {
+function paintAttList(filtered) {
+    if (!filtered.length) {
         document.getElementById('attList').innerHTML = '<div class="att-empty">No students match this filter.</div>';
         return;
     }
-
     document.getElementById('attList').innerHTML = filtered.map(function(r) {
-        const parts    = r.name.trim().split(' ');
+        const parts    = (r.name || '').trim().split(/\s+/);
         const initials = parts.length >= 2
             ? (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
-            : r.name.substring(0, 2).toUpperCase();
+            : (r.name || '??').substring(0, 2).toUpperCase();
         const label = r.status === 'physical' ? 'Physical' : r.status === 'online' ? 'Online' : 'Absent';
         return '<div class="att-row">'
             + '<div class="att-avatar">' + escHtml(initials) + '</div>'
@@ -1053,119 +1903,87 @@ function renderAttendance() {
     }).join('');
 }
 
-function filterAttendance() { renderAttendance(); }
+function filterAttendance() {
+    if (attAllStudents.length && attAllStudents[0].status)
+        renderAttendanceFromUnified({ students: attAllStudents, physical: parseInt(document.getElementById('attPhysical').textContent)||0, online: parseInt(document.getElementById('attOnline').textContent)||0, absent: parseInt(document.getElementById('attAbsent').textContent)||0 });
+    else
+        renderAttendance();
+}
 
 function setAttFilter(mode, btn) {
     attFilterMode = mode;
     document.querySelectorAll('.att-filter').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    renderAttendance();
+    filterAttendance();
 }
 
-// ── Activity Log ──────────────────────────────────────────────
+// ============================================================
+//  LIVE ACTIVITY LOG (right rail)
+// ============================================================
+function startLogPolling() {
+    loadLog(); // fire immediately on login
+    if (logPollTimer) clearInterval(logPollTimer);
+    logPollTimer = setInterval(loadLog, LOG_POLL_MS);
+}
+function stopLogPolling() {
+    if (logPollTimer) clearInterval(logPollTimer);
+    logPollTimer = null;
+    setRailStatus(false);
+}
+function setRailStatus(live) {
+    const status = document.getElementById('railStatus');
+    const text   = document.getElementById('railStatusText');
+    if (live) { status.classList.remove('offline'); text.textContent = 'Live updates'; }
+    else      { status.classList.add('offline');    text.textContent = 'Offline'; }
+}
+
 async function loadLog() {
-    const logList = document.getElementById('logList');
-    logList.innerHTML = '<div class="log-empty">Loading…</div>';
+    if (!admin) return;
     try {
-        const url  = SCRIPT_URL + '?action=admin_get_log&adminName=' + encodeURIComponent(admin.name)
-            + '&password=' + encodeURIComponent(getStoredPass());
-        const res  = await fetch(url); const data = await res.json();
-        if (data.status !== 'success') { logList.innerHTML = '<div class="log-empty">Could not load log.</div>'; return; }
-        if (!data.logs || data.logs.length === 0) { logList.innerHTML = '<div class="log-empty">No activity recorded yet.</div>'; return; }
-        logList.innerHTML = data.logs.map(function(log) {
-            const ts = log.timestamp ? new Date(log.timestamp) : null;
-            const timeStr = ts ? ts.toLocaleDateString('en-GB', { day:'numeric', month:'short' }) + ' · ' + ts.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) : '';
-            const session = [log.className, log.year, log.stream ? 'Stream ' + log.stream : ''].filter(Boolean).join(' · ');
-            return '<div class="log-item"><div class="log-dot"></div><div class="log-body"><div class="log-action">' + escHtml(log.action) + '</div><div class="log-meta">' + escHtml(log.adminName) + (session ? ' &nbsp;·&nbsp; ' + escHtml(session) : '') + (timeStr ? ' &nbsp;·&nbsp; ' + timeStr : '') + '</div></div></div>';
-        }).join('');
-    } catch(e) { logList.innerHTML = '<div class="log-empty">Connection error.</div>'; }
-}
-
-// ── Exam Open / Close ─────────────────────────────────────────
-async function checkExamStatus() {
-    const btn   = document.getElementById('examToggleBtn');
-    const label = document.getElementById('examToggleLabel');
-    btn.className = 'exam-toggle checking';
-    btn.disabled  = true;
-    label.textContent = 'Exam';
-    try {
-        const url  = EXAM_SCRIPT_URL + '?action=check_exam_open&cb=' + Date.now();
+        const url = SCRIPT_URL + '?action=admin_get_log&adminName=' + encodeURIComponent(admin.name)
+            + '&password=' + encodeURIComponent(getStoredPass())
+            + '&cb='       + Date.now();
         const res  = await fetch(url);
         const data = await res.json();
-        if (data.status === 'success') {
-            examIsOpen = data.open;
-            updateExamBtn();
-        } else {
-            label.textContent = 'Exam status unknown';
-            btn.disabled = false;
-        }
+        if (data.status !== 'success') { setRailStatus(false); return; }
+        setRailStatus(true);
+        const logs = data.logs || [];
+        const sig = logs.length + '|' + (logs[0] ? logs[0].timestamp + logs[0].action : '');
+        if (sig === lastLogSignature) return; // no change → no re-render
+        lastLogSignature = sig;
+        renderLog(logs);
     } catch(e) {
-        label.textContent = 'Exam status unknown';
-        btn.disabled = false;
+        setRailStatus(false);
     }
 }
 
-function updateExamBtn() {
-    const btn   = document.getElementById('examToggleBtn');
-    const label = document.getElementById('examToggleLabel');
-    btn.disabled = false;
-    if (examIsOpen) {
-        btn.className     = 'exam-toggle open';
-        label.textContent = 'Close Exam';
-    } else {
-        btn.className     = 'exam-toggle closed';
-        label.textContent = 'Open Exam';
+function renderLog(logs) {
+    const list = document.getElementById('railList');
+    if (!logs.length) {
+        list.innerHTML = '<div class="rail-empty">No activity recorded yet.</div>';
+        return;
     }
+    list.innerHTML = logs.map(function(log) {
+        const ts = log.timestamp ? new Date(log.timestamp) : null;
+        const timeStr = ts ? ts.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) : '';
+        const action  = (log.action || '').toLowerCase();
+        let tone = 'info';
+        if (action.indexOf('opened') !== -1 || action.indexOf('granted') !== -1 || action.indexOf('uploaded') !== -1) tone = 'green';
+        else if (action.indexOf('closed') !== -1 || action.indexOf('disabled') !== -1) tone = 'amber';
+        else if (action.indexOf('fail') !== -1 || action.indexOf('error') !== -1) tone = 'rose';
+        else if (action.indexOf('test mode') !== -1) tone = 'amber';
+        const session = [log.className, log.year, log.stream ? 'S'+log.stream : ''].filter(Boolean).join(' · ');
+        const detail  = [escHtml(log.adminName||'system'), session && escHtml(session), escHtml(log.details||'')].filter(Boolean).join(' &nbsp;·&nbsp; ');
+        return '<div class="log-item ' + tone + '">'
+            + '<div class="log-row"><div class="log-action">' + escHtml(log.action || 'Activity') + '</div><div class="log-time">' + timeStr + '</div></div>'
+            + '<div class="log-detail">' + detail + '</div>'
+            + '</div>';
+    }).join('');
 }
 
-async function toggleExamOpen() {
-    if (examIsOpen === null) { await checkExamStatus(); return; }
-    const btn      = document.getElementById('examToggleBtn');
-    const label    = document.getElementById('examToggleLabel');
-    const newState = !examIsOpen;
-    const action   = newState ? 'Opening exam…' : 'Closing exam…';
-
-    btn.disabled      = true;
-    label.textContent = action;
-    showToast(action, 'warn');
-
-    try {
-        const url  = EXAM_SCRIPT_URL
-            + '?action=set_exam_open'
-            + '&value=' + (newState ? 'TRUE' : 'FALSE')
-            + '&cb='    + Date.now();
-        const res  = await fetch(url);
-        const data = await res.json();
-        if (data.status === 'success') {
-            examIsOpen = newState;
-            updateExamBtn();
-            showToast(newState ? 'Exam is now OPEN — students can access the portal' : 'Exam is now CLOSED', newState ? 'ok' : 'warn');
-        } else {
-            showToast(data.message || 'Failed to update exam status', 'err');
-            btn.disabled = false;
-            updateExamBtn();
-        }
-    } catch(e) {
-        showToast('Connection error', 'err');
-        btn.disabled = false;
-        updateExamBtn();
-    }
-}
-
-// ── Tab switch — trigger new panels ──────────────────────────
-const _origSwitchTab = switchTab;
-function switchTab(name, btn) {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('panel' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
-    if (name === 'log')         loadLog();
-    if (name === 'attendance')  loadAttendance();
-    if (name === 'scores')      updateTopicList();
-    if (name === 'permissions') { updateExcuseForm(); loadExcuses(); }
-}
-
-// ── Score Upload ──────────────────────────────────────────────
+// ============================================================
+//  SCORES — CSV upload
+// ============================================================
 const TEST_TOPICS = [
     'Principles of HOTR','Lordship of Christ','Authority of the Scriptures',
     'Repentance from Dead Works','Faith Towards God','Doctrine of Baptisms (Water)',
@@ -1175,8 +1993,8 @@ const ASSIGNMENT_TOPICS = ['AS1','AS2','AS3'];
 let csvFileData = null;
 
 function updateTopicList() {
-    const type  = document.getElementById('scoreType').value;
-    const sel   = document.getElementById('scoreTopic');
+    const type = document.getElementById('scoreType').value;
+    const sel  = document.getElementById('scoreTopic');
     sel.innerHTML = '';
     const topics = type === 'TEST' ? TEST_TOPICS : type === 'ASSIGNMENT' ? ASSIGNMENT_TOPICS : ['Final Exam'];
     topics.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; sel.appendChild(o); });
@@ -1198,10 +2016,10 @@ function readCSVFile(file) {
     reader.onload = function(e) {
         csvFileData = e.target.result;
         const lines = csvFileData.trim().split('\n').filter(l => l.trim());
-        const rowCount = Math.max(0, lines.length - 1); // exclude header
+        const rowCount = Math.max(0, lines.length - 1);
         const result = document.getElementById('uploadResult');
         result.textContent = '✓ File loaded — ' + rowCount + ' rows detected (excluding header). Click "Upload Scores" to proceed.';
-        result.className = 'upload-result show';
+        result.classList.add('show');
         document.getElementById('btnUploadScores').disabled = false;
         document.getElementById('uploadZone').querySelector('.upload-zone-title').textContent = file.name;
     };
@@ -1210,15 +2028,14 @@ function readCSVFile(file) {
 
 async function uploadScores() {
     if (!csvFileData) { showToast('Please select a CSV file first', 'err'); return; }
-    const cls    = document.getElementById('selClass').value;
-    const yr     = document.getElementById('selYear').value;
-    const st     = document.getElementById('selStream').value;
-    const type   = document.getElementById('scoreType').value;
-    const topic  = document.getElementById('scoreTopic').value;
-    const btn    = document.getElementById('btnUploadScores');
+    const cls   = document.getElementById('selClass').value;
+    const yr    = document.getElementById('selYear').value;
+    const st    = document.getElementById('selStream').value;
+    const type  = document.getElementById('scoreType').value;
+    const topic = document.getElementById('scoreTopic').value;
+    const btn   = document.getElementById('btnUploadScores');
 
-    btn.disabled  = true;
-    btn.textContent = 'Uploading…';
+    btn.disabled = true; btn.textContent = 'Uploading…';
     showToast('Uploading scores for ' + topic + '…', 'warn');
 
     try {
@@ -1232,18 +2049,15 @@ async function uploadScores() {
             + '&assessmentType=' + encodeURIComponent(type)
             + '&topic='          + encodeURIComponent(topic)
             + '&csvData='        + encodeURIComponent(csvFileData);
-
         const res  = await fetch(url);
         const data = await res.json();
-
         if (data.status === 'success') {
             showToast(data.message, 'ok');
             const result = document.getElementById('uploadResult');
             let msg = '✓ ' + data.written + ' score(s) uploaded for ' + topic;
             if (data.skipped > 0) msg += ' · ' + data.skipped + ' row(s) skipped';
-            if (data.errors && data.errors.length > 0) msg += '\n⚠ ' + data.errors.join('\n');
-            result.textContent = msg;
-            result.className = 'upload-result show';
+            if (data.errors && data.errors.length) msg += '\n⚠ ' + data.errors.join('\n');
+            result.textContent = msg; result.classList.add('show');
             csvFileData = null;
             document.getElementById('uploadZone').querySelector('.upload-zone-title').textContent = 'Click to upload CSV or drag and drop';
         } else {
@@ -1251,16 +2065,16 @@ async function uploadScores() {
         }
     } catch(e) { showToast('Connection error', 'err'); }
 
-    btn.disabled    = false;
-    btn.textContent = 'Upload Scores';
+    btn.disabled = false; btn.textContent = 'Upload Scores';
 }
 
-// ── Permissions ───────────────────────────────────────────────
+// ============================================================
+//  PERMISSIONS
+// ============================================================
 function updateExcuseForm() {
-    const btn = document.getElementById('btnGrantExcuse');
-    btn.disabled = false;
-    // Set today's date as default
-    document.getElementById('excuseDate').valueAsDate = new Date();
+    document.getElementById('btnGrantExcuse').disabled = false;
+    const dt = document.getElementById('excuseDate');
+    if (!dt.value) dt.valueAsDate = new Date();
 }
 
 async function grantExcuse() {
@@ -1315,7 +2129,7 @@ async function loadExcuses() {
         const res  = await fetch(url);
         const data = await res.json();
         if (data.status !== 'success') { list.innerHTML = '<div class="perm-empty">Could not load excuses.</div>'; return; }
-        if (!data.excuses || data.excuses.length === 0) { list.innerHTML = '<div class="perm-empty">No excused absences recorded for this stream.</div>'; return; }
+        if (!data.excuses || !data.excuses.length) { list.innerHTML = '<div class="perm-empty">No excused absences recorded for this stream.</div>'; return; }
         list.innerHTML = data.excuses.map(function(ex) {
             return '<div class="perm-row"><div class="perm-dot"></div><div class="perm-body">'
                 + '<div class="perm-reg">' + escHtml(ex.reg) + '</div>'
@@ -1325,15 +2139,18 @@ async function loadExcuses() {
     } catch(e) { list.innerHTML = '<div class="perm-empty">Connection error.</div>'; }
 }
 
-// ── Report ────────────────────────────────────────────────────
+// ============================================================
+//  REPORT
+// ============================================================
 let reportData = null;
 
 async function generateReport() {
     const cls = document.getElementById('selClass').value;
     const yr  = document.getElementById('selYear').value;
     const st  = document.getElementById('selStream').value;
+    if (!cls || !yr || !st) { showToast('Load a session first', 'err'); return; }
     const wrap = document.getElementById('reportTableWrap');
-    document.getElementById('reportSummary').style.display = 'none';
+    document.getElementById('reportSummary').classList.remove('show');
     wrap.innerHTML = '<div class="att-empty">Generating report…</div>';
     showToast('Computing report for ' + cls + ' ' + yr + ' Stream ' + st + '…', 'warn');
     try {
@@ -1347,7 +2164,6 @@ async function generateReport() {
         const res  = await fetch(url);
         const data = await res.json();
         if (data.status !== 'success') { wrap.innerHTML = '<div class="att-empty">' + escHtml(data.message || 'Failed to generate report.') + '</div>'; return; }
-
         reportData = data.results;
         renderReport(data);
         showToast('Report generated — ' + data.total + ' students', 'ok');
@@ -1359,26 +2175,22 @@ async function generateReport() {
 
 function renderReport(data) {
     const results = data.results || [];
-
-    // Summary counts
     const eligible = results.filter(r => r.eligibility === 'ELIGIBLE' || r.eligibility === 'ELIGIBLE-W').length;
     const passed   = results.filter(r => r.finalStatus === 'PASSED' || r.finalStatus === 'PASSED-W').length;
     const failed   = results.filter(r => r.finalStatus === 'FAIL').length;
-
     document.getElementById('rptEligible').textContent = eligible;
     document.getElementById('rptPassed').textContent   = passed;
     document.getElementById('rptFailed').textContent   = failed;
-    document.getElementById('reportSummary').style.display = 'grid';
+    document.getElementById('reportSummary').classList.add('show');
 
-    // Table
     const wrap = document.getElementById('reportTableWrap');
-    if (results.length === 0) { wrap.innerHTML = '<div class="att-empty">No active students found for this stream.</div>'; return; }
+    if (!results.length) { wrap.innerHTML = '<div class="att-empty">No active students found for this stream.</div>'; return; }
 
     const rows = results.map(function(r) {
         const eligBadge = '<span class="rpt-badge ' + r.eligibility.replace(/\s/g,'-') + '">' + escHtml(r.eligibility) + '</span>';
         const statBadge = '<span class="rpt-badge ' + r.finalStatus + '">' + escHtml(r.finalStatus) + '</span>';
         return '<tr>'
-            + '<td style="font-family:monospace;font-size:11px;">' + escHtml(r.reg) + '</td>'
+            + '<td style="font-family:JetBrains Mono, monospace;font-size:11px;">' + escHtml(r.reg) + '</td>'
             + '<td>' + escHtml(r.lastName + ' ' + r.firstName) + '</td>'
             + '<td>' + r.attended + '</td>'
             + '<td>' + r.attPct + '%</td>'
@@ -1389,19 +2201,17 @@ function renderReport(data) {
             + '<td>' + statBadge + '</td>'
             + '</tr>';
     }).join('');
-
     wrap.innerHTML = '<div class="rpt-table-wrap"><table class="rpt-table">'
-        + '<thead><tr>'
-        + '<th>Reg No.</th><th>Name</th><th>Attended</th><th>Att %</th>'
-        + '<th>Eligibility</th><th>Test Avg</th><th>Exam</th><th>Total</th><th>Status</th>'
-        + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
-        + '<div style="margin-top:12px;text-align:right;">'
-        + '<button class="btn btn-outline" style="flex:none;height:32px;font-size:12px;padding:0 14px;" onclick="downloadReport()">Download CSV</button>'
+        + '<thead><tr><th>Reg No.</th><th>Name</th><th>Attended</th><th>Att %</th>'
+        + '<th>Eligibility</th><th>Test Avg</th><th>Exam</th><th>Total</th><th>Status</th></tr></thead>'
+        + '<tbody>' + rows + '</tbody></table></div>'
+        + '<div style="margin-top:12px; text-align:right;">'
+        + '<button class="btn btn-outline btn-sm" onclick="downloadReport()">Download CSV</button>'
         + '</div>';
 }
 
 function downloadReport() {
-    if (!reportData || reportData.length === 0) return;
+    if (!reportData || !reportData.length) return;
     const TEST_TOPICS_SHORT = ['POTR','LOC','AOS','RFDW','FTG','DOB','LOH','ROTD','EJ'];
     const headers = ['Reg Number','Last Name','First Name','Attended','Excused','Att%','Eligibility',
         ...TEST_TOPICS_SHORT,'Test Avg','AS1','AS2','AS3','Assign Marks',
@@ -1424,21 +2234,9 @@ function downloadReport() {
     a.click();
 }
 
-// ── Helpers ───────────────────────────────────────────────────
-function getStoredPass() {
-    // Password is stored in the session for re-auth on actions after refresh
-    const saved = sessionStorage.getItem('rfs_pass');
-    return saved || document.getElementById('loginPassword').value || '';
-}
-
-// Store password in session on login so it's available after refresh
-const origLogin = window.handleLogin;
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('loginPassword').addEventListener('input', function() {
-        if (this.value) sessionStorage.setItem('rfs_pass', this.value);
-    });
-});
-
+// ============================================================
+//  HELPERS
+// ============================================================
 function escHtml(str) {
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
