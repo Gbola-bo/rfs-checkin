@@ -85,9 +85,8 @@ input:focus, select:focus { outline: none; }
 }
 .login-brand {
     background:
-        radial-gradient(ellipse at 25% 20%, rgba(46,190,96,0.15), transparent 60%),
-        radial-gradient(ellipse at 80% 90%, rgba(20,62,32,0.4), transparent 60%),
-        var(--top-bg);
+        linear-gradient(160deg, rgba(14,26,20,0.82) 0%, rgba(31,90,46,0.72) 50%, rgba(14,26,20,0.90) 100%),
+        url('https://raw.githubusercontent.com/House-of-the-Rock-Lagos/rfs-system/main/hotr-bg.jpg') center/cover no-repeat;
     color: #fff;
     padding: 56px 56px 40px;
     display: flex; flex-direction: column; justify-content: space-between;
@@ -100,10 +99,11 @@ input:focus, select:focus { outline: none; }
 }
 .login-brand-top { display: flex; align-items: center; gap: 12px; position: relative; z-index: 1; }
 .login-brand-mark {
-    width: 38px; height: 38px; border-radius: 8px;
+    width: 44px; height: 44px; border-radius: 10px;
     background: #fff; display: grid; place-items: center;
     color: var(--green-deep); font-weight: 700; font-size: 16px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+    overflow: hidden; padding: 4px;
 }
 .login-brand-name { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
 .login-brand-headline { position: relative; z-index: 1; }
@@ -732,10 +732,53 @@ input:focus, select:focus { outline: none; }
 @media (max-width: 1100px) {
     .body-grid { grid-template-columns: var(--side-w) 1fr; }
     .rail { display: none; }
+    .rail-fab { display: flex !important; }
 }
+
+/* Rail slide-over for medium screens */
+.rail-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 150;
+    background: rgba(14,26,20,0.40);
+    backdrop-filter: blur(2px);
+}
+.rail-overlay.show { display: block; }
+.rail-slide {
+    position: fixed; right: 0; top: var(--top-h); bottom: 0; z-index: 151;
+    width: 320px; max-width: 90vw;
+    background: var(--rail);
+    border-left: 1px solid var(--line);
+    display: flex; flex-direction: column;
+    transform: translateX(100%);
+    transition: transform .22s cubic-bezier(.4,0,.2,1);
+    box-shadow: -8px 0 32px rgba(0,0,0,0.12);
+}
+.rail-slide.show { transform: translateX(0); }
+
+/* FAB to open activity log */
+.rail-fab {
+    display: none;
+    position: fixed; bottom: 22px; right: 22px; z-index: 140;
+    width: 48px; height: 48px; border-radius: 50%;
+    background: var(--green-deep); color: #fff;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.22);
+    align-items: center; justify-content: center;
+    border: none; cursor: pointer;
+    transition: background .12s, transform .08s;
+}
+.rail-fab:hover { background: var(--green); }
+.rail-fab:active { transform: scale(0.95); }
+.rail-fab svg { width: 20px; height: 20px; }
+.rail-fab-dot {
+    position: absolute; top: 8px; right: 8px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--green-dot); border: 2px solid var(--green-deep);
+    animation: pulse 2.4s ease-in-out infinite;
+}
+
 @media (max-width: 720px) {
     .login-overlay { grid-template-columns: 1fr; }
-    .login-brand { padding: 32px 28px; }
+    .login-brand { padding: 32px 28px; min-height: 220px; }
     .login-brand-headline h1 { font-size: 28px; }
     .body-grid { grid-template-columns: 1fr; }
     .side { display: none; }
@@ -743,18 +786,86 @@ input:focus, select:focus { outline: none; }
     .stats { grid-template-columns: 1fr; }
     .att-summary { grid-template-columns: 1fr; }
     .code-grid, .sel-grid { grid-template-columns: 1fr; }
-    .tb-context { display: none; }
+
+    /* Mobile warning banner */
+    .mobile-warning {
+        display: flex !important;
+    }
 }
+
+/* Mobile-only warning bar */
+.mobile-warning {
+    display: none;
+    position: fixed; inset: 0; z-index: 500;
+    background: var(--top-bg);
+    flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 32px 24px; text-align: center;
+    color: #fff;
+}
+.mobile-warning-icon {
+    width: 56px; height: 56px; border-radius: 14px;
+    background: rgba(255,255,255,0.08); display: grid;
+    place-items: center; margin: 0 auto 20px;
+}
+.mobile-warning-icon svg { width: 28px; height: 28px; color: #fff; }
+.mobile-warning h2 { font-size: 22px; font-weight: 600; margin-bottom: 10px; letter-spacing: -0.02em; }
+.mobile-warning p { font-size: 14px; color: var(--top-muted); line-height: 1.6; max-width: 30ch; margin: 0 auto 28px; }
+.mobile-warning-btn {
+    height: 44px; padding: 0 24px;
+    background: var(--green-deep); color: #fff;
+    border-radius: var(--r-sm); font-size: 14px; font-weight: 600;
+    border: none; cursor: pointer;
+}
+.mobile-warning .mobile-proceed {
+    margin-top: 14px;
+    background: transparent; color: var(--top-muted);
+    font-size: 13px; padding: 8px; cursor: pointer; border: none;
+    text-decoration: underline; text-underline-offset: 3px;
+}
+    .tb-context { display: none; }
 </style>
 </head>
 <body>
+
+<!-- ────────── MOBILE WARNING ────────── -->
+<div class="mobile-warning" id="mobileWarning">
+    <div class="mobile-warning-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>
+        </svg>
+    </div>
+    <h2>Desktop Recommended</h2>
+    <p>The Admin Command Center is designed for desktop use. For the best experience, open it on a laptop or computer.</p>
+    <button class="mobile-warning-btn" onclick="document.getElementById('mobileWarning').style.display='none'">Continue Anyway</button>
+    <button class="mobile-proceed" onclick="document.getElementById('mobileWarning').style.display='none'">dismiss</button>
+</div>
+
+<!-- ────────── RAIL SLIDE-OVER (medium screens) ────────── -->
+<div class="rail-overlay" id="railOverlay" onclick="closeRailSlide()"></div>
+<div class="rail-slide" id="railSlide">
+    <!-- Content will be mirrored from the main rail by JS -->
+</div>
+
+<!-- ────────── ACTIVITY LOG FAB ────────── -->
+<button class="rail-fab" id="railFab" onclick="openRailSlide()" title="View Activity Log">
+    <span class="rail-fab-dot"></span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+    </svg>
+</button>
 
 <!-- ────────── LOGIN OVERLAY ────────── -->
 <div class="login-overlay" id="loginOverlay">
     <aside class="login-brand">
         <div class="login-brand-top">
-            <div class="login-brand-mark">R</div>
-            <div class="login-brand-name">Rock Foundation School</div>
+            <div class="login-brand-mark">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1535.61 720.7" style="width:32px;height:32px;object-fit:contain;">
+                  <defs><style>.cls-1{fill:#7ac042}.cls-2{fill:#26361b}.cls-3{fill:#f6eb19}</style></defs>
+                  <g><path class="cls-1" d="M0,693.1l17.76-27.95,78.77-14.93,39.53-55.38c77.39-18.85,157.19-33.28,236.48-44.4,298.97-41.95,607.51-36.4,904.31,19.14,48.81,9.13,92.27,16.51,137.14,38.78,15.07,7.48,54.7,29.33,64.06,41.87,6.62,8.87,11.26,24.98,17.82,34.63,6.09,3.05,24.83,2.93,29.31,6.17,1.19.86,10.43,20.26,10.44,21.53-8.4,1.77-17.28-.18-25.46-.53-172.91-7.3-345.62-20.92-518.95-15.98-120.92,3.45-242.02,15.47-362.82,21.05-167.22,7.73-335,2.5-501.9-11.03-42.2-3.42-84.32-8.22-126.47-11.98v-1Z"/><path class="cls-2" d="M905.76,112.87v160.78c24.25-7.17,48.56-17.58,74.47-15.96,28.01,1.75,53.53,16.33,75.81,32.13,50,35.45,119.73,106.25,181.15,113.65,13.1,1.58,26.08-1.17,36.47,9.51,5.34,5.49,12.01,21.51,12.01,28.95v22.47l-64.98,1v45.94c-35.89-4.17-71.67-10.41-107.6-14.86-242.16-30.01-485.68-27.78-727.54,4.01-19.03,2.5-37.9,6.26-57.05,7.91-2.5-13.93-2.65-28.83-1.58-43h-41.99v-31.46c0-3.13,1.55-12.2,2.48-15.5,2.27-8.01,6.95-12.37,15.27-13.7,101.98-.92,204.14,1.97,304.17-19.72,86.33-18.72,163.38-55.83,243.75-90.56.54-17.23-.14-34.53.17-51.77.1-5.48-.09-10.99,0-16.48,15.76-35.82,32.94-71.42,50.13-106.71.93-1.91,1.92-4.24,3-5.99.46-.74,1.51-2.57,1.85-.64Z"/><path class="cls-3" d="M850.78,242.7c-75.13,29.86-146.12,67.66-224.73,88.6-38.12,10.16-77.21,16.63-116.54,20.16l-1.47-1.58c-9.55-57.54-3.35-116.46,19.35-170.07C583.95,46.3,728.79-28.69,870.99,10.3c109.33,29.97,193.87,126.56,210.72,238.39-1.54.38-2.17-.63-3.28-1.2-7.95-4.12-16.61-11.38-25.03-15.94-30.39-16.47-65.95-25.9-100.59-19.82l-47.04-98.85c-.35-1.93-1.4-.09-1.85.64-1.08,1.75-2.07,4.08-3,5.99-17.19,35.29-34.37,70.89-50.13,106.71-.09,5.49.1,11,0,16.48Z"/></g>
+                </svg>
+            </div>
+            <div class="login-brand-name">Rock Foundation School, Lagos</div>
         </div>
         <div class="login-brand-headline">
             <h1>Command center for stream operations.</h1>
@@ -788,11 +899,12 @@ input:focus, select:focus { outline: none; }
     <header class="topbar">
         <div class="tb-left">
             <div class="tb-mark">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 11.5L12 4l9 7.5"/><path d="M5 10v9.5h14V10"/><path d="M10 19.5v-5h4v5"/>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1535.61 720.7" style="width:18px;height:18px;">
+                  <defs><style>.tbcls-1{fill:#7ac042}.tbcls-2{fill:#26361b}.tbcls-3{fill:#f6eb19}</style></defs>
+                  <g><path class="tbcls-1" d="M0,693.1l17.76-27.95,78.77-14.93,39.53-55.38c77.39-18.85,157.19-33.28,236.48-44.4,298.97-41.95,607.51-36.4,904.31,19.14,48.81,9.13,92.27,16.51,137.14,38.78,15.07,7.48,54.7,29.33,64.06,41.87,6.62,8.87,11.26,24.98,17.82,34.63,6.09,3.05,24.83,2.93,29.31,6.17,1.19.86,10.43,20.26,10.44,21.53-8.4,1.77-17.28-.18-25.46-.53-172.91-7.3-345.62-20.92-518.95-15.98-120.92,3.45-242.02,15.47-362.82,21.05-167.22,7.73-335,2.5-501.9-11.03-42.2-3.42-84.32-8.22-126.47-11.98v-1Z"/><path class="tbcls-2" d="M905.76,112.87v160.78c24.25-7.17,48.56-17.58,74.47-15.96,28.01,1.75,53.53,16.33,75.81,32.13,50,35.45,119.73,106.25,181.15,113.65,13.1,1.58,26.08-1.17,36.47,9.51,5.34,5.49,12.01,21.51,12.01,28.95v22.47l-64.98,1v45.94c-35.89-4.17-71.67-10.41-107.6-14.86-242.16-30.01-485.68-27.78-727.54,4.01-19.03,2.5-37.9,6.26-57.05,7.91-2.5-13.93-2.65-28.83-1.58-43h-41.99v-31.46c0-3.13,1.55-12.2,2.48-15.5,2.27-8.01,6.95-12.37,15.27-13.7,101.98-.92,204.14,1.97,304.17-19.72,86.33-18.72,163.38-55.83,243.75-90.56.54-17.23-.14-34.53.17-51.77.1-5.48-.09-10.99,0-16.48,15.76-35.82,32.94-71.42,50.13-106.71.93-1.91,1.92-4.24,3-5.99.46-.74,1.51-2.57,1.85-.64Z"/><path class="tbcls-3" d="M850.78,242.7c-75.13,29.86-146.12,67.66-224.73,88.6-38.12,10.16-77.21,16.63-116.54,20.16l-1.47-1.58c-9.55-57.54-3.35-116.46,19.35-170.07C583.95,46.3,728.79-28.69,870.99,10.3c109.33,29.97,193.87,126.56,210.72,238.39-1.54.38-2.17-.63-3.28-1.2-7.95-4.12-16.61-11.38-25.03-15.94-30.39-16.47-65.95-25.9-100.59-19.82l-47.04-98.85c-.35-1.93-1.4-.09-1.85.64-1.08,1.75-2.07,4.08-3,5.99-17.19,35.29-34.37,70.89-50.13,106.71-.09,5.49.1,11,0,16.48Z"/></g>
                 </svg>
             </div>
-            <div class="tb-name">Rock Foundation School</div>
+            <div class="tb-name">Rock Foundation School, Lagos</div>
         </div>
 
         <div class="tb-context" id="tbContext">
@@ -816,12 +928,12 @@ input:focus, select:focus { outline: none; }
                 </svg>
                 <span id="examToggleLabel">Exams</span>
             </button>
-            <button class="tb-icon-btn" title="Notifications">
+            <button class="tb-icon-btn" title="Notifications" style="display:none;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 21a2 2 0 0 0 4 0"/>
                 </svg>
             </button>
-            <button class="tb-icon-btn" title="Settings">
+            <button class="tb-icon-btn" title="Settings" style="display:none;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
                 </svg>
@@ -892,10 +1004,6 @@ input:focus, select:focus { outline: none; }
                         <p class="page-sub">Overview of current session engagement and attendance.</p>
                     </div>
                     <div class="page-actions">
-                        <button class="btn btn-outline btn-sm" onclick="exportDailyReport()">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            Export Daily Report
-                        </button>
                         <button class="btn btn-primary btn-sm" onclick="switchPage('attendance', document.querySelector('.nav-item[data-page=attendance]'))">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                             View Attendance
@@ -1235,7 +1343,7 @@ input:focus, select:focus { outline: none; }
         </main>
 
         <!-- RIGHT RAIL — LIVE ACTIVITY LOG -->
-        <aside class="rail">
+        <aside class="rail" id="rail">
             <div class="rail-head">
                 <div class="rail-head-text">
                     <div class="rail-title">Live Activity Log</div>
@@ -2248,6 +2356,27 @@ function showToast(msg, type) {
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
 }
+// ============================================================
+//  ACTIVITY LOG SLIDE-OVER (medium screens)
+// ============================================================
+function openRailSlide() {
+    const rail = document.getElementById('rail');
+    const slide = document.getElementById('railSlide');
+    // Clone rail content into slide panel
+    slide.innerHTML = rail ? rail.innerHTML : '<div class="rail-empty">No activity yet.</div>';
+    document.getElementById('railOverlay').classList.add('show');
+    slide.classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+function closeRailSlide() {
+    document.getElementById('railOverlay').classList.remove('show');
+    document.getElementById('railSlide').classList.remove('show');
+    document.body.style.overflow = '';
+}
+// Close with Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeRailSlide();
+});
 </script>
 </body>
 </html>
