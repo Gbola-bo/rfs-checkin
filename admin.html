@@ -953,7 +953,7 @@ input:focus, select:focus { outline: none; }
             <div class="login-form-sub">Sign in with your admin credentials to continue.</div>
             <div class="f-group">
                 <label for="loginName">Name</label>
-                <input type="text" id="loginName" class="input" autocomplete="username" placeholder="e.g. Tunde A.">
+                <input type="text" id="loginName" class="input" autocomplete="username" placeholder="Firstname Surname">
             </div>
             <div class="f-group">
                 <label for="loginPassword">Password</label>
@@ -1171,7 +1171,7 @@ input:focus, select:focus { outline: none; }
                     <div class="card-body">
                         <div class="code-field">
                             <label for="sunCodeInput">Today's Code</label>
-                            <input type="text" id="sunCodeInput" class="input mono" placeholder="e.g. RFS2026A" style="text-transform:uppercase;">
+                            <input type="text" id="sunCodeInput" class="input mono" placeholder="0000" style="text-transform:uppercase;">
                         </div>
                         <button class="btn btn-primary btn-sm btn-full" id="btnSunSaveCode" onclick="saveSunCode()" disabled>Save Code</button>
                     </div>
@@ -1216,11 +1216,11 @@ input:focus, select:focus { outline: none; }
                         <div class="code-grid" style="margin-bottom:14px;">
                             <div class="code-field" style="margin-bottom:0;">
                                 <label for="satCICode">Check-in Code</label>
-                                <input type="text" id="satCICode" class="input mono" placeholder="e.g. SAT-IN-2026" style="text-transform:uppercase;">
+                                <input type="text" id="satCICode" class="input mono" placeholder="0000" style="text-transform:uppercase;">
                             </div>
                             <div class="code-field" style="margin-bottom:0;">
                                 <label for="satCOCode">Check-out Code</label>
-                                <input type="text" id="satCOCode" class="input mono" placeholder="e.g. SAT-OUT-2026" style="text-transform:uppercase;">
+                                <input type="text" id="satCOCode" class="input mono" placeholder="0000" style="text-transform:uppercase;">
                             </div>
                         </div>
                         <button class="btn btn-outline btn-sm btn-full" id="btnSatSave" onclick="saveSatCodes()" disabled>Save Codes</button>
