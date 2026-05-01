@@ -791,17 +791,90 @@ input:focus, select:focus { outline: none; }
 
 
 @media (max-width: 720px) {
+    /* ── LOGIN ── */
     .login-overlay { grid-template-columns: 1fr; }
-    .login-brand { padding: 32px 28px; min-height: 200px; }
-    .login-brand-headline h1 { font-size: 28px; }
+    .login-brand { padding: 36px 28px 32px; min-height: 220px; }
+    .login-brand-headline h1 { font-size: 26px; }
+
+    /* ── TOPBAR ── */
+    .tb-context { display: none; }
+    .tb-name { font-size: 13px; }
+
+    /* ── BODY GRID: hide sidebar, hide rail ── */
     .body-grid { grid-template-columns: 1fr; }
     .side { display: none; }
-    .main { padding: 18px 16px 32px; }
-    .stats { grid-template-columns: 1fr; }
+    .rail { display: none; }
+    .rail-fab { bottom: 76px; } /* lift above bottom nav */
+
+    /* ── MAIN ── */
+    .main { padding: 16px 14px 90px; } /* bottom padding for nav bar */
+
+    /* ── STAT CARDS ── */
+    .stats { grid-template-columns: 1fr; gap: 10px; }
     .att-summary { grid-template-columns: 1fr; }
     .code-grid, .sel-grid { grid-template-columns: 1fr; }
-    .tb-context { display: none; }
+
+    /* ── BOTTOM NAV ── */
+    .mob-nav { display: flex !important; }
+
+    /* ── DESKTOP-ONLY PAGE NUDGE ── */
+    .mob-desktop-only { display: flex !important; }
+    #pageScores .page-content-wrap,
+    #pagePermissions .page-content-wrap,
+    #pageReport .page-content-wrap { display: none; }
 }
+
+/* ════════════════════════════════════════
+   BOTTOM NAV BAR  (mobile only)
+════════════════════════════════════════ */
+.mob-nav {
+    display: none;
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 120;
+    height: 62px;
+    background: var(--shell);
+    border-top: 1px solid var(--line);
+    align-items: stretch;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.07);
+}
+.mob-nav-item {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 4px;
+    border: none; background: none; cursor: pointer;
+    color: var(--ink-3);
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    font-family: 'DM Sans', sans-serif;
+    transition: color .12s;
+    padding: 0 4px;
+    -webkit-tap-highlight-color: transparent;
+}
+.mob-nav-item svg { width: 20px; height: 20px; flex-shrink: 0; }
+.mob-nav-item.active { color: var(--green-deep); }
+.mob-nav-item.active svg { stroke: var(--green-deep); }
+.mob-nav-item:active { opacity: 0.7; }
+
+/* ════════════════════════════════════════
+   DESKTOP-ONLY NUDGE (inside page)
+════════════════════════════════════════ */
+.mob-desktop-only {
+    display: none; /* shown via media query */
+    flex-direction: column; align-items: center; justify-content: center;
+    text-align: center;
+    padding: 48px 24px;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--r-lg); margin-top: 8px;
+}
+.mob-desktop-only-icon {
+    width: 52px; height: 52px; border-radius: 14px;
+    background: var(--line-soft); display: grid;
+    place-items: center; margin: 0 auto 18px;
+    color: var(--ink-3);
+}
+.mob-desktop-only-icon svg { width: 24px; height: 24px; }
+.mob-desktop-only h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.01em; }
+.mob-desktop-only p { font-size: 13px; color: var(--ink-3); line-height: 1.6; max-width: 28ch; margin: 0 auto; }
 </style>
 </head>
 <body>
@@ -833,7 +906,7 @@ input:focus, select:focus { outline: none; }
             <div class="login-brand-name">Rock Foundation School, Lagos</div>
         </div>
         <div class="login-brand-headline">
-            <h1>Admin Dashboard for steam operations.</h1>
+            <h1>Admin Dashboard for stream operations.</h1>
             <p>Manage attendance, scores, permissions, and exam access from a single console.</p>
         </div>
         <div class="login-brand-foot">RFS SUITE · ADMIN v1.0 · HOTR LAGOS</div>
@@ -1181,6 +1254,16 @@ input:focus, select:focus { outline: none; }
                     </div>
                 </div>
 
+                <!-- mobile nudge -->
+                <div class="mob-desktop-only">
+                    <div class="mob-desktop-only-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                    </div>
+                    <h3>Desktop Required</h3>
+                    <p>Score uploads involve CSV files — open this on a laptop or desktop to continue.</p>
+                </div>
+
+                <div class="page-content-wrap">
                 <div class="card">
                     <div class="card-body">
                         <div class="sel-grid">
@@ -1211,6 +1294,7 @@ input:focus, select:focus { outline: none; }
                         <button class="btn btn-primary btn-sm btn-full" id="btnUploadScores" onclick="uploadScores()" disabled style="margin-top:14px;">Upload Scores</button>
                     </div>
                 </div>
+                </div><!-- /page-content-wrap -->
             </section>
 
             <!-- ─── PERMISSIONS PAGE ─── -->
@@ -1222,6 +1306,16 @@ input:focus, select:focus { outline: none; }
                     </div>
                 </div>
 
+                <!-- mobile nudge -->
+                <div class="mob-desktop-only">
+                    <div class="mob-desktop-only-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0"/></svg>
+                    </div>
+                    <h3>Desktop Required</h3>
+                    <p>Permissions management is best handled on a desktop for accuracy.</p>
+                </div>
+
+                <div class="page-content-wrap">
                 <div class="card">
                     <div class="card-head">
                         <div class="card-head-text">
@@ -1262,6 +1356,7 @@ input:focus, select:focus { outline: none; }
                         </div>
                     </div>
                 </div>
+                </div><!-- /page-content-wrap -->
             </section>
 
             <!-- ─── REPORT PAGE ─── -->
@@ -1279,6 +1374,16 @@ input:focus, select:focus { outline: none; }
                     </div>
                 </div>
 
+                <!-- mobile nudge -->
+                <div class="mob-desktop-only">
+                    <div class="mob-desktop-only-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 5-7"/></svg>
+                    </div>
+                    <h3>Desktop Required</h3>
+                    <p>The full report table is best viewed on a wider screen.</p>
+                </div>
+
+                <div class="page-content-wrap">
                 <div class="card">
                     <div class="card-body">
                         <div class="rpt-summary" id="reportSummary">
@@ -1303,6 +1408,7 @@ input:focus, select:focus { outline: none; }
                         </div>
                     </div>
                 </div>
+                </div><!-- /page-content-wrap -->
             </section>
 
         </main>
@@ -1333,6 +1439,31 @@ input:focus, select:focus { outline: none; }
     <input type="hidden" id="selClass" value="">
     <input type="hidden" id="selYear" value="">
     <input type="hidden" id="selStream" value="">
+
+    <!-- ────────── MOBILE BOTTOM NAV ────────── -->
+    <nav class="mob-nav" id="mobNav">
+        <button class="mob-nav-item active" data-page="dashboard" onclick="switchPage('dashboard', this); mobNavSwitch(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+            Dash
+        </button>
+        <button class="mob-nav-item" data-page="sunday" onclick="switchPage('sunday', this); mobNavSwitch(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            Sunday
+        </button>
+        <button class="mob-nav-item" data-page="saturday" onclick="switchPage('saturday', this); mobNavSwitch(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
+            Saturday
+        </button>
+        <button class="mob-nav-item" data-page="attendance" onclick="switchPage('attendance', this); mobNavSwitch(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11l-3 3-1.5-1.5"/></svg>
+            Attend.
+        </button>
+        <button class="mob-nav-item" onclick="openRailSlide()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M12 2a10 10 0 0 0 0 20"/><path d="M2 12h20"/></svg>
+            Activity
+        </button>
+    </nav>
+
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1476,6 +1607,11 @@ function switchPage(name, btn) {
     const cap = name.charAt(0).toUpperCase() + name.slice(1);
     const pg  = document.getElementById('page' + cap);
     if (pg) pg.classList.add('show');
+
+    // Sync mobile bottom nav active state
+    document.querySelectorAll('.mob-nav-item[data-page]').forEach(b => {
+        b.classList.toggle('active', b.dataset.page === name);
+    });
 
     // Lazy-load page data
     if (name === 'dashboard')   loadDashboard();
@@ -2320,8 +2456,13 @@ function showToast(msg, type) {
     toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
 }
 // ============================================================
-//  ACTIVITY LOG SLIDE-OVER (medium screens)
+//  MOBILE NAV SYNC
 // ============================================================
+function mobNavSwitch(el) {
+    document.querySelectorAll('.mob-nav-item').forEach(b => b.classList.remove('active'));
+    if (el) el.classList.add('active');
+}
+
 function openRailSlide() {
     const rail = document.getElementById('rail');
     const slide = document.getElementById('railSlide');
