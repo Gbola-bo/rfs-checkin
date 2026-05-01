@@ -61,7 +61,8 @@
     --rail-w:       312px;
 }
 
-html, body { height: 100%; overflow-x: hidden; }
+html, body { height: 100%; overflow-x: hidden; overscroll-behavior: none; }
+body { touch-action: pan-x pan-y; }
 body {
     font-family: 'DM Sans', system-ui, sans-serif;
     background: var(--bg);
@@ -349,6 +350,8 @@ input:focus, select:focus { outline: none; }
 .main {
     overflow-y: auto; padding: 28px 32px 40px;
     min-width: 0;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: none;
 }
 .main::-webkit-scrollbar { width: 8px; }
 .main::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
@@ -821,11 +824,24 @@ input:focus, select:focus { outline: none; }
     .tb-logout-mob { display: flex; }
 
     /* ── BODY: full width single column ── */
-    .body-grid { grid-template-columns: 1fr; width: 100%; }
+    .body-grid { grid-template-columns: 1fr; width: 100%; overflow: hidden; }
     .side { display: none; }
     .rail { display: none; }
-    .main { padding: 16px 14px 90px; width: 100%; overflow-x: hidden; }
     .rail-fab { bottom: 76px; }
+
+    /* ── iOS BOUNCE FIX ── */
+    /* Lock the body so Safari can't bounce the page. Only .main scrolls. */
+    body { position: fixed; width: 100%; height: 100%; overflow: hidden; }
+    .app { height: 100%; height: 100dvh; overflow: hidden; }
+    .body-grid { height: calc(100% - var(--top-h)); }
+    .main {
+        height: 100%;
+        overflow-y: scroll;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
+        padding: 16px 14px 90px;
+    }
 
     /* ── CARDS FULL WIDTH ── */
     .stats { grid-template-columns: 1fr; gap: 10px; }
