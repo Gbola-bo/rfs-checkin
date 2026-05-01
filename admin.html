@@ -739,6 +739,66 @@ input:focus, select:focus { outline: none; }
 .tb-logout-mob:active { background: rgba(181,64,47,0.28); }
 .tb-logout-mob svg { width: 13px; height: 13px; }
 
+/* PAGE ACTIONS — responsive stacking */
+.page-actions {
+    display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;
+}
+@media (max-width: 720px) {
+    .page-head { flex-wrap: wrap; gap: 10px; }
+    .page-actions { width: 100%; justify-content: flex-start; }
+    .page-actions .btn { flex: 1; justify-content: center; }
+}
+
+/* QA/QC CONFIRMATION OVERLAY */
+.qaqc-overlay {
+    position: fixed; inset: 0; z-index: 400;
+    background: rgba(14,26,20,0.55);
+    backdrop-filter: blur(3px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .18s;
+}
+.qaqc-overlay.show { opacity: 1; pointer-events: all; }
+.qaqc-modal {
+    background: var(--card);
+    border-radius: var(--r-xl);
+    padding: 28px 24px 24px;
+    width: 100%; max-width: 400px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.22);
+    transform: translateY(12px) scale(0.98);
+    transition: transform .18s;
+}
+.qaqc-overlay.show .qaqc-modal { transform: none; }
+.qaqc-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    background: var(--amber-soft);
+    display: grid; place-items: center;
+    margin-bottom: 16px;
+    color: var(--amber);
+}
+.qaqc-icon svg { width: 24px; height: 24px; }
+.qaqc-title { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 8px; }
+.qaqc-desc { font-size: 13px; color: var(--ink-2); line-height: 1.6; margin-bottom: 20px; }
+.qaqc-checklist { display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px; }
+.qaqc-check {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: var(--line-soft); border-radius: var(--r-sm);
+    padding: 10px 12px; font-size: 13px; color: var(--ink-2); line-height: 1.5;
+}
+.qaqc-check-icon {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--amber-soft); flex-shrink: 0;
+    display: grid; place-items: center; margin-top: 1px;
+}
+.qaqc-check-icon svg { width: 10px; height: 10px; color: var(--amber); }
+.qaqc-actions { display: flex; gap: 8px; }
+.qaqc-actions .btn { flex: 1; height: 42px; justify-content: center; }
+@media (max-width: 480px) {
+    .qaqc-modal { padding: 24px 18px 20px; }
+    .qaqc-actions { flex-direction: column-reverse; }
+}
+
 /* TOAST */
 .toast {
     position: fixed; bottom: 22px; left: 50%;
@@ -1082,14 +1142,20 @@ input:focus, select:focus { outline: none; }
                     </div>
                     <div class="page-actions">
                         <button class="btn btn-primary btn-sm" onclick="switchPage('attendance', document.querySelector('.nav-item[data-page=attendance]'))">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-        <circle cx="9" cy="7" r="4"></circle>
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-    </svg>
-    View Attendance
-</button>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                            View Attendance
+                        </button>
+                        <button class="btn btn-amber btn-sm" onclick="openQAQCConfirm()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                            </svg>
+                            Perform QA/QC
+                        </button>
                     </div>
                 </div>
 
@@ -1511,6 +1577,45 @@ input:focus, select:focus { outline: none; }
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- ────────── QA/QC CONFIRMATION OVERLAY ────────── -->
+<div class="qaqc-overlay" id="qaqcOverlay">
+    <div class="qaqc-modal">
+        <div class="qaqc-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+        </div>
+        <div class="qaqc-title">Before you perform QA/QC</div>
+        <div class="qaqc-desc">This will compute and write the Summary tab for all active students in the current stream. Please confirm the following before proceeding:</div>
+        <div class="qaqc-checklist">
+            <div class="qaqc-check">
+                <div class="qaqc-check-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                All test, assignment, and exam scores have been uploaded for this stream.
+            </div>
+            <div class="qaqc-check">
+                <div class="qaqc-check-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                The attendance window has been closed and all check-ins are finalised.
+            </div>
+        </div>
+        <div class="qaqc-actions">
+            <button class="btn btn-sm" style="background:var(--line-soft);color:var(--ink-2);border:none;height:42px;flex:1;justify-content:center;" onclick="closeQAQCConfirm()">
+                No, Go Back
+            </button>
+            <button class="btn btn-amber btn-sm" id="btnQAQCConfirm" onclick="runQAQC()" style="height:42px;flex:1;justify-content:center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                </svg>
+                Yes, Perform QA/QC
+            </button>
+        </div>
+    </div>
+</div>
 
 <script>
 // ============================================================
@@ -2483,6 +2588,75 @@ function downloadReport() {
     a.href     = URL.createObjectURL(blob);
     a.download = 'RFS_Report_' + new Date().toISOString().split('T')[0] + '.csv';
     a.click();
+}
+
+
+// ============================================================
+//  QA/QC — SUMMARY TAB REFRESH
+// ============================================================
+function openQAQCConfirm() {
+    document.getElementById('qaqcOverlay').classList.add('show');
+}
+
+function closeQAQCConfirm() {
+    document.getElementById('qaqcOverlay').classList.remove('show');
+}
+
+// Close on backdrop click
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('qaqcOverlay').addEventListener('click', function(e) {
+        if (e.target === this) closeQAQCConfirm();
+    });
+});
+
+async function runQAQC() {
+    const btn = document.getElementById('btnQAQCConfirm');
+    btn.disabled = true;
+    btn.innerHTML = '<span style="font-size:13px">Running…</span>';
+
+    // Read session from hidden inputs (populated by autoLoadSession)
+    const cls    = (document.getElementById('selClass')  || {}).value || '';
+    const yr     = (document.getElementById('selYear')   || {}).value || '';
+    const st     = (document.getElementById('selStream') || {}).value || '';
+
+    if (!cls || !yr || !st) {
+        closeQAQCConfirm();
+        toast('No active session loaded. Please wait for session to load.', 'err');
+        resetQAQCBtn();
+        return;
+    }
+
+    try {
+        const url = UNIFIED_SCRIPT_URL
+            + '?action=admin_refresh_summary'
+            + '&adminName=' + encodeURIComponent(admin.name)
+            + '&password='  + encodeURIComponent(getStoredPass())
+            + '&class='     + encodeURIComponent(cls)
+            + '&year='      + encodeURIComponent(yr)
+            + '&stream='    + encodeURIComponent(st)
+            + '&cb='        + Date.now();
+
+        const res  = await fetch(url);
+        const data = await res.json();
+        closeQAQCConfirm();
+
+        if (data.status === 'success') {
+            toast(data.message || 'QA/QC complete — Summary tab updated', 'ok');
+        } else {
+            toast(data.message || 'QA/QC failed. Please try again.', 'err');
+        }
+    } catch(err) {
+        closeQAQCConfirm();
+        toast('Connection error during QA/QC', 'err');
+    }
+    resetQAQCBtn();
+}
+
+function resetQAQCBtn() {
+    const btn = document.getElementById('btnQAQCConfirm');
+    if (!btn) return;
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Yes, Perform QA/QC';
 }
 
 // ============================================================
