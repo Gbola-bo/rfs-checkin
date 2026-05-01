@@ -84,20 +84,33 @@ input:focus, select:focus { outline: none; }
     background: var(--bg);
 }
 .login-brand {
-    background:
-        linear-gradient(160deg, rgba(14,26,20,0.82) 0%, rgba(31,90,46,0.72) 50%, rgba(14,26,20,0.90) 100%),
-        url('https://raw.githubusercontent.com/House-of-the-Rock-Lagos/rfs-system/main/hotr-bg.jpg') center/cover no-repeat;
+    background: transparent;
     color: #fff;
     padding: 56px 56px 40px;
     display: flex; flex-direction: column; justify-content: space-between;
     position: relative; overflow: hidden;
 }
+.login-brand::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url('hotr-bg.jpg');
+    background-size: cover;
+    background-position: center 30%;
+    background-repeat: no-repeat;
+    filter: blur(3px) brightness(0.38) saturate(0.7);
+    transform: scale(1.05);
+    z-index: 0;
+}
 .login-brand::after {
     content:''; position: absolute; inset: 0;
-    background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.04) 1px, transparent 0);
-    background-size: 18px 18px; pointer-events: none;
+    background:
+        linear-gradient(160deg, rgba(14,26,20,0.75) 0%, rgba(31,90,46,0.60) 50%, rgba(14,26,20,0.85) 100%),
+        radial-gradient(circle at 1px 1px, rgba(255,255,255,0.04) 1px, transparent 0);
+    background-size: auto, 18px 18px;
+    pointer-events: none; z-index: 1;
 }
-.login-brand-top { display: flex; align-items: center; gap: 12px; position: relative; z-index: 1; }
+.login-brand-top { display: flex; align-items: center; gap: 12px; position: relative; z-index: 2; }
 .login-brand-mark {
     width: 44px; height: 44px; border-radius: 10px;
     background: #fff; display: grid; place-items: center;
@@ -106,7 +119,7 @@ input:focus, select:focus { outline: none; }
     overflow: hidden; padding: 4px;
 }
 .login-brand-name { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
-.login-brand-headline { position: relative; z-index: 1; }
+.login-brand-headline { position: relative; z-index: 2; }
 .login-brand-headline h1 {
     font-size: 38px; font-weight: 600; line-height: 1.08;
     letter-spacing: -0.02em; margin-bottom: 14px;
@@ -119,7 +132,7 @@ input:focus, select:focus { outline: none; }
 .login-brand-foot {
     font-family: 'JetBrains Mono', monospace;
     font-size: 10.5px; color: rgba(255,255,255,0.35);
-    letter-spacing: 0.05em; position: relative; z-index: 1;
+    letter-spacing: 0.05em; position: relative; z-index: 2;
 }
 
 .login-form-side { display: flex; align-items: center; justify-content: center; padding: 40px; }
@@ -776,9 +789,10 @@ input:focus, select:focus { outline: none; }
     animation: pulse 2.4s ease-in-out infinite;
 }
 
+
 @media (max-width: 720px) {
     .login-overlay { grid-template-columns: 1fr; }
-    .login-brand { padding: 32px 28px; min-height: 220px; }
+    .login-brand { padding: 32px 28px; min-height: 200px; }
     .login-brand-headline h1 { font-size: 28px; }
     .body-grid { grid-template-columns: 1fr; }
     .side { display: none; }
@@ -786,60 +800,11 @@ input:focus, select:focus { outline: none; }
     .stats { grid-template-columns: 1fr; }
     .att-summary { grid-template-columns: 1fr; }
     .code-grid, .sel-grid { grid-template-columns: 1fr; }
-
-    /* Mobile warning banner */
-    .mobile-warning {
-        display: flex !important;
-    }
-}
-
-/* Mobile-only warning bar */
-.mobile-warning {
-    display: none;
-    position: fixed; inset: 0; z-index: 500;
-    background: var(--top-bg);
-    flex-direction: column;
-    align-items: center; justify-content: center;
-    padding: 32px 24px; text-align: center;
-    color: #fff;
-}
-.mobile-warning-icon {
-    width: 56px; height: 56px; border-radius: 14px;
-    background: rgba(255,255,255,0.08); display: grid;
-    place-items: center; margin: 0 auto 20px;
-}
-.mobile-warning-icon svg { width: 28px; height: 28px; color: #fff; }
-.mobile-warning h2 { font-size: 22px; font-weight: 600; margin-bottom: 10px; letter-spacing: -0.02em; }
-.mobile-warning p { font-size: 14px; color: var(--top-muted); line-height: 1.6; max-width: 30ch; margin: 0 auto 28px; }
-.mobile-warning-btn {
-    height: 44px; padding: 0 24px;
-    background: var(--green-deep); color: #fff;
-    border-radius: var(--r-sm); font-size: 14px; font-weight: 600;
-    border: none; cursor: pointer;
-}
-.mobile-warning .mobile-proceed {
-    margin-top: 14px;
-    background: transparent; color: var(--top-muted);
-    font-size: 13px; padding: 8px; cursor: pointer; border: none;
-    text-decoration: underline; text-underline-offset: 3px;
-}
     .tb-context { display: none; }
+}
 </style>
 </head>
 <body>
-
-<!-- ────────── MOBILE WARNING ────────── -->
-<div class="mobile-warning" id="mobileWarning">
-    <div class="mobile-warning-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>
-        </svg>
-    </div>
-    <h2>Desktop Recommended</h2>
-    <p>The Admin Command Center is designed for desktop use. For the best experience, open it on a laptop or computer.</p>
-    <button class="mobile-warning-btn" onclick="document.getElementById('mobileWarning').style.display='none'">Continue Anyway</button>
-    <button class="mobile-proceed" onclick="document.getElementById('mobileWarning').style.display='none'">dismiss</button>
-</div>
 
 <!-- ────────── RAIL SLIDE-OVER (medium screens) ────────── -->
 <div class="rail-overlay" id="railOverlay" onclick="closeRailSlide()"></div>
@@ -1359,9 +1324,7 @@ input:focus, select:focus { outline: none; }
             <div class="rail-list" id="railList">
                 <div class="rail-empty">Activity log will appear here once admin actions are recorded.</div>
             </div>
-            <div class="rail-foot">
-                <button onclick="alert('History view coming soon.')">View All History</button>
-            </div>
+
         </aside>
 
     </div>
