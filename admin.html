@@ -1056,7 +1056,7 @@ input:focus, select:focus { outline: none; }
                 </svg>
                 <span id="testToggleLabel">Test Mode</span>
             </button>
-            <button class="tb-toggle checking" id="examToggle" onclick="toggleExamOpen()" title="Open or close the exam portal">
+            <button class="tb-toggle checking" id="examToggle" onclick="toggleExamOpen()" title="Open or close the assessment portal">
                 <svg class="tb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/>
                 </svg>
@@ -1595,7 +1595,7 @@ input:focus, select:focus { outline: none; }
                 <div class="qaqc-check-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
-                All necessary test, assignment, and exam scores have been uploaded.
+                All test, assignment, and exam scores have been uploaded for this stream.
             </div>
             <div class="qaqc-check">
                 <div class="qaqc-check-icon">
@@ -2080,19 +2080,19 @@ async function checkExamStatus() {
     const label = document.getElementById('examToggleLabel');
     btn.className = 'tb-toggle checking';
     btn.disabled  = true;
-    label.textContent = 'Exams';
+    label.textContent = 'Assessment';
     try {
-        const res  = await fetch(EXAM_SCRIPT_URL + '?action=check_exam_open&cb=' + Date.now());
+        const res  = await fetch(EXAM_SCRIPT_URL + '?action=check_assessment_open&cb=' + Date.now());
         const data = await res.json();
         if (data.status === 'success') {
             examIsOpen = data.open;
             updateExamBtn();
         } else {
-            label.textContent = 'Exams ?';
+            label.textContent = 'Assessment ?';
             btn.disabled = false;
         }
     } catch(e) {
-        label.textContent = 'Exams ?';
+        label.textContent = 'Assessment ?';
         btn.disabled = false;
     }
 }
@@ -2104,10 +2104,10 @@ function updateExamBtn() {
     btn.classList.remove('checking');
     if (examIsOpen) {
         btn.className = 'tb-toggle active exam-open';
-        label.textContent = 'Exams: Open';
+        label.textContent = 'Assessment: Open';
     } else {
         btn.className = 'tb-toggle active exam-closed';
-        label.textContent = 'Exams: Closed';
+        label.textContent = 'Assessment: Closed';
     }
 }
 
@@ -2118,15 +2118,15 @@ async function toggleExamOpen() {
     const newState = !examIsOpen;
     btn.disabled = true;
     label.textContent = newState ? 'Opening…' : 'Closing…';
-    showToast(newState ? 'Opening exam…' : 'Closing exam…', 'warn');
+    showToast(newState ? 'Opening assessment…' : 'Closing assessment…', 'warn');
     try {
-        const url  = EXAM_SCRIPT_URL + '?action=set_exam_open&value=' + (newState ? 'TRUE' : 'FALSE') + '&cb=' + Date.now();
+        const url  = EXAM_SCRIPT_URL + '?action=set_assessment_open&value=' + (newState ? 'TRUE' : 'FALSE') + '&cb=' + Date.now();
         const res  = await fetch(url);
         const data = await res.json();
         if (data.status === 'success') {
             examIsOpen = newState;
             updateExamBtn();
-            showToast(newState ? 'Exam is now OPEN — students can access the portal' : 'Exam is now CLOSED', newState ? 'ok' : 'warn');
+            showToast(newState ? 'Assessment is now OPEN — students can access the portal' : 'Assessment is now CLOSED', newState ? 'ok' : 'warn');
         } else {
             showToast(data.message || 'Failed to update exam status', 'err');
             btn.disabled = false; updateExamBtn();
