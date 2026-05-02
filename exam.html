@@ -779,14 +779,18 @@ function reopenExam() {
     examInProgress = true;
     startBarTimer();
 
-    // Navigation detection for restored sessions — same logic
-    let reopenLoadCount = 0;
+    // Navigation detection for restored sessions — same logic as doRedirect
+    let reopenFrameLoaded = false;
     frame.addEventListener('load', () => {
-        reopenLoadCount++;
         if (frame.src === 'about:blank') return;
-        if (reopenLoadCount === 1) return; // first load = form, skip
-        frame.src = 'about:blank';
-        showConfirmOverlay();
+        if (!reopenFrameLoaded) { reopenFrameLoaded = true; return; }
+        try {
+            const loc = frame.contentWindow.location.href;
+            if (loc && loc !== 'about:blank') {
+                frame.src = 'about:blank';
+                showConfirmOverlay();
+            }
+        } catch(e) { /* cross-origin = Google Forms navigation, ignore */ }
     });
 }
 
@@ -1163,28 +1167,55 @@ function doRedirect() {
     startBarTimer();
 
     // ── Iframe navigation detection ──────────────────────────────
-    // First load is the form itself — we skip it.
-    // Any subsequent load means the student submitted or clicked a link.
-    let formLoadCount = 0;
+    // Google Forms fires load events for:
+    //   (a) Initial form load          — cross-origin, throws on location read → ignore
+    //   (b) Next/Prev page transitions — cross-origin, throws on location read → ignore
+    //   (c) Form submission            — redirects to formResponse page → cross-origin, throws
+    //   (d) External link in iframe    — may be readable OR cross-origin
+    //
+    // Strategy: on every load event, try to read the location.
+    //   - If it throws (cross-origin) → Google Forms page → safe to ignore
+    //   - If it succeeds AND href contains 'formResponse' → submitted → show overlay
+    //   - If it succeeds AND href is 'about:blank' → we blanked it → ignore
+    //   - If it succeeds AND href is something else → external link → block it
+    let frameLoaded = false;
     frame.addEventListener('load', () => {
-        formLoadCount++;
-        if (frame.src === 'about:blank') return; // initial blank — ignore
+        if (frame.src === 'about:blank') return; // we blanked it — ignore
 
-        if (formLoadCount === 1) {
-            // First real load = the form loaded — check for block
+        if (!frameLoaded) {
+            // Very first load — check for iframe block after a delay
+            frameLoaded = true;
             setTimeout(() => {
                 try {
                     const loc = frame.contentWindow.location.href;
                     if (loc === 'about:blank') showIframeBlocked(formUrl);
-                } catch(e) { /* cross-origin = loaded fine, all good */ }
+                } catch(e) { /* cross-origin = Google Forms loaded fine */ }
             }, 3000);
             return;
         }
 
-        // Second+ load = form navigated (submitted or link clicked)
-        // Immediately blank the iframe so they can't see the new page
-        frame.src = 'about:blank';
-        showConfirmOverlay();
+        // Subsequent loads — check if it is still cross-origin (Google Forms) or not
+        try {
+            const loc = frame.contentWindow.location.href;
+            // If we can READ the location, it means the page is same-origin or
+            // navigated to something accessible — this is NOT normal Google Forms behaviour.
+            // Blank it and show overlay.
+            if (loc && loc !== 'about:blank') {
+                frame.src = 'about:blank';
+                showConfirmOverlay();
+            }
+        } catch(e) {
+            // Cross-origin — still on Google Forms (next/prev page or submission confirmation)
+            // Check if this looks like a formResponse redirect by listening a bit longer
+            setTimeout(() => {
+                try {
+                    const loc2 = frame.contentWindow.location.href;
+                    // Still cross-origin after delay — normal form navigation, ignore
+                } catch(e2) {
+                    // Still cross-origin — fine, do nothing
+                }
+            }, 500);
+        }
     });
 }
 
