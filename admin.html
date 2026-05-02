@@ -1361,7 +1361,7 @@ input:focus, select:focus { outline: none; }
                 <div class="page-head">
                     <div class="page-head-text">
                         <h1 class="page-title">Score Upload</h1>
-                        <p class="page-sub">Export Google Form responses as CSV and upload here.</p>
+                        <p class="page-sub">Prepare a CSV with columns: Reg Number, Last Name, First Name, Score. Row 1 = headers.</p>
                     </div>
                 </div>
 
@@ -1398,7 +1398,7 @@ input:focus, select:focus { outline: none; }
                                 <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                             </svg>
                             <div class="upload-zone-title">Click to upload CSV or drag and drop</div>
-                            <div class="upload-zone-sub">Format: Timestamp · Score · Reg Number · Surname · First Name</div>
+                            <div class="upload-zone-sub">Format: Reg Number · Last Name · First Name · Score (plain number, e.g. 8)</div>
                         </div>
                         <input type="file" id="csvFileInput" accept=".csv" style="display:none;" onchange="handleFileSelect(this)">
                         <div class="upload-result" id="uploadResult"></div>
