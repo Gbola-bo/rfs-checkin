@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RFS Examination Portal</title>
+    <title>RFS Assessment Portal</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
@@ -378,11 +378,10 @@
                 <span class="brand-school">Rock Foundation School</span>
             </div>
         </div>
-        <div class="exam-title">FTR 2026 Stream 1 Examination</div>
-        <div class="exam-meta">
-            <span class="meta-tag">100 Questions</span>
-            <span class="meta-tag gold">45 Minutes</span>
-            <span class="meta-tag">FTR · 2026</span>
+        <div class="exam-title" id="assessmentTitle">Loading assessment…</div>
+        <div class="exam-meta" id="assessmentMeta">
+            <span class="meta-tag" id="assessmentTypeBadge" style="display:none;"></span>
+            <span class="meta-tag gold" id="assessmentTimeBadge" style="display:none;">45 Minutes</span>
         </div>
     </div>
 
@@ -392,9 +391,9 @@
             <!-- Exam closed banner — shown when ExamOpen = FALSE -->
             <div id="examClosedBanner">
                 <span class="closed-title">
-                    <span class="closed-pulse"></span>Exam Not Yet Open
+                    <span class="closed-pulse"></span>Assessment Not Yet Open
                 </span>
-                The exam window is not currently open. Please wait — this page will update automatically when your Admin opens it.
+                The assessment window is not currently open. Please wait — this page will update automatically when your Admin opens it.
             </div>
 
             <div class="field">
@@ -404,9 +403,9 @@
                 <span class="err-text" id="regErr"></span>
             </div>
             <div class="field">
-                <label>Exam Access Code</label>
+                <label>Access Code</label>
                 <input type="text" id="codeInput" placeholder="Enter your unique code" maxlength="10" autocomplete="off">
-                <span class="hint">Your personal code provided by admin</span>
+                <span class="hint">Your personal assessment code provided by admin</span>
                 <span class="err-text" id="codeErr"></span>
             </div>
             <!-- Location status — only shown for physical students -->
@@ -451,21 +450,14 @@
                     <div class="welcome-reg"  id="studentReg"></div>
                 </div>
             </div>
-            <div class="timer-wrap">
+            <!-- Timer — only shown for EXAM type -->
+            <div class="timer-wrap" id="timerWrap" style="display:none;">
                 <span class="timer-label">Time Allowed</span>
                 <span class="timer-value" id="timerDisplay">45:00</span>
             </div>
-            <div class="instructions-box">
-                <div class="instructions-title">Exam Instructions</div>
-                <div class="instructions-list">
-                    <div class="inst-row"><div class="inst-num">1</div><div class="inst-text">Do <strong>not</strong> take this exam if you are not physically in class.</div></div>
-                    <div class="inst-row"><div class="inst-num">2</div><div class="inst-text">Attempt <strong>all 100 questions</strong> — 60 multiple choice and 40 true/false.</div></div>
-                    <div class="inst-row"><div class="inst-num">3</div><div class="inst-text">Do <strong>not</strong> submit and retake the exam — a second submission will score zero.</div></div>
-                    <div class="inst-row"><div class="inst-num">4</div><div class="inst-text">Ensure your registration number is pre-filled correctly before answering.</div></div>
-                    <div class="inst-row"><div class="inst-num">5</div><div class="inst-text">You have <strong>45 minutes</strong> from when you click Start Exam.</div></div>
-                    <div class="inst-row"><div class="inst-num">6</div><div class="inst-text">Ensure you are in a quiet environment with a stable internet connection.</div></div>
-                    <div class="inst-row"><div class="inst-num">7</div><div class="inst-text"><strong>If you lose connection mid-exam, do not panic.</strong> Google Forms saves your answers automatically. Reconnect and your answers will still be there — just continue from where you stopped.</div></div>
-                </div>
+            <div class="instructions-box" id="instructionsBox">
+                <div class="instructions-title" id="instructionsTitle">Instructions</div>
+                <div class="instructions-list" id="instructionsList"></div>
             </div>
             <!-- Online badge — shown for ONLINE students (code already validated at login) -->
             <div class="online-session-wrap" id="onlineSessionWrap">
@@ -481,7 +473,7 @@
             </label>
             <button class="btn btn-gold" id="startBtn" onclick="handleStart()" disabled>
                 <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M8 5v10l7-5-7-5z"/></svg>
-                Start Exam Now
+                <span id="startBtnLabel">Start Now</span>
             </button>
         </div>
     </div>
@@ -528,8 +520,8 @@
 <!-- Submitted screen — shown after form is submitted -->
 <div id="submittedScreen">
     <div class="sub-icon">✅</div>
-    <div class="sub-title">Exam Submitted!</div>
-    <div class="sub-text">Your responses have been recorded. Well done for completing the exam.</div>
+    <div class="sub-title" id="subTitle">Submitted!</div>
+    <div class="sub-text" id="subText">Your responses have been recorded. Well done.</div>
     <div class="sub-reg" id="subReg"></div>
     <div class="sub-note">You may now close this tab. Do not attempt to go back or retake the exam — a second submission will score zero.</div>
 </div>
@@ -539,7 +531,7 @@
 //  CONFIG
 // ════════════════════════════════════════════════════════════
 const SCRIPT_URL   = 'https://script.google.com/macros/s/AKfycbzbCjk8RA9peuu4nhAy48N5WYRwEmLws1RIQ_mO_wA7T3aPYoG3iR1Qw0x3Ff-1QefYiQ/exec';
-const EXAM_MINUTES = 45;
+const EXAM_MINUTES = 45; // Only used for EXAM type assessments
 
 // ════════════════════════════════════════════════════════════
 //  STATE
@@ -549,8 +541,10 @@ let timerInterval   = null;
 let secondsLeft     = EXAM_MINUTES * 60;
 let userLocation    = null;   // { latitude, longitude }
 let studentType     = null;   // 'PHYSICAL' or 'ONLINE'
+let assessmentType  = null;   // 'TEST' or 'EXAM' — set from config on load
+let assessmentTopic = null;   // e.g. 'Principles of HOTR' or 'Final Exam'
 let examInProgress  = false;  // true while iframe exam is open
-let examIsOpen      = false;  // result of background check_exam_open poll
+let examIsOpen      = false;  // result of background check_assessment_open poll
 let examOpenPoller  = null;   // interval ID for background polling
 
 const CAMPUS_LAT     = 6.4369984301299645;
@@ -805,12 +799,13 @@ function setLocPill(text, state) {
 }
 
 // ════════════════════════════════════════════════════════════
-//  EXAM OPEN CHECK — runs on page load + polls every 30s
+//  ASSESSMENT CONFIG LOAD — runs on page load
+//  Fetches assessment type + topic from Config sheet
 //  Shows/hides banner, enables/disables Verify button
 // ════════════════════════════════════════════════════════════
-async function checkExamOpen() {
+async function checkAssessmentOpen() {
     try {
-        const url  = SCRIPT_URL + '?action=check_exam_open&cb=' + Date.now();
+        const url  = SCRIPT_URL + '?action=check_assessment_open&cb=' + Date.now();
         const res  = await fetch(url);
         const data = await res.json();
 
@@ -819,18 +814,32 @@ async function checkExamOpen() {
         const wasOpen = examIsOpen;
         examIsOpen    = isOpen;
 
+        // Populate header with assessment info from config
+        if (data.status === 'success') {
+            assessmentType  = data.assessmentType || 'EXAM'; // 'TEST' or 'EXAM'
+            assessmentTopic = data.topic          || '';
+
+            const title = document.getElementById('assessmentTitle');
+            const badge = document.getElementById('assessmentTypeBadge');
+            const time  = document.getElementById('assessmentTimeBadge');
+
+            title.textContent   = assessmentTopic || (assessmentType === 'TEST' ? 'Test' : 'Examination');
+            badge.textContent   = assessmentType;
+            badge.style.display = 'inline-block';
+
+            if (assessmentType === 'EXAM') {
+                time.style.display = 'inline-block';
+            }
+        }
+
         if (isOpen) {
-            // Exam is open — hide banner, re-enable button if fields are valid
             banner.classList.remove('show');
             updateLoginBtn();
-
-            // If it just opened (was closed before), stop polling — no need to keep checking
             if (!wasOpen && examOpenPoller) {
                 clearInterval(examOpenPoller);
                 examOpenPoller = null;
             }
         } else {
-            // Exam is closed — show banner, force button disabled
             banner.classList.add('show');
             loginBtn.disabled = true;
         }
@@ -840,10 +849,8 @@ async function checkExamOpen() {
 }
 
 function startExamOpenPolling() {
-    // Run immediately on load
-    checkExamOpen();
-    // Then re-check every 30 seconds so banner disappears automatically when opened
-    examOpenPoller = setInterval(checkExamOpen, 30000);
+    checkAssessmentOpen();
+    examOpenPoller = setInterval(checkAssessmentOpen, 30000);
 }
 
 // ════════════════════════════════════════════════════════════
@@ -885,7 +892,7 @@ async function handleLogin() {
 
         // ── Step 2: Verify exam credentials + consume the code ──
         const url = SCRIPT_URL
-            + '?action=verify_exam'
+            + '?action=verify_assessment'
             + '&reg='      + encodeURIComponent(reg)
             + '&code='     + encodeURIComponent(code)
             + '&isOnline=' + (isOnline ? 'true' : 'false')
@@ -903,7 +910,9 @@ async function handleLogin() {
 
         data.formUrl = xorDecode(data.encodedUrl, code);
         verifiedData = data;
-        studentType  = isOnline ? 'ONLINE' : (data.studentType || 'PHYSICAL');
+        studentType     = isOnline ? 'ONLINE' : (data.studentType || 'PHYSICAL');
+        assessmentType  = data.assessmentType  || assessmentType  || 'EXAM';
+        assessmentTopic = data.topic           || assessmentTopic || '';
 
         // Save session so a refresh/reload can restore it
         saveSession();
@@ -923,6 +932,28 @@ async function handleLogin() {
 // ════════════════════════════════════════════════════════════
 //  STAGE 2 — INSTRUCTIONS
 // ════════════════════════════════════════════════════════════
+// TEST instructions (no timer)
+const TEST_INSTRUCTIONS = [
+    'Do <strong>not</strong> take this test if you are not in class.',
+    'Attempt <strong>all questions</strong>.',
+    'Do <strong>not</strong> retake the test after submission — a second submission will score zero.',
+    'Ensure your registration number is pre-filled correctly before answering.',
+    'Provide your registered phone number using the required format.',
+    '<strong>Wish you all the best!</strong>'
+];
+
+// EXAM instructions (with timer)
+const EXAM_INSTRUCTIONS = [
+    'Do <strong>not</strong> take this exam if you are not in class.',
+    'Attempt <strong>all questions</strong>.',
+    'Do <strong>not</strong> retake the exam after submission — a second submission will score zero.',
+    'Ensure your registration number is pre-filled correctly before answering.',
+    'Provide your registered phone number in the required format.',
+    'The exam duration is <strong>45 minutes</strong> from when the link goes live.',
+    '<strong>If you lose connection mid-exam, do not panic.</strong> Google Forms saves your answers automatically. Reconnect and continue from where you stopped.',
+    '<strong>Wish you all the best!</strong>'
+];
+
 function showInstructions(data) {
     const initials = data.firstName
         ? (data.firstName.charAt(0) + (data.name.split(' ').pop() || '').charAt(0)).toUpperCase()
@@ -932,10 +963,29 @@ function showInstructions(data) {
     document.getElementById('studentName').textContent   = 'Welcome, ' + data.name + '!';
     document.getElementById('studentReg').textContent    = data.regNumber;
 
-    secondsLeft = EXAM_MINUTES * 60;
-    updateTimerDisplay();
+    const isExam = assessmentType === 'EXAM';
 
-    // Show online badge if online student
+    // Timer — only for EXAM
+    const timerWrap = document.getElementById('timerWrap');
+    if (isExam) {
+        secondsLeft = EXAM_MINUTES * 60;
+        updateTimerDisplay();
+        timerWrap.style.display = 'flex';
+    } else {
+        timerWrap.style.display = 'none';
+    }
+
+    // Instructions — TEST or EXAM set
+    const instructions = isExam ? EXAM_INSTRUCTIONS : TEST_INSTRUCTIONS;
+    document.getElementById('instructionsTitle').textContent = isExam ? 'Exam Instructions' : 'Test Instructions';
+    document.getElementById('instructionsList').innerHTML = instructions.map((text, i) =>
+        '<div class="inst-row"><div class="inst-num">' + (i + 1) + '</div><div class="inst-text">' + text + '</div></div>'
+    ).join('');
+
+    // Start button label
+    document.getElementById('startBtnLabel').textContent = isExam ? 'Start Exam Now' : 'Start Test Now';
+
+    // Online badge
     const onlineWrap = document.getElementById('onlineSessionWrap');
     if (onlineWrap) {
         if (studentType === 'ONLINE') onlineWrap.classList.add('show');
@@ -1114,15 +1164,20 @@ function showSubmitted() {
     examInProgress = false;
     clearSession(); // session done — prevent restore on next load
 
-    const reg = document.getElementById('barReg').textContent || (verifiedData && verifiedData.regNumber) || '';
-    document.getElementById('subReg').textContent = reg;
+    const reg    = document.getElementById('barReg').textContent || (verifiedData && verifiedData.regNumber) || '';
+    const isExam = assessmentType === 'EXAM';
+    document.getElementById('subReg').textContent   = reg;
+    document.getElementById('subTitle').textContent = isExam ? 'Exam Submitted!' : 'Test Submitted!';
+    document.getElementById('subText').textContent  = isExam
+        ? 'Your responses have been recorded. Well done for completing the exam.'
+        : 'Your responses have been recorded. Well done for completing the test.';
     document.getElementById('submittedScreen').classList.add('active');
 }
 
 // Submission detection: student taps "I Have Submitted" button manually (see confirmSubmitted)
 // ════════════════════════════════════════════════════════════
 //  INIT — Restore session if exists, otherwise start GPS
-//         and begin background exam-open polling.
+//         and begin background assessment-open polling.
 // ════════════════════════════════════════════════════════════
 if (!restoreSession()) {
     // No active session — normal flow
