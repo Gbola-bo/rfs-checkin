@@ -680,17 +680,15 @@ function showForm(eventType) {
     closedScreen.classList.remove('show');
     form.style.display = 'block';
 
-    // Update button label
-    if (eventType === 'SAT-OUT') {
-        const _bl1 = document.getElementById('btnLabel'); if (_bl1) _bl1.textContent = 'Sign Out Now';
-        cardTitle.textContent = 'Saturday Check-Out';
-    } else if (eventType === 'SAT-IN') {
-        const _bl2 = document.getElementById('btnLabel'); if (_bl2) _bl2.textContent = 'Sign In Now';
-        cardTitle.textContent = 'Saturday Check-In';
-    } else {
-        const _bl2 = document.getElementById('btnLabel'); if (_bl2) _bl2.textContent = 'Sign In Now';
-        cardTitle.textContent = 'Student Check-In';
-    }
+    // Update all button labels and sub-texts based on event type
+    const isOut  = eventType === 'SAT-OUT';
+    const btnTxt = isOut ? 'Sign Out Now' : 'Sign In Now';
+    const subTxt = isOut ? 'Is this you? Confirm to proceed with Sign Out.' : 'Is this you? Confirm to proceed with Sign In.';
+    document.querySelectorAll('#btnLabel, #checkinBtn span:last-child').forEach(function(el) { el.textContent = btnTxt; });
+    document.querySelectorAll('#identitySubA, #identitySubB').forEach(function(el) { el.textContent = subTxt; });
+    if (eventType === 'SAT-OUT')     cardTitle.textContent = 'Saturday Check-Out';
+    else if (eventType === 'SAT-IN') cardTitle.textContent = 'Saturday Check-In';
+    else                             cardTitle.textContent = 'Student Check-In';
 }
 
 function showClosed(title, msg) {
