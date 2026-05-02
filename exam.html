@@ -1168,17 +1168,14 @@ function doRedirect() {
     // Start bar countdown
     startBarTimer();
 
-    // ── Iframe block detection only ──────────────────────────────
-    // Google Forms multi-page forms fire load events on Next/Back too,
-    // so we cannot reliably distinguish Next from Submit via load events.
-    // Submit detection is handled manually via the submit bar button.
+    // ── Iframe block detection ───────────────────────────────────
     frame.addEventListener('load', () => {
         if (frame.src === 'about:blank') return;
         setTimeout(() => {
             try {
                 const loc = frame.contentWindow.location.href;
                 if (loc === 'about:blank') showIframeBlocked(formUrl);
-            } catch(e) { /* cross-origin = Google Forms, fine */ }
+            } catch(e) { /* cross-origin = fine */ }
         }, 3000);
     });
 }
