@@ -780,17 +780,13 @@ function reopenExam() {
     startBarTimer();
 
     // Navigation detection for restored sessions — same logic as doRedirect
+    // First load = form, any subsequent load = submitted or external link
     let reopenFrameLoaded = false;
     frame.addEventListener('load', () => {
         if (frame.src === 'about:blank') return;
         if (!reopenFrameLoaded) { reopenFrameLoaded = true; return; }
-        try {
-            const loc = frame.contentWindow.location.href;
-            if (loc && loc !== 'about:blank') {
-                frame.src = 'about:blank';
-                showConfirmOverlay();
-            }
-        } catch(e) { /* cross-origin = Google Forms navigation, ignore */ }
+        frame.src = 'about:blank';
+        showConfirmOverlay();
     });
 }
 
@@ -1167,24 +1163,21 @@ function doRedirect() {
     startBarTimer();
 
     // ── Iframe navigation detection ──────────────────────────────
-    // Google Forms fires load events for:
-    //   (a) Initial form load          — cross-origin, throws on location read → ignore
-    //   (b) Next/Prev page transitions — cross-origin, throws on location read → ignore
-    //   (c) Form submission            — redirects to formResponse page → cross-origin, throws
-    //   (d) External link in iframe    — may be readable OR cross-origin
+    // Key insight from Google Forms SPA architecture:
+    //   - Next/Back buttons use XHR/Fetch internally — NO iframe load event fires
+    //   - Submit causes a real browser navigation to /formResponse — load event fires
+    //   - So: first load = form loading, any subsequent load = form submitted
     //
-    // Strategy: on every load event, try to read the location.
-    //   - If it throws (cross-origin) → Google Forms page → safe to ignore
-    //   - If it succeeds AND href contains 'formResponse' → submitted → show overlay
-    //   - If it succeeds AND href is 'about:blank' → we blanked it → ignore
-    //   - If it succeeds AND href is something else → external link → block it
+    // This means we just need to skip the first load event and show the overlay
+    // on any subsequent load — it can only be a submission or an external link.
     let frameLoaded = false;
     frame.addEventListener('load', () => {
         if (frame.src === 'about:blank') return; // we blanked it — ignore
 
         if (!frameLoaded) {
-            // Very first load — check for iframe block after a delay
+            // First load = the Google Form loading — skip it
             frameLoaded = true;
+            // Check for iframe block (some browsers/networks block iframes)
             setTimeout(() => {
                 try {
                     const loc = frame.contentWindow.location.href;
@@ -1194,28 +1187,10 @@ function doRedirect() {
             return;
         }
 
-        // Subsequent loads — check if it is still cross-origin (Google Forms) or not
-        try {
-            const loc = frame.contentWindow.location.href;
-            // If we can READ the location, it means the page is same-origin or
-            // navigated to something accessible — this is NOT normal Google Forms behaviour.
-            // Blank it and show overlay.
-            if (loc && loc !== 'about:blank') {
-                frame.src = 'about:blank';
-                showConfirmOverlay();
-            }
-        } catch(e) {
-            // Cross-origin — still on Google Forms (next/prev page or submission confirmation)
-            // Check if this looks like a formResponse redirect by listening a bit longer
-            setTimeout(() => {
-                try {
-                    const loc2 = frame.contentWindow.location.href;
-                    // Still cross-origin after delay — normal form navigation, ignore
-                } catch(e2) {
-                    // Still cross-origin — fine, do nothing
-                }
-            }, 500);
-        }
+        // Second+ load = form submitted (navigated to /formResponse) OR external link
+        // In both cases: blank the iframe and show the confirmation overlay
+        frame.src = 'about:blank';
+        showConfirmOverlay();
     });
 }
 
