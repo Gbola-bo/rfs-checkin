@@ -784,19 +784,15 @@ function reopenExam() {
     examInProgress = true;
     startBarTimer();
 
-    // Same detection logic for restored sessions
-    let reopenLoadCount = 0;
-    let reopenDetectionEnabled = false;
-    setTimeout(() => { reopenDetectionEnabled = true; }, 800);
-
+    // Iframe block detection for restored sessions
     frame.addEventListener('load', () => {
         if (frame.src === 'about:blank') return;
-        reopenLoadCount++;
-        if (reopenLoadCount === 1) return; // first load = form, skip
-        if (reopenDetectionEnabled) {
-            frame.src = 'about:blank';
-            showConfirmOverlay();
-        }
+        setTimeout(() => {
+            try {
+                const loc = frame.contentWindow.location.href;
+                if (loc === 'about:blank') showIframeBlocked(formUrl);
+            } catch(e) { /* cross-origin = fine */ }
+        }, 3000);
     });
 }
 
@@ -1172,39 +1168,18 @@ function doRedirect() {
     // Start bar countdown
     startBarTimer();
 
-    // ── Iframe navigation detection ──────────────────────────────
-    // Google Forms Next/Back = XHR only, NO iframe load event fires.
-    // Only Submit causes a real iframe load (redirect to /formResponse).
-    // So: ignore the first load (form loading), treat any subsequent
-    // load as form submitted.
-    //
-    // Guard: we wait 800ms before enabling submission detection to
-    // avoid any browser double-fire of the initial load event.
-    let frameLoadCount = 0;
-    let detectionEnabled = false;
-    setTimeout(() => { detectionEnabled = true; }, 800);
-
+    // ── Iframe block detection only ──────────────────────────────
+    // Google Forms multi-page forms fire load events on Next/Back too,
+    // so we cannot reliably distinguish Next from Submit via load events.
+    // Submit detection is handled manually via the submit bar button.
     frame.addEventListener('load', () => {
-        if (frame.src === 'about:blank') return; // we blanked it — ignore
-        frameLoadCount++;
-
-        if (frameLoadCount === 1) {
-            // First load = the Google Form — check for iframe block
-            setTimeout(() => {
-                try {
-                    const loc = frame.contentWindow.location.href;
-                    if (loc === 'about:blank') showIframeBlocked(formUrl);
-                } catch(e) { /* cross-origin = Google Forms loaded fine */ }
-            }, 3000);
-            return;
-        }
-
-        // Second+ load AND detection is enabled = form submitted
-        // (Next/Back never fire load events per Google Forms SPA architecture)
-        if (detectionEnabled) {
-            frame.src = 'about:blank';
-            showConfirmOverlay();
-        }
+        if (frame.src === 'about:blank') return;
+        setTimeout(() => {
+            try {
+                const loc = frame.contentWindow.location.href;
+                if (loc === 'about:blank') showIframeBlocked(formUrl);
+            } catch(e) { /* cross-origin = Google Forms, fine */ }
+        }, 3000);
     });
 }
 
