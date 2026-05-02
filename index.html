@@ -436,7 +436,7 @@
                 <div class="identity-avatar" id="identityAvatar">?</div>
                 <div class="identity-body">
                     <div class="identity-welcome" id="identityWelcome">Welcome!</div>
-                    <div class="identity-sub">Is this you? Confirm to proceed with check-in.</div>
+                    <div class="identity-sub" id="identitySubA">Is this you? Confirm to proceed with Sign In.</div>
                 </div>
                 <div class="identity-actions">
                     <button type="button" class="identity-btn identity-btn-secondary" id="notMeBtn" onclick="resetToStageOne()">
@@ -446,7 +446,7 @@
                         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="3 8 7 12 13 4"/>
                         </svg>
-                        <span>Check In Now</span>
+                        <span>Sign In Now</span>
                     </button>
                 </div>
             </div>
@@ -483,7 +483,7 @@
             <div class="identity-avatar" id="identityAvatar">?</div>
             <div class="identity-body">
                 <div class="identity-welcome" id="identityWelcome">Welcome!</div>
-                <div class="identity-sub">Is this you? Confirm to proceed with check-in.</div>
+                <div class="identity-sub" id="identitySubB">Is this you? Confirm to proceed with Sign In.</div>
             </div>
             <div class="identity-actions">
                 <button class="identity-btn identity-btn-secondary" id="notMeBtn" onclick="resetToStageOne()">
@@ -493,7 +493,7 @@
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="3 8 7 12 13 4"/>
                     </svg>
-                    <span id="btnLabel">Check In Now</span>
+                    <span id="btnLabel">Sign In Now</span>
                 </button>
             </div>
         </div>
@@ -555,7 +555,7 @@ let isTestMode    = false;
     if (!YEAR || !STREAM) {
         showClosed(
             'No session selected',
-            'Please use the check-in link shared by your class coordinator. If you think this is an error, contact admin.'
+            'Please use the sign-in link shared by your class coordinator. If you think this is an error, contact admin.'
         );
         // Still try to get location in background
         getLocation();
@@ -642,7 +642,7 @@ function applySessionStatus(data) {
     if (day === 0 && !sunOpen) {
         showClosed('Window not open yet', 'Sunday attendance opens at 7:30 AM and closes at 8:10 AM.');
     } else if (day === 6) {
-        showClosed('Window closed', 'Saturday check-in/check-out is not currently open. Wait for admin to open it.');
+        showClosed('Window closed', 'Saturday sign-in/sign-out is not currently open. Wait for admin to open it.');
     } else {
         showClosed('No class today', 'Check-in is only available on Sundays and scheduled Saturdays.');
     }
@@ -682,13 +682,13 @@ function showForm(eventType) {
 
     // Update button label
     if (eventType === 'SAT-OUT') {
-        const _bl1 = document.getElementById('btnLabel'); if (_bl1) _bl1.textContent = 'Check Out Now';
+        const _bl1 = document.getElementById('btnLabel'); if (_bl1) _bl1.textContent = 'Sign Out Now';
         cardTitle.textContent = 'Saturday Check-Out';
     } else if (eventType === 'SAT-IN') {
-        const _bl2 = document.getElementById('btnLabel'); if (_bl2) _bl2.textContent = 'Check In Now';
+        const _bl2 = document.getElementById('btnLabel'); if (_bl2) _bl2.textContent = 'Sign In Now';
         cardTitle.textContent = 'Saturday Check-In';
     } else {
-        const _bl2 = document.getElementById('btnLabel'); if (_bl2) _bl2.textContent = 'Check In Now';
+        const _bl2 = document.getElementById('btnLabel'); if (_bl2) _bl2.textContent = 'Sign In Now';
         cardTitle.textContent = 'Student Check-In';
     }
 }
@@ -918,7 +918,7 @@ form.addEventListener('submit', async function(e) {
         }
         const dist = calcDistance(CAMPUS_LAT, CAMPUS_LNG, userLocation.latitude, userLocation.longitude);
         if (dist > MAX_DISTANCE_M) {
-            showStatus('error', 'You must be on campus to check in. You are ' + (dist / 1000).toFixed(2) + 'km away.');
+            showStatus('error', 'You must be on campus to sign in. You are ' + (dist / 1000).toFixed(2) + 'km away.');
             return;
         }
     }
@@ -968,7 +968,12 @@ form.addEventListener('submit', async function(e) {
         identityAvatar.textContent  = initials;
         identityWelcome.textContent = 'Welcome, ' + data.firstName + ' ' + data.lastName + '!';
         const _bl3 = document.getElementById('btnLabel');
-        if (_bl3) _bl3.textContent = currentEvent === 'SAT-OUT' ? 'Check Out Now' : 'Check In Now';
+        if (_bl3) _bl3.textContent = currentEvent === 'SAT-OUT' ? 'Sign Out Now' : 'Sign In Now';
+        const _subA = document.getElementById('identitySubA');
+        const _subB = document.getElementById('identitySubB');
+        const _subTxt = currentEvent === 'SAT-OUT' ? 'Is this you? Confirm to proceed with Sign Out.' : 'Is this you? Confirm to proceed with Sign In.';
+        if (_subA) _subA.textContent = _subTxt;
+        if (_subB) _subB.textContent = _subTxt;
         // Hide the input fields and confirm button
         document.querySelector('.field-grid').style.display = 'none';
         confirmBtn.style.display = 'none';
@@ -983,7 +988,7 @@ form.addEventListener('submit', async function(e) {
 });
 
 // ════════════════════════════════════════════════════════════
-//  STAGE 2 — FINAL CHECK-IN (Check In Now button)
+//  STAGE 2 — FINAL SIGN-IN (Sign In / Sign Out button)
 // ════════════════════════════════════════════════════════════
 checkinBtn.addEventListener('click', async function() {
     if (!verifiedStudent) return;
@@ -1032,7 +1037,7 @@ checkinBtn.addEventListener('click', async function() {
             confirmBtn.disabled  = true;
             confirmBtn.innerHTML = '<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>';
             checkinBtn.disabled  = false;
-            checkinBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 7 12 13 4"/></svg><span>Check In Now</span>';
+            checkinBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 7 12 13 4"/></svg><span>' + (currentEvent === 'SAT-OUT' ? 'Sign Out Now' : 'Sign In Now') + '</span>';
         } else {
             // Error — show message, hide identity card, reset to Stage 1 so they can try again
             identityCard.classList.remove('show');
@@ -1041,7 +1046,7 @@ checkinBtn.addEventListener('click', async function() {
             confirmBtn.disabled  = false;
             confirmBtn.innerHTML = '<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>';
             checkinBtn.disabled  = false;
-            checkinBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 7 12 13 4"/></svg><span>Check In Now</span>';
+            checkinBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 7 12 13 4"/></svg><span>' + (currentEvent === 'SAT-OUT' ? 'Sign Out Now' : 'Sign In Now') + '</span>';
         }
 
     } catch(err) {
@@ -1051,7 +1056,7 @@ checkinBtn.addEventListener('click', async function() {
         confirmBtn.disabled  = false;
         confirmBtn.innerHTML = '<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>';
         checkinBtn.disabled  = false;
-        checkinBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 7 12 13 4"/></svg><span>Check In Now</span>';
+        checkinBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 7 12 13 4"/></svg><span>' + (currentEvent === 'SAT-OUT' ? 'Sign Out Now' : 'Sign In Now') + '</span>';
     }
 });
 </script>
