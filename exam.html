@@ -247,9 +247,9 @@
         /* ── Submit button bar pinned above iframe ── */
         #submitBar {
             display: none;
-            background: #1a2a1a;
-            border-top: 1px solid rgba(255,255,255,0.08);
-            padding: 10px 16px;
+            background: #0f1f0f;
+            border-top: 2px solid #2D6A2D;
+            padding: 12px 16px;
             flex-shrink: 0;
             align-items: center;
             justify-content: space-between;
@@ -257,19 +257,24 @@
         }
         #submitBar.visible { display: flex; }
         .submit-bar-text {
-            font-size: 12px; color: rgba(255,255,255,0.5); line-height: 1.4;
+            font-size: 12px; color: rgba(255,255,255,0.55); line-height: 1.5;
             flex: 1;
         }
-        .submit-bar-text strong { color: rgba(255,255,255,0.85); display: block; }
+        .submit-bar-text strong {
+            color: #7ac042; display: block;
+            font-size: 13px; margin-bottom: 2px;
+        }
         #submitDoneBtn {
             background: #2D6A2D; color: #fff;
-            border: none; border-radius: 8px;
-            padding: 10px 18px; font-size: 13px; font-weight: 700;
+            border: 2px solid #7ac042; border-radius: 8px;
+            padding: 12px 20px; font-size: 14px; font-weight: 700;
             cursor: pointer; white-space: nowrap; flex-shrink: 0;
             font-family: 'DM Sans', sans-serif;
-            transition: opacity 0.15s;
+            transition: background 0.15s, transform 0.1s;
+            box-shadow: 0 0 12px rgba(45,106,45,0.4);
         }
-        #submitDoneBtn:active { opacity: 0.8; }
+        #submitDoneBtn:active { transform: scale(0.97); }
+        #submitDoneBtn:hover  { background: #245A24; }
 
         /* ── Time-up screen ── */
         #timeUpScreen {
@@ -510,10 +515,10 @@
     <!-- Submit bar — kept as fallback for students who miss the auto-detect overlay -->
     <div id="submitBar">
         <div class="submit-bar-text">
-            <strong id="submitBarTitle">Done with your assessment?</strong>
-            <span id="submitBarSub">Only tap after you have submitted the form above.</span>
+            <strong id="submitBarTitle">Submitted the form above?</strong>
+            <span id="submitBarSub">After Google Form shows "Your response has been recorded", tap this button.</span>
         </div>
-        <button id="submitDoneBtn" onclick="confirmSubmitted()">I Have Submitted ✓</button>
+        <button id="submitDoneBtn" onclick="confirmSubmitted()">Done — End Session ✓</button>
     </div>
 <!-- Auto-detect overlay — appears when iframe navigates away (form submitted or link clicked) -->
 <div id="confirmOverlay" style="
@@ -779,14 +784,19 @@ function reopenExam() {
     examInProgress = true;
     startBarTimer();
 
-    // Navigation detection for restored sessions — same logic as doRedirect
-    // First load = form, any subsequent load = submitted or external link
-    let reopenFrameLoaded = false;
+    // Same detection logic for restored sessions
+    let reopenLoadCount = 0;
+    let reopenDetectionEnabled = false;
+    setTimeout(() => { reopenDetectionEnabled = true; }, 800);
+
     frame.addEventListener('load', () => {
         if (frame.src === 'about:blank') return;
-        if (!reopenFrameLoaded) { reopenFrameLoaded = true; return; }
-        frame.src = 'about:blank';
-        showConfirmOverlay();
+        reopenLoadCount++;
+        if (reopenLoadCount === 1) return; // first load = form, skip
+        if (reopenDetectionEnabled) {
+            frame.src = 'about:blank';
+            showConfirmOverlay();
+        }
     });
 }
 
@@ -1163,21 +1173,23 @@ function doRedirect() {
     startBarTimer();
 
     // ── Iframe navigation detection ──────────────────────────────
-    // Key insight from Google Forms SPA architecture:
-    //   - Next/Back buttons use XHR/Fetch internally — NO iframe load event fires
-    //   - Submit causes a real browser navigation to /formResponse — load event fires
-    //   - So: first load = form loading, any subsequent load = form submitted
+    // Google Forms Next/Back = XHR only, NO iframe load event fires.
+    // Only Submit causes a real iframe load (redirect to /formResponse).
+    // So: ignore the first load (form loading), treat any subsequent
+    // load as form submitted.
     //
-    // This means we just need to skip the first load event and show the overlay
-    // on any subsequent load — it can only be a submission or an external link.
-    let frameLoaded = false;
+    // Guard: we wait 800ms before enabling submission detection to
+    // avoid any browser double-fire of the initial load event.
+    let frameLoadCount = 0;
+    let detectionEnabled = false;
+    setTimeout(() => { detectionEnabled = true; }, 800);
+
     frame.addEventListener('load', () => {
         if (frame.src === 'about:blank') return; // we blanked it — ignore
+        frameLoadCount++;
 
-        if (!frameLoaded) {
-            // First load = the Google Form loading — skip it
-            frameLoaded = true;
-            // Check for iframe block (some browsers/networks block iframes)
+        if (frameLoadCount === 1) {
+            // First load = the Google Form — check for iframe block
             setTimeout(() => {
                 try {
                     const loc = frame.contentWindow.location.href;
@@ -1187,10 +1199,12 @@ function doRedirect() {
             return;
         }
 
-        // Second+ load = form submitted (navigated to /formResponse) OR external link
-        // In both cases: blank the iframe and show the confirmation overlay
-        frame.src = 'about:blank';
-        showConfirmOverlay();
+        // Second+ load AND detection is enabled = form submitted
+        // (Next/Back never fire load events per Google Forms SPA architecture)
+        if (detectionEnabled) {
+            frame.src = 'about:blank';
+            showConfirmOverlay();
+        }
     });
 }
 
