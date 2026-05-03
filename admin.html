@@ -913,7 +913,9 @@ input:focus, select:focus { outline: none; }
     /* ── BOTTOM NAV ── */
     .att-day-pills {
     display: flex; gap: 6px; margin-bottom: 14px;
+    max-width: 50%;
 }
+@media (max-width: 600px) { .att-day-pills { max-width: 100%; } }
 .att-day-pill {
     flex: 1; height: 38px; border: 1.5px solid var(--line-soft);
     border-radius: 99px; background: var(--surface);
@@ -932,7 +934,9 @@ input:focus, select:focus { outline: none; }
 }
 @media (min-width: 600px) { .att-day-pills {
     display: flex; gap: 6px; margin-bottom: 14px;
+    max-width: 50%;
 }
+@media (max-width: 600px) { .att-day-pills { max-width: 100%; } }
 .att-day-pill {
     flex: 1; height: 38px; border: 1.5px solid var(--line-soft);
     border-radius: 99px; background: var(--surface);
@@ -982,7 +986,9 @@ input:focus, select:focus { outline: none; }
 ════════════════════════════════════════ */
 .att-day-pills {
     display: flex; gap: 6px; margin-bottom: 14px;
+    max-width: 50%;
 }
+@media (max-width: 600px) { .att-day-pills { max-width: 100%; } }
 .att-day-pill {
     flex: 1; height: 38px; border: 1.5px solid var(--line-soft);
     border-radius: 99px; background: var(--surface);
@@ -1001,7 +1007,9 @@ input:focus, select:focus { outline: none; }
 }
 @media (min-width: 600px) { .att-day-pills {
     display: flex; gap: 6px; margin-bottom: 14px;
+    max-width: 50%;
 }
+@media (max-width: 600px) { .att-day-pills { max-width: 100%; } }
 .att-day-pill {
     flex: 1; height: 38px; border: 1.5px solid var(--line-soft);
     border-radius: 99px; background: var(--surface);
@@ -1447,10 +1455,10 @@ input:focus, select:focus { outline: none; }
 
                 <!-- Day quick-select pills -->
                 <div class="att-day-pills">
-                    <button class="att-day-pill" onclick="setAttDay(3, this)">3 Days Ago</button>
-                    <button class="att-day-pill" onclick="setAttDay(2, this)">2 Days Ago</button>
-                    <button class="att-day-pill" onclick="setAttDay(1, this)">Yesterday</button>
                     <button class="att-day-pill active" id="pillToday" onclick="setAttDay(0, this)">Today</button>
+                    <button class="att-day-pill" onclick="setAttDay(1, this)">Yesterday</button>
+                    <button class="att-day-pill" onclick="setAttDay(2, this)">2 Days Ago</button>
+                    <button class="att-day-pill" onclick="setAttDay(3, this)">3 Days Ago</button>
                 </div>
 
                 <div class="card">
@@ -2349,7 +2357,7 @@ async function loadAttendance() {
     document.getElementById('attAbsent').textContent   = '—';
 
     try {
-        const url = SCRIPT_URL + '?action=admin_get_attendance'
+        const url = UNIFIED_SCRIPT_URL + '?action=admin_get_attendance'
             + '&adminName=' + encodeURIComponent(admin.name)
             + '&password='  + encodeURIComponent(getStoredPass())
             + '&class='     + encodeURIComponent(cls)
