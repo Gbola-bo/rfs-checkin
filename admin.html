@@ -2666,7 +2666,7 @@ function renderReport(data) {
         return '<tr>'
             + '<td style="font-family:JetBrains Mono, monospace;font-size:11px;">' + escHtml(r.reg) + '</td>'
             + '<td>' + escHtml(r.lastName + ' ' + r.firstName) + '</td>'
-            + '<td>' + r.attended + '</td>'
+            + '<td>' + r.attPts + '</td>'
             + '<td>' + r.attPct + '%</td>'
             + '<td>' + eligBadge + '</td>'
             + '<td>' + r.testAvg.toFixed(1) + '</td>'
@@ -2692,7 +2692,7 @@ function downloadReport() {
         'Exam Score','Att Marks','Exam Marks','Test Marks','Grand Total','Final Status'];
     const rows = reportData.map(function(r) {
         return [
-            r.reg, r.lastName, r.firstName, r.attended, r.excused, r.attPct, r.eligibility,
+            r.reg, r.lastName, r.firstName, r.attPts, r.excused, r.attPct, r.eligibility,
             ...(r.testScores || [0,0,0,0,0,0,0,0,0]),
             r.testAvg,
             ...(r.assignScores || [0,0,0]),
