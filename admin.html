@@ -911,11 +911,41 @@ input:focus, select:focus { outline: none; }
     .card { margin-left: 0; margin-right: 0; }
 
     /* ── BOTTOM NAV ── */
-    .group-grid {
+    .att-day-pills {
+    display: flex; gap: 6px; margin-bottom: 14px;
+}
+.att-day-pill {
+    flex: 1; height: 38px; border: 1.5px solid var(--line-soft);
+    border-radius: 99px; background: var(--surface);
+    font-family: "DM Sans", sans-serif; font-size: 13px; font-weight: 600;
+    color: var(--ink-2); cursor: pointer; transition: all .15s;
+}
+.att-day-pill:hover { border-color: var(--green-mid); color: var(--green-mid); }
+.att-day-pill.active {
+    background: var(--green-deep); border-color: var(--green-deep);
+    color: #fff;
+}
+
+.group-grid {
     display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
     margin-bottom: 18px;
 }
-@media (min-width: 600px) { .group-grid { grid-template-columns: repeat(5, 1fr); } }
+@media (min-width: 600px) { .att-day-pills {
+    display: flex; gap: 6px; margin-bottom: 14px;
+}
+.att-day-pill {
+    flex: 1; height: 38px; border: 1.5px solid var(--line-soft);
+    border-radius: 99px; background: var(--surface);
+    font-family: "DM Sans", sans-serif; font-size: 13px; font-weight: 600;
+    color: var(--ink-2); cursor: pointer; transition: all .15s;
+}
+.att-day-pill:hover { border-color: var(--green-mid); color: var(--green-mid); }
+.att-day-pill.active {
+    background: var(--green-deep); border-color: var(--green-deep);
+    color: #fff;
+}
+
+.group-grid { grid-template-columns: repeat(5, 1fr); } }
 .group-card {
     background: var(--surface); border: 1.5px solid var(--line-soft);
     border-radius: var(--r-sm); padding: 12px 10px; text-align: center;
@@ -950,11 +980,41 @@ input:focus, select:focus { outline: none; }
 /* ════════════════════════════════════════
    BOTTOM NAV BAR  (mobile only)
 ════════════════════════════════════════ */
+.att-day-pills {
+    display: flex; gap: 6px; margin-bottom: 14px;
+}
+.att-day-pill {
+    flex: 1; height: 38px; border: 1.5px solid var(--line-soft);
+    border-radius: 99px; background: var(--surface);
+    font-family: "DM Sans", sans-serif; font-size: 13px; font-weight: 600;
+    color: var(--ink-2); cursor: pointer; transition: all .15s;
+}
+.att-day-pill:hover { border-color: var(--green-mid); color: var(--green-mid); }
+.att-day-pill.active {
+    background: var(--green-deep); border-color: var(--green-deep);
+    color: #fff;
+}
+
 .group-grid {
     display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
     margin-bottom: 18px;
 }
-@media (min-width: 600px) { .group-grid { grid-template-columns: repeat(5, 1fr); } }
+@media (min-width: 600px) { .att-day-pills {
+    display: flex; gap: 6px; margin-bottom: 14px;
+}
+.att-day-pill {
+    flex: 1; height: 38px; border: 1.5px solid var(--line-soft);
+    border-radius: 99px; background: var(--surface);
+    font-family: "DM Sans", sans-serif; font-size: 13px; font-weight: 600;
+    color: var(--ink-2); cursor: pointer; transition: all .15s;
+}
+.att-day-pill:hover { border-color: var(--green-mid); color: var(--green-mid); }
+.att-day-pill.active {
+    background: var(--green-deep); border-color: var(--green-deep);
+    color: #fff;
+}
+
+.group-grid { grid-template-columns: repeat(5, 1fr); } }
 .group-card {
     background: var(--surface); border: 1.5px solid var(--line-soft);
     border-radius: var(--r-sm); padding: 12px 10px; text-align: center;
@@ -1378,13 +1438,19 @@ input:focus, select:focus { outline: none; }
                         <p class="page-sub" id="attDateSub">Load a session to view attendance</p>
                     </div>
                     <div class="page-actions">
-                        <input type="date" id="attDatePicker" class="input" style="height:34px; font-size:13px; padding:0 10px; width:auto;"
-                               onchange="loadAttendance()">
                         <button class="btn btn-outline btn-sm" onclick="loadAttendance()">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.65 4.36A9 9 0 0 0 20.5 15"/></svg>
                             Refresh
                         </button>
                     </div>
+                </div>
+
+                <!-- Day quick-select pills -->
+                <div class="att-day-pills">
+                    <button class="att-day-pill" onclick="setAttDay(3, this)">3 Days Ago</button>
+                    <button class="att-day-pill" onclick="setAttDay(2, this)">2 Days Ago</button>
+                    <button class="att-day-pill" onclick="setAttDay(1, this)">Yesterday</button>
+                    <button class="att-day-pill active" id="pillToday" onclick="setAttDay(0, this)">Today</button>
                 </div>
 
                 <div class="card">
@@ -2269,10 +2335,13 @@ async function loadAttendance() {
     const st  = document.getElementById('selStream').value;
     if (!cls || !yr || !st) { showToast('Load a session first', 'err'); return; }
 
-    // Date picker — default to today if not set
-    const picker = document.getElementById('attDatePicker');
-    if (!picker.value) picker.value = new Date().toISOString().split('T')[0];
-    const selectedDate = picker.value; // YYYY-MM-DD
+    // Use the selected date offset (default 0 = today)
+    const offset = typeof attDayOffset !== 'undefined' ? attDayOffset : 0;
+    const d = new Date();
+    d.setDate(d.getDate() - offset);
+    const selectedDate = d.getFullYear() + '-'
+        + String(d.getMonth() + 1).padStart(2, '0') + '-'
+        + String(d.getDate()).padStart(2, '0');
 
     document.getElementById('attList').innerHTML = '<div class="att-empty">Loading…</div>';
     document.getElementById('attPhysical').textContent = '—';
@@ -2830,6 +2899,16 @@ function closeRailSlide() {
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeRailSlide();
 });
+
+// ── Attendance day selector ──────────────────────────────────
+let attDayOffset = 0;
+
+function setAttDay(offset, btn) {
+    attDayOffset = offset;
+    document.querySelectorAll('.att-day-pill').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    loadAttendance();
+}
 
 // ============================================================
 //  GROUPING MODULE — Super Admin only
