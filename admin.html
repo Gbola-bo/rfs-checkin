@@ -2830,7 +2830,7 @@ async function loadGroupConfig() {
     if (!grid) return;
     grid.innerHTML = '<div class="att-empty" style="grid-column:1/-1;">Loading...</div>';
     try {
-        const url  = SCRIPT_URL + '?action=get_group_config'
+        const url  = UNIFIED_SCRIPT_URL + '?action=get_group_config'
             + '&adminName=' + encodeURIComponent(admin.name)
             + '&password='  + encodeURIComponent(getStoredPass())
             + '&cb=' + Date.now();
@@ -2894,7 +2894,7 @@ async function saveGroupAdmin() {
     if (!newAdmin) { showToast('Please enter an admin name.', 'warn'); return; }
     saveBtn.textContent = 'Saving…'; saveBtn.disabled = true;
     try {
-        const url  = SCRIPT_URL + '?action=update_group_config'
+        const url  = UNIFIED_SCRIPT_URL + '?action=update_group_config'
             + '&adminName='     + encodeURIComponent(admin.name)
             + '&password='      + encodeURIComponent(getStoredPass())
             + '&group='         + encodeURIComponent(groupNum)
@@ -2928,7 +2928,7 @@ async function runRefreshGroups() {
     if (!sessionInfo) return;
     showToast('Updating groups — this may take a moment…', 'warn');
     try {
-        const url  = SCRIPT_URL + '?action=admin_refresh_groups'
+        const url  = UNIFIED_SCRIPT_URL + '?action=admin_refresh_groups'
             + '&adminName=' + encodeURIComponent(admin.name)
             + '&password='  + encodeURIComponent(getStoredPass())
             + '&class='     + encodeURIComponent(sessionInfo.className)
