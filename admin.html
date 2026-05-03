@@ -2917,11 +2917,12 @@ async function saveGroupAdmin() {
 
 function confirmRefreshGroups() {
     if (!sessionInfo) { showToast('No active session loaded.', 'warn'); return; }
-    showQAQCModal(
-        'Update Groups',
-        'This will append new active students to their group tabs in the Grouping Sheet. Existing rows and any columns beyond G will not be touched.',
-        runRefreshGroups
-    );
+    // Show grouping confirm overlay
+    document.getElementById('groupingConfirmOverlay').classList.add('show');
+}
+
+function closeGroupingConfirm() {
+    document.getElementById('groupingConfirmOverlay').classList.remove('show');
 }
 
 async function runRefreshGroups() {
@@ -2976,6 +2977,24 @@ function renderGroupResults(groups, totalAdded) {
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
             </svg>
         </button>
+
+        <!-- Grouping Confirm Overlay -->
+        <div class="qaqc-overlay" id="groupingConfirmOverlay">
+            <div class="qaqc-modal">
+                <div class="qaqc-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <div class="qaqc-title">Update Groups</div>
+                <div class="qaqc-desc">This will append newly active students to their group tabs in the Grouping Sheet. Existing rows and columns H+ will not be touched.</div>
+                <div class="qaqc-actions">
+                    <button class="btn btn-outline btn-sm" onclick="closeGroupingConfirm()">Cancel</button>
+                    <button class="btn btn-primary btn-sm" id="btnGroupingConfirm" onclick="closeGroupingConfirm(); runRefreshGroups();">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        Yes, Update Now
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <!-- Edit Group Admin Overlay -->
         <div class="edit-admin-overlay" id="editAdminOverlay">
