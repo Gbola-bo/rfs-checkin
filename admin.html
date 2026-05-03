@@ -2832,7 +2832,7 @@ async function loadGroupConfig() {
     try {
         const url  = SCRIPT_URL + '?action=get_group_config'
             + '&adminName=' + encodeURIComponent(admin.name)
-            + '&password='  + encodeURIComponent(adminPassword)
+            + '&password='  + encodeURIComponent(getStoredPass())
             + '&cb=' + Date.now();
         const res  = await fetch(url);
         const data = await res.json();
@@ -2896,7 +2896,7 @@ async function saveGroupAdmin() {
     try {
         const url  = SCRIPT_URL + '?action=update_group_config'
             + '&adminName='     + encodeURIComponent(admin.name)
-            + '&password='      + encodeURIComponent(adminPassword)
+            + '&password='      + encodeURIComponent(getStoredPass())
             + '&group='         + encodeURIComponent(groupNum)
             + '&assignedAdmin=' + encodeURIComponent(newAdmin)
             + '&cb=' + Date.now();
@@ -2930,7 +2930,7 @@ async function runRefreshGroups() {
     try {
         const url  = SCRIPT_URL + '?action=admin_refresh_groups'
             + '&adminName=' + encodeURIComponent(admin.name)
-            + '&password='  + encodeURIComponent(adminPassword)
+            + '&password='  + encodeURIComponent(getStoredPass())
             + '&class='     + encodeURIComponent(sessionInfo.className)
             + '&year='      + encodeURIComponent(sessionInfo.year)
             + '&stream='    + encodeURIComponent(sessionInfo.stream)
