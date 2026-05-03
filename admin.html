@@ -911,18 +911,71 @@ input:focus, select:focus { outline: none; }
     .card { margin-left: 0; margin-right: 0; }
 
     /* ── BOTTOM NAV ── */
-    .mob-nav { display: flex !important; }
+    .group-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+    margin-bottom: 18px;
+}
+@media (min-width: 600px) { .group-grid { grid-template-columns: repeat(5, 1fr); } }
+.group-card {
+    background: var(--surface); border: 1.5px solid var(--line-soft);
+    border-radius: var(--r-sm); padding: 12px 10px; text-align: center;
+    transition: border-color .15s, box-shadow .15s;
+}
+.group-card:hover { border-color: var(--green-mid); box-shadow: 0 2px 12px rgba(45,106,45,0.08); }
+.group-card-num   { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); margin-bottom: 6px; }
+.group-card-admin { font-size: 13px; font-weight: 600; color: var(--ink-1); margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.group-card-count { font-size: 12px; color: var(--ink-3); margin-bottom: 6px; }
+.group-card-edit  { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; color: var(--green-mid); background: var(--green-wash); border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-family: "DM Sans", sans-serif; transition: opacity .15s; }
+.group-card-edit:hover { opacity: 0.75; }
+.group-result-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--line-soft); font-size: 13px; }
+.group-result-row:last-child { border-bottom: none; }
+.group-result-label { color: var(--ink-2); font-weight: 500; }
+.group-result-added { font-weight: 700; color: var(--green-deep); }
+.group-result-added.zero { color: var(--ink-3); font-weight: 400; }
+.edit-admin-overlay { display: none; position: fixed; inset: 0; z-index: 9000; background: rgba(10,20,10,0.55); backdrop-filter: blur(3px); align-items: center; justify-content: center; padding: 20px; }
+.edit-admin-overlay.show { display: flex; }
+.edit-admin-modal { background: var(--card); border-radius: var(--r-lg); padding: 28px 26px 24px; width: 100%; max-width: 360px; box-shadow: 0 16px 48px rgba(0,0,0,0.25); }
+.edit-admin-title { font-size: 16px; font-weight: 700; color: var(--ink-1); margin-bottom: 4px; }
+.edit-admin-sub   { font-size: 13px; color: var(--ink-3); margin-bottom: 18px; }
+.mob-nav { display: flex !important; }
 
     /* ── DESKTOP-ONLY PAGE NUDGE ── */
     .mob-desktop-only { display: flex !important; }
     #pageScores .page-content-wrap,
     #pagePermissions .page-content-wrap,
-    #pageReport .page-content-wrap { display: none; }
+    #pageReport .page-content-wrap,
+    #pageGrouping .page-content-wrap { display: none; }
 }
 
 /* ════════════════════════════════════════
    BOTTOM NAV BAR  (mobile only)
 ════════════════════════════════════════ */
+.group-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+    margin-bottom: 18px;
+}
+@media (min-width: 600px) { .group-grid { grid-template-columns: repeat(5, 1fr); } }
+.group-card {
+    background: var(--surface); border: 1.5px solid var(--line-soft);
+    border-radius: var(--r-sm); padding: 12px 10px; text-align: center;
+    transition: border-color .15s, box-shadow .15s;
+}
+.group-card:hover { border-color: var(--green-mid); box-shadow: 0 2px 12px rgba(45,106,45,0.08); }
+.group-card-num   { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); margin-bottom: 6px; }
+.group-card-admin { font-size: 13px; font-weight: 600; color: var(--ink-1); margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.group-card-count { font-size: 12px; color: var(--ink-3); margin-bottom: 6px; }
+.group-card-edit  { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; color: var(--green-mid); background: var(--green-wash); border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-family: "DM Sans", sans-serif; transition: opacity .15s; }
+.group-card-edit:hover { opacity: 0.75; }
+.group-result-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--line-soft); font-size: 13px; }
+.group-result-row:last-child { border-bottom: none; }
+.group-result-label { color: var(--ink-2); font-weight: 500; }
+.group-result-added { font-weight: 700; color: var(--green-deep); }
+.group-result-added.zero { color: var(--ink-3); font-weight: 400; }
+.edit-admin-overlay { display: none; position: fixed; inset: 0; z-index: 9000; background: rgba(10,20,10,0.55); backdrop-filter: blur(3px); align-items: center; justify-content: center; padding: 20px; }
+.edit-admin-overlay.show { display: flex; }
+.edit-admin-modal { background: var(--card); border-radius: var(--r-lg); padding: 28px 26px 24px; width: 100%; max-width: 360px; box-shadow: 0 16px 48px rgba(0,0,0,0.25); }
+.edit-admin-title { font-size: 16px; font-weight: 700; color: var(--ink-1); margin-bottom: 4px; }
+.edit-admin-sub   { font-size: 13px; color: var(--ink-3); margin-bottom: 18px; }
 .mob-nav {
     display: none;
     position: fixed; bottom: 0; left: 0; right: 0; z-index: 120;
@@ -950,6 +1003,19 @@ input:focus, select:focus { outline: none; }
 .mob-nav-item.active { color: var(--green-deep); }
 .mob-nav-item.active svg { stroke: var(--green-deep); }
 .mob-nav-item:active { opacity: 0.7; }
+
+/* Grouping mobile FAB — Super Admin only, visible when sidebar hidden */
+.grouping-mob-fab {
+    display: none;
+    position: fixed; bottom: 80px; right: 16px; z-index: 500;
+    width: 46px; height: 46px; border-radius: 50%;
+    background: var(--green-deep); color: #fff; border: none;
+    box-shadow: 0 4px 16px rgba(45,106,45,0.4);
+    align-items: center; justify-content: center;
+    cursor: pointer; transition: transform .15s, opacity .15s;
+}
+.grouping-mob-fab:active { transform: scale(0.93); }
+@media (max-width: 889px) { .grouping-mob-fab { display: flex; } }
 
 /* ════════════════════════════════════════
    DESKTOP-ONLY NUDGE (inside page)
@@ -1121,6 +1187,10 @@ input:focus, select:focus { outline: none; }
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 5-7"/></svg>
                     Report
                 </button>
+                <button class="nav-item" data-page="grouping" id="navGrouping" onclick="switchPage('grouping', this)" style="display:none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    Grouping
+                </button>
             </div>
 
             <div class="side-foot">
@@ -1155,7 +1225,7 @@ input:focus, select:focus { outline: none; }
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
                                 <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
                             </svg>
-                            Computation
+                            Perform QA/QC
                         </button>
                     </div>
                 </div>
@@ -1522,6 +1592,48 @@ input:focus, select:focus { outline: none; }
                 </div><!-- /page-content-wrap -->
             </section>
 
+            <!-- GROUPING PAGE — Super Admin only -->
+            <section class="page" id="pageGrouping">
+                <div class="page-head">
+                    <div class="page-head-text">
+                        <h1 class="page-title">Student Grouping</h1>
+                        <p class="page-sub">Assign active students to WhatsApp groups by last digit of their serial number.</p>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-outline btn-sm" onclick="loadGroupConfig()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 1 1-.5-5"/></svg>
+                            Refresh View
+                        </button>
+                        <button class="btn btn-primary btn-sm" onclick="confirmRefreshGroups()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            Update Groups
+                        </button>
+                    </div>
+                </div>
+
+                <div class="page-content-wrap">
+                <div class="card" style="margin-bottom:14px;">
+                    <div class="card-body">
+                        <div class="field-label" style="margin-bottom:12px;">Group Assignments</div>
+                        <div class="group-grid" id="groupGrid">
+                            <div class="att-empty" style="grid-column:1/-1;">Loading group assignments…</div>
+                        </div>
+                        <p style="font-size:12px; color:var(--ink-3); line-height:1.6; margin-top:4px;">
+                            001, 011, 021… → Group 1 &nbsp;·&nbsp; 002, 012, 022… → Group 2 &nbsp;·&nbsp; 010, 020, 030… → Group 10
+                        </p>
+                    </div>
+                </div>
+
+                <div class="card" id="groupResultCard" style="display:none;">
+                    <div class="card-body">
+                        <div class="field-label" style="margin-bottom:12px;">Last Refresh Results</div>
+                        <div id="groupResultList"></div>
+                        <p style="margin-top:12px; font-size:12px; color:var(--ink-3);" id="groupResultTotal"></p>
+                    </div>
+                </div>
+                </div>
+            </section>
+
         </main>
 
         <!-- RIGHT RAIL — LIVE ACTIVITY LOG -->
@@ -1588,8 +1700,8 @@ input:focus, select:focus { outline: none; }
                 <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
             </svg>
         </div>
-        <div class="qaqc-title">Before you perform Computation</div>
-        <div class="qaqc-desc">This will compute the data for all active students in the current stream. Please confirm the following before proceeding:</div>
+        <div class="qaqc-title">Before you perform QA/QC</div>
+        <div class="qaqc-desc">This will compute and write the Summary tab for all active students in the current stream. Please confirm the following before proceeding:</div>
         <div class="qaqc-checklist">
             <div class="qaqc-check">
                 <div class="qaqc-check-icon">
@@ -1612,7 +1724,7 @@ input:focus, select:focus { outline: none; }
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
                 </svg>
-                Yes, Run Computation
+                Yes, Perform QA/QC
             </button>
         </div>
     </div>
@@ -1728,6 +1840,10 @@ function showApp() {
 
     // Test toggle visibility (Super Admin only)
     document.getElementById('testToggle').style.display = (admin.role === 'Super Admin') ? 'inline-flex' : 'none';
+    // Grouping nav + mobile FAB (Super Admin only)
+    const isSuper = admin.role === 'Super Admin';
+    document.getElementById('navGrouping').style.display    = isSuper ? 'flex'  : 'none';
+    document.getElementById('groupingMobFab').style.display = isSuper ? 'flex'  : 'none';
 
     // Initial loads
     autoLoadSession();
@@ -1768,6 +1884,7 @@ function switchPage(name, btn) {
     if (name === 'attendance')  loadAttendance();
     if (name === 'scores')      updateTopicList();
     if (name === 'permissions') { updateExcuseForm(); loadExcuses(); }
+    if (name === 'grouping')     loadGroupConfig();
 }
 
 // ============================================================
@@ -2593,7 +2710,7 @@ function downloadReport() {
 
 
 // ============================================================
-//  Computation — SUMMARY TAB REFRESH
+//  QA/QC — SUMMARY TAB REFRESH
 // ============================================================
 function openQAQCConfirm() {
     document.getElementById('qaqcOverlay').classList.add('show');
@@ -2644,13 +2761,13 @@ async function runQAQC() {
         closeQAQCConfirm();
 
         if (data.status === 'success') {
-            showToast(data.message || 'Computation complete ✓', 'ok');
+            showToast(data.message || 'QA/QC complete — Summary tab updated ✓', 'ok');
         } else {
-            showToast(data.message || 'Computation failed. Please try again.', 'err');
+            showToast(data.message || 'QA/QC failed. Please try again.', 'err');
         }
     } catch(err) {
         closeQAQCConfirm();
-        showToast('Connection error during Computation — please retry', 'err');
+        showToast('Connection error during QA/QC — please retry', 'err');
     }
     resetQAQCBtn();
 }
@@ -2659,7 +2776,7 @@ function resetQAQCBtn() {
     const btn = document.getElementById('btnQAQCConfirm');
     if (!btn) return;
     btn.disabled = false;
-    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Yes, Run Computation';
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Yes, Perform QA/QC';
 }
 
 // ============================================================
@@ -2702,6 +2819,180 @@ function closeRailSlide() {
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeRailSlide();
 });
+
+// ============================================================
+//  GROUPING MODULE — Super Admin only
+// ============================================================
+let groupConfigCache = [];
+
+async function loadGroupConfig() {
+    const grid = document.getElementById('groupGrid');
+    if (!grid) return;
+    grid.innerHTML = '<div class="att-empty" style="grid-column:1/-1;">Loading...</div>';
+    try {
+        const url  = SCRIPT_URL + '?action=get_group_config'
+            + '&adminName=' + encodeURIComponent(admin.name)
+            + '&password='  + encodeURIComponent(adminPassword)
+            + '&cb=' + Date.now();
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (data.status !== 'success') {
+            grid.innerHTML = '<div class="att-empty" style="grid-column:1/-1; color:var(--red-mid);">' + (data.message || 'Failed to load groups.') + '</div>';
+            return;
+        }
+        groupConfigCache = data.groups || [];
+        renderGroupCards(groupConfigCache);
+    } catch(e) {
+        grid.innerHTML = '<div class="att-empty" style="grid-column:1/-1; color:var(--red-mid);">Connection error. Try again.</div>';
+    }
+}
+
+function renderGroupCards(groups) {
+    const grid = document.getElementById('groupGrid');
+    if (!groups || !groups.length) {
+        grid.innerHTML = '<div class="att-empty" style="grid-column:1/-1;">No Group Config found. Add groups 1-10 to Master Config Sheet first.</div>';
+        return;
+    }
+    grid.innerHTML = groups.map(function(g) {
+        return '<div class="group-card">'
+            + '<div class="group-card-num">Group ' + g.group + '</div>'
+            + '<div class="group-card-admin">' + safeHtml(g.admin) + '</div>'
+            + '<button class="group-card-edit" onclick="openEditAdminByGroup(' + g.group + ')">'
+            + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>'
+            + 'Edit</button></div>';
+    }).join('');
+}
+
+function safeHtml(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function openEditAdminByGroup(groupNum) {
+    // Look up current admin from cache — avoids passing strings through onclick attrs
+    var found = groupConfigCache.filter(function(g) { return g.group === groupNum; })[0];
+    var currentAdmin = found ? found.admin : '';
+    openEditAdmin(groupNum, currentAdmin);
+}
+
+function openEditAdmin(groupNum, currentAdmin) {
+    document.getElementById('editAdminTitle').textContent = 'Edit Group ' + groupNum + ' Admin';
+    document.getElementById('editAdminSub').textContent   = 'Currently assigned to: ' + currentAdmin;
+    document.getElementById('editAdminGroupNum').value    = groupNum;
+    document.getElementById('editAdminInput').value       = currentAdmin;
+    document.getElementById('editAdminOverlay').classList.add('show');
+    setTimeout(function() { document.getElementById('editAdminInput').focus(); }, 100);
+}
+
+function closeEditAdmin() {
+    document.getElementById('editAdminOverlay').classList.remove('show');
+}
+
+async function saveGroupAdmin() {
+    const groupNum = document.getElementById('editAdminGroupNum').value;
+    const newAdmin = document.getElementById('editAdminInput').value.trim();
+    const saveBtn  = document.querySelector('#editAdminOverlay .btn-primary');
+    if (!newAdmin) { showToast('Please enter an admin name.', 'warn'); return; }
+    saveBtn.textContent = 'Saving…'; saveBtn.disabled = true;
+    try {
+        const url  = SCRIPT_URL + '?action=update_group_config'
+            + '&adminName='     + encodeURIComponent(admin.name)
+            + '&password='      + encodeURIComponent(adminPassword)
+            + '&group='         + encodeURIComponent(groupNum)
+            + '&assignedAdmin=' + encodeURIComponent(newAdmin)
+            + '&cb=' + Date.now();
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (data.status === 'success') {
+            showToast(data.message || 'Group updated.', 'ok');
+            closeEditAdmin();
+            loadGroupConfig();
+        } else {
+            showToast(data.message || 'Update failed.', 'error');
+        }
+    } catch(e) {
+        showToast('Connection error. Try again.', 'error');
+    }
+    saveBtn.textContent = 'Save'; saveBtn.disabled = false;
+}
+
+function confirmRefreshGroups() {
+    if (!sessionInfo) { showToast('No active session loaded.', 'warn'); return; }
+    showQAQCModal(
+        'Update Groups',
+        'This will append new active students to their group tabs in the Grouping Sheet. Existing rows and any columns beyond G will not be touched.',
+        runRefreshGroups
+    );
+}
+
+async function runRefreshGroups() {
+    if (!sessionInfo) return;
+    showToast('Updating groups — this may take a moment…', 'warn');
+    try {
+        const url  = SCRIPT_URL + '?action=admin_refresh_groups'
+            + '&adminName=' + encodeURIComponent(admin.name)
+            + '&password='  + encodeURIComponent(adminPassword)
+            + '&class='     + encodeURIComponent(sessionInfo.className)
+            + '&year='      + encodeURIComponent(sessionInfo.year)
+            + '&stream='    + encodeURIComponent(sessionInfo.stream)
+            + '&cb=' + Date.now();
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (data.status === 'success') {
+            showToast(data.message || 'Groups updated.', 'ok');
+            renderGroupResults(data.groups || [], data.totalAdded || 0);
+        } else {
+            showToast(data.message || 'Update failed.', 'error');
+        }
+    } catch(e) {
+        showToast('Connection error. Try again.', 'error');
+    }
+}
+
+function renderGroupResults(groups, totalAdded) {
+    const card  = document.getElementById('groupResultCard');
+    const list  = document.getElementById('groupResultList');
+    const total = document.getElementById('groupResultTotal');
+    if (!card) return;
+    card.style.display = 'block';
+    list.innerHTML = groups.map(function(g) {
+        const added = g.added || 0;
+        const label = g.admin ? 'Group ' + g.group + ' (' + safeHtml(g.admin) + ')' : 'Group ' + g.group;
+        const txt   = added === 0 ? 'No new students' : '+' + added + ' added';
+        const cls   = added === 0 ? 'zero' : '';
+        return '<div class="group-result-row"><span class="group-result-label">' + label + '</span><span class="group-result-added ' + cls + '">' + txt + '</span></div>';
+    }).join('');
+    total.textContent = totalAdded + ' student(s) added in total across all groups.';
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
 </script>
+
+        <!-- Grouping FAB — mobile only, Super Admin only -->
+        <button class="grouping-mob-fab" id="groupingMobFab" style="display:none;"
+                onclick="switchPage('grouping', document.getElementById('navGrouping'))"
+                title="Grouping">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+        </button>
+
+        <!-- Edit Group Admin Overlay -->
+        <div class="edit-admin-overlay" id="editAdminOverlay">
+            <div class="edit-admin-modal">
+                <div class="edit-admin-title" id="editAdminTitle">Edit Group Admin</div>
+                <div class="edit-admin-sub" id="editAdminSub">Update the admin assigned to this group.</div>
+                <input type="hidden" id="editAdminGroupNum">
+                <div class="field" style="margin-bottom:16px;">
+                    <label class="field-label">Assigned Admin Name</label>
+                    <input type="text" class="field-input" id="editAdminInput" placeholder="Enter admin name" autocomplete="off"
+                           onkeydown="if(event.key==='Enter') saveGroupAdmin()">
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn btn-outline btn-sm" style="flex:1; justify-content:center;" onclick="closeEditAdmin()">Cancel</button>
+                    <button class="btn btn-primary btn-sm" style="flex:1; justify-content:center;" onclick="saveGroupAdmin()">Save</button>
+                </div>
+            </div>
+        </div>
 </body>
 </html>
