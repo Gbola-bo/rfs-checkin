@@ -1374,10 +1374,12 @@ input:focus, select:focus { outline: none; }
             <section class="page" id="pageAttendance">
                 <div class="page-head">
                     <div class="page-head-text">
-                        <h1 class="page-title">Today's Attendance</h1>
+                        <h1 class="page-title">Attendance</h1>
                         <p class="page-sub" id="attDateSub">Load a session to view attendance</p>
                     </div>
                     <div class="page-actions">
+                        <input type="date" id="attDatePicker" class="input" style="height:34px; font-size:13px; padding:0 10px; width:auto;"
+                               onchange="loadAttendance()">
                         <button class="btn btn-outline btn-sm" onclick="loadAttendance()">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.65 4.36A9 9 0 0 0 20.5 15"/></svg>
                             Refresh
@@ -2267,6 +2269,11 @@ async function loadAttendance() {
     const st  = document.getElementById('selStream').value;
     if (!cls || !yr || !st) { showToast('Load a session first', 'err'); return; }
 
+    // Date picker — default to today if not set
+    const picker = document.getElementById('attDatePicker');
+    if (!picker.value) picker.value = new Date().toISOString().split('T')[0];
+    const selectedDate = picker.value; // YYYY-MM-DD
+
     document.getElementById('attList').innerHTML = '<div class="att-empty">Loading…</div>';
     document.getElementById('attPhysical').textContent = '—';
     document.getElementById('attOnline').textContent   = '—';
@@ -2279,6 +2286,7 @@ async function loadAttendance() {
             + '&class='     + encodeURIComponent(cls)
             + '&year='      + encodeURIComponent(yr)
             + '&stream='    + encodeURIComponent(st)
+            + '&date='      + encodeURIComponent(selectedDate)
             + '&cb='        + Date.now();
         const res  = await fetch(url);
         const data = await res.json();
@@ -2291,8 +2299,11 @@ async function loadAttendance() {
         attAllStudents  = data.students || [];
         attTodayRecords = data.records  || [];
 
-        const today = new Date();
-        document.getElementById('attDateSub').textContent = today.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+        // Show selected date in subtitle
+        const pickedDate  = new Date(selectedDate + 'T00:00:00');
+        const isToday     = selectedDate === new Date().toISOString().split('T')[0];
+        const dateLabel   = pickedDate.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+        document.getElementById('attDateSub').textContent = isToday ? 'Today — ' + dateLabel : dateLabel;
 
         // If unified backend already classified (status field present), use it directly
         if (attAllStudents.length && attAllStudents[0].status) {
