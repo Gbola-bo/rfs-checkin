@@ -2916,8 +2916,10 @@ async function saveGroupAdmin() {
 }
 
 function confirmRefreshGroups() {
-    if (!sessionInfo) { showToast('No active session loaded.', 'warn'); return; }
-    // Show grouping confirm overlay
+    const cls = document.getElementById('selClass').value;
+    const yr  = document.getElementById('selYear').value;
+    const st  = document.getElementById('selStream').value;
+    if (!cls || !yr || !st) { showToast('No active session loaded.', 'warn'); return; }
     document.getElementById('groupingConfirmOverlay').classList.add('show');
 }
 
@@ -2926,15 +2928,18 @@ function closeGroupingConfirm() {
 }
 
 async function runRefreshGroups() {
-    if (!sessionInfo) return;
+    const cls = document.getElementById('selClass').value;
+    const yr  = document.getElementById('selYear').value;
+    const st  = document.getElementById('selStream').value;
+    if (!cls || !yr || !st) { showToast('No active session loaded.', 'warn'); return; }
     showToast('Updating groups — this may take a moment…', 'warn');
     try {
         const url  = UNIFIED_SCRIPT_URL + '?action=admin_refresh_groups'
             + '&adminName=' + encodeURIComponent(admin.name)
             + '&password='  + encodeURIComponent(getStoredPass())
-            + '&class='     + encodeURIComponent(sessionInfo.className)
-            + '&year='      + encodeURIComponent(sessionInfo.year)
-            + '&stream='    + encodeURIComponent(sessionInfo.stream)
+            + '&class='     + encodeURIComponent(cls)
+            + '&year='      + encodeURIComponent(yr)
+            + '&stream='    + encodeURIComponent(st)
             + '&cb=' + Date.now();
         const res  = await fetch(url);
         const data = await res.json();
